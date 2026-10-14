@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "role"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "hello"
+        },
+        "role": {
+          "enum": ["core", "cli"]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "service", "mode"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "ready"
+        },
+        "service": {
+          "const": "audio"
+        },
+        "mode": {
+          "const": "mock"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "service", "status"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "ready"
+        },
+        "service": {
+          "const": "core"
+        },
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ready",
+            "mode",
+            "state",
+            "manual_activation",
+            "voice_conversation",
+            "audio",
+            "since_ms",
+            "audio_diagnostic"
+          ],
+          "properties": {
+            "ready": {
+              "type": "boolean"
+            },
+            "mode": {
+              "const": "mock"
+            },
+            "state": {
+              "const": "idle"
+            },
+            "manual_activation": {
+              "const": "unavailable"
+            },
+            "voice_conversation": {
+              "const": "unavailable"
+            },
+            "audio": {
+              "enum": ["ready", "unavailable"]
+            },
+            "since_ms": {
+              "type": "number",
+              "minimum": 0
+            },
+            "audio_diagnostic": {
+              "enum": [
+                "invalid_message",
+                "incompatible_version",
+                "frame_too_large",
+                "timeout",
+                "unavailable",
+                "busy",
+                null
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "code"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "error"
+        },
+        "code": {
+          "enum": [
+            "invalid_message",
+            "incompatible_version",
+            "frame_too_large",
+            "timeout",
+            "unavailable",
+            "busy"
+          ]
+        }
+      }
+    }
+  ]
+}

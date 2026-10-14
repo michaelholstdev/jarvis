@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+.mypy_cache/
+.ruff_cache/
+*.pyc
+.scratch/**/review-*.md

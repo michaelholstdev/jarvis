@@ -1,0 +1,309 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "locale": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "default": "de-DE",
+      "const": "de-DE"
+    },
+    "audio": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "input_device": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "default"
+        },
+        "output_device": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "default"
+        },
+        "sample_rate_hz": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000,
+          "default": 16000,
+          "const": 16000
+        },
+        "pre_roll_ms": {
+          "type": "integer",
+          "minimum": 500,
+          "maximum": 1000,
+          "default": 750
+        },
+        "echo_cancellation": {
+          "type": "boolean",
+          "default": false,
+          "const": false
+        }
+      }
+    },
+    "wake_word": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "phrase": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "Hey Jarvis",
+          "const": "Hey Jarvis"
+        },
+        "model_path": {
+          "type": "null",
+          "default": null
+        },
+        "threshold": {
+          "type": "null",
+          "default": null
+        }
+      }
+    },
+    "vad": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "engine": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "silero",
+          "const": "silero"
+        },
+        "end_silence_ms": {
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 5000,
+          "default": 350
+        },
+        "max_utterance_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120,
+          "default": 30
+        }
+      }
+    },
+    "stt": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "engine": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "sherpa-onnx",
+          "const": "sherpa-onnx"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "to-be-benchmarked"
+        },
+        "device": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "cpu",
+          "const": "cpu"
+        }
+      }
+    },
+    "tts": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "engine": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "piper",
+          "const": "piper"
+        },
+        "voice": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "de_DE-thorsten-medium"
+        },
+        "device": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "cpu",
+          "const": "cpu"
+        }
+      }
+    },
+    "llm": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "ollama",
+          "const": "ollama"
+        },
+        "base_url": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "http://127.0.0.1:11434",
+          "pattern": "^http://(127\\.0\\.0\\.1|localhost|\\[::1\\]):[0-9]{1,5}/?$"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "user-configured"
+        },
+        "max_context_tokens": {
+          "type": "integer",
+          "minimum": 512,
+          "maximum": 32768,
+          "default": 8192
+        }
+      }
+    },
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "follow_up_seconds": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 60,
+          "default": 20
+        },
+        "max_duration_seconds": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 3600,
+          "default": 300
+        },
+        "extension_response_seconds": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 60,
+          "default": 20
+        },
+        "extension_duration_seconds": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 3600,
+          "default": 300
+        },
+        "recognition_completion_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "default": 5
+        },
+        "persistence": {
+          "type": "boolean",
+          "default": false,
+          "const": false
+        }
+      }
+    },
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "manual_activation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "single_press",
+          "const": "single_press"
+        },
+        "activation_sound": {
+          "type": "boolean",
+          "default": true
+        },
+        "conversation_end_sound": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "barge_in": {
+          "type": "boolean",
+          "default": false,
+          "const": false
+        },
+        "external_tools": {
+          "type": "boolean",
+          "default": false,
+          "const": false
+        },
+        "tray": {
+          "type": "boolean",
+          "default": false,
+          "const": false
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "content_logging": {
+          "type": "boolean",
+          "default": false,
+          "const": false
+        }
+      }
+    },
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 10000,
+          "default": 1000
+        },
+        "max_frame_bytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 65536,
+          "default": 8192
+        },
+        "max_connections": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32,
+          "default": 8
+        }
+      }
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

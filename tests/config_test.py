@@ -1,0 +1,43 @@
+"""Public audio configuration loader checks; no hardware or sockets."""
+
+import os
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import patch
+
+from apps.audio.main import Diagnostic, load_config
+
+
+class AudioConfigurationTest(unittest.TestCase):
+    def test_empty_config_has_cpu_defaults(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.dict(os.environ, {"XDG_CONFIG_HOME": directory}, clear=True):
+                config = load_config()
+        self.assertEqual(config["session"]["follow_up_seconds"], 20)
+        self.assertEqual(config["stt"]["device"], "cpu")
+        self.assertIs(config["features"]["external_tools"], False)
+
+    def test_invalid_configuration_is_content_free(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.yaml"
+            for content in (
+                "llm:\n  base_url: https://private.example/secret",
+                "session:\n  follow_up_seconds: 61",
+                "features:\n  external_tools: true",
+                "wake_word:\n  model_path: unverified-model",
+                "unknown: secret",
+                "llm:\n  base_url: http://127.0.0.1:65536",
+                "session:\n  follow_up_seconds: 5\n  follow_up_seconds: 60",
+            ):
+                with self.subTest(content=content):
+                    path.write_text(content)
+                    with patch.dict(os.environ, {"JARVIS_CONFIG": str(path)}):
+                        with self.assertRaises(Diagnostic) as error:
+                            load_config()
+                        self.assertTrue(str(error.exception).startswith("invalid_config:"))
+                        self.assertNotIn("secret", str(error.exception))
+
+
+if __name__ == "__main__":
+    unittest.main()

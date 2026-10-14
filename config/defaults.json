@@ -1,0 +1,62 @@
+{
+  "locale": "de-DE",
+  "audio": {
+    "input_device": "default",
+    "output_device": "default",
+    "sample_rate_hz": 16000,
+    "pre_roll_ms": 750,
+    "echo_cancellation": false
+  },
+  "wake_word": {
+    "phrase": "Hey Jarvis",
+    "model_path": null,
+    "threshold": null
+  },
+  "vad": {
+    "engine": "silero",
+    "end_silence_ms": 350,
+    "max_utterance_seconds": 30
+  },
+  "stt": {
+    "engine": "sherpa-onnx",
+    "model": "to-be-benchmarked",
+    "device": "cpu"
+  },
+  "tts": {
+    "engine": "piper",
+    "voice": "de_DE-thorsten-medium",
+    "device": "cpu"
+  },
+  "llm": {
+    "provider": "ollama",
+    "base_url": "http://127.0.0.1:11434",
+    "model": "user-configured",
+    "max_context_tokens": 8192
+  },
+  "session": {
+    "follow_up_seconds": 20,
+    "max_duration_seconds": 300,
+    "extension_response_seconds": 20,
+    "extension_duration_seconds": 300,
+    "recognition_completion_seconds": 5,
+    "persistence": false
+  },
+  "interaction": {
+    "manual_activation": "single_press",
+    "activation_sound": true,
+    "conversation_end_sound": true
+  },
+  "features": {
+    "barge_in": false,
+    "external_tools": false,
+    "tray": false
+  },
+  "logging": {
+    "content_logging": false
+  },
+  "transport": {
+    "timeout_ms": 1000,
+    "max_frame_bytes": 8192,
+    "max_connections": 8
+  }
+}

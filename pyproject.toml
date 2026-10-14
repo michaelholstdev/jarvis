@@ -1,0 +1,15 @@
+[project]
+name = "jarvis-audio"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["jsonschema==4.25.1", "PyYAML==6.0.3"]
+
+[dependency-groups]
+dev = ["mypy==1.18.2", "ruff==0.14.1", "types-PyYAML==6.0.12.20250915", "types-jsonschema==4.25.1.20250822"]
+
+[tool.mypy]
+strict = true
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100

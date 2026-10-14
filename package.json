@@ -1,0 +1,30 @@
+{
+  "name": "jarvis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check apps/core packages tests",
+    "format": "biome check --write apps/core packages tests",
+    "test:node": "npm run build && node --test dist/tests/*.test.js",
+    "test": "npm run test:node && uv run --frozen python -m unittest discover -s tests -p '*_test.py'",
+    "check": "npm run typecheck && npm run lint && uv run --frozen ruff check apps/audio tests && uv run --frozen mypy apps/audio",
+    "core": "node dist/apps/core/main.js start",
+    "health": "node dist/apps/core/main.js health",
+    "doctor": "sh scripts/doctor.sh"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.4",
+    "@types/node": "24.10.0",
+    "typescript": "5.9.3"
+  }
+}

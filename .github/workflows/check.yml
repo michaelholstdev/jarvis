@@ -1,0 +1,21 @@
+name: Foundation checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.9.21'
+          python-version: '3.11'
+      - run: npm ci
+      - run: uv sync --frozen
+      - run: npm run check
+      - run: npm test
