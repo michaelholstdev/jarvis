@@ -12,7 +12,7 @@ test('scripted service events expose readiness and latency without requesting sp
     ready: true,
     mode: 'mock',
     state: 'idle',
-    manual_activation: 'unavailable',
+    manual_activation: 'mock',
     voice_conversation: 'unavailable',
     audio: 'ready',
     audio_diagnostic: null,

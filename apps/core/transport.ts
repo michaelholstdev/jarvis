@@ -52,13 +52,12 @@ export async function request(
   path: string,
   role: 'cli' | 'core',
   limits: Config['transport'],
+  message: Message = { version: 1, type: 'hello', role },
 ): Promise<Message> {
   const socket = createConnection(path);
   const response = receive(socket, limits);
   socket.on('error', () => {});
-  socket.on('connect', () =>
-    socket.write(encodeMessage({ version: 1, type: 'hello', role })),
-  );
+  socket.on('connect', () => socket.write(encodeMessage(message)));
   try {
     return await response;
   } finally {

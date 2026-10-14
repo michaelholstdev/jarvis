@@ -1,10 +1,10 @@
-# Jarvis — M0 mock foundation
+# Jarvis — scripted mock conversations
 
 A Node.js/TypeScript core and a separate Python audio service exchange validated
 messages over private Unix sockets. No microphone, speaker, speech model,
 Ollama, cloud fallback or external tool is needed. This milestone verifies the
-runnable foundation. German voice conversation and manual activation are
-**unavailable**; a successful health check means only the mock services are ready.
+runnable foundation. Real German voice conversation is **unavailable**; scripted manual activation
+is available as a mock; a successful health check means only the mock services are ready.
 
 Layout: `apps/core` (CLI and orchestration), `apps/audio` (Python mock),
 `packages/protocol` (shared schemas/types), `config` (defaults and model records),
@@ -69,9 +69,8 @@ node dist/apps/core/main.js health
 ```
 
 Exit code 0 means both mock services completed the handshake; exit code 1 means
-degraded/unavailable, an invalid configuration or a protocol failure. Output
-distinguishes mock readiness from unavailable manual activation and voice
-conversation. `npm run health` runs the same command with npm's heading.
+degraded/unavailable, an invalid configuration or a protocol failure. Output distinguishes mock readiness and scripted manual activation from
+unavailable real voice conversation. `npm run health` runs the same command with npm's heading.
 
 Stop each foreground service with Ctrl+C (or send SIGTERM to its PID). Services
 close clients and remove their own sockets. Stop audio to see health degrade;
@@ -113,8 +112,8 @@ processes in a disposable private runtime directory. They require Unix-socket
 binding, but no hardware. CI runs the same locked installs, checks and tests.
 The public `createCore(clock)` interface accepts scripted service events and
 reports status and requested operations; its clock is controllable in tests.
-M0 requests no audio or inference operations. Full conversation actions belong
-to subsequent tickets.
+Scripted manual turns request mock recognition, inference, synthesis and
+playback operations. Further conversation actions belong to subsequent tickets.
 
 Troubleshooting: `command not found` → install the named prerequisite and run
 doctor; `missing_environment` → use the locked install commands above;
@@ -129,3 +128,45 @@ Hardware validation remains open: wake models/licensing, German STT/TTS,
 headset/speaker behavior, spoken stop, desktop lock/mute, device recovery,
 recognition allowance, latency, resource use and offline model-backed operation.
 No performance or voice capability measurements are claimed by M0.
+
+## Scripted manual turn (#02)
+
+With both services running, activate once, then submit an utterance within the
+configured listening limit (30 seconds by default):
+
+```sh
+node dist/apps/core/main.js activate
+node dist/apps/core/main.js demo 'Wie geht es dir?'
+```
+
+`activate` reports `listening` after the mock acknowledgment completes; no key
+needs to stay pressed. `demo` from idle also activates automatically, so this
+single command runs the whole scripted turn:
+
+```sh
+node dist/apps/core/main.js demo
+```
+
+The core reports `acknowledging → listening → thinking → synthesizing → speaking
+→ idle`. Core operation logs show intermediate statuses and IDs;
+`playback_completed` includes completion, delivered UTF-16 character count and
+exchange elapsed time. CLI output contains content-free final status JSON. The
+fixed mock reply is “Dies ist eine simulierte Antwort von Jarvis.” Recognition
+copies the explicit script, inference produces that fixture, and synthesis and
+playback return simulated results from Python. No sound is audible and no
+microphone or model is used. Health now reports `manual_activation:mock` when
+ready; real `voice_conversation` remains `unavailable`.
+
+Set `interaction.activation_sound:false` in the shared YAML to skip the
+acknowledgment. `vad.max_utterance_seconds` bounds listening (30 s default);
+`transport.timeout_ms` bounds each other operation (1000 ms default). A stalled
+turn returns to idle without replay. Only one turn and one operation are active;
+another activation during a turn returns `busy`. Each transcript/answer is
+limited to the smaller of 4096 UTF-8 bytes and `llm.max_context_tokens` (8192 by
+default), using bytes as a conservative mock context budget rather than a model
+tokenizer. Transport frame and connection limits still apply. Content stays in
+memory, with no prompt or transcript logs. Completed reply access at the public
+core boundary expires after `transport.timeout_ms` (1000 ms default), and is
+replaced on activation or cleared on service loss.
+Follow-up conversations, cancellation/replacement and real audio are later tickets;
+this slice closes to idle after delivery.

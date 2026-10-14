@@ -11,14 +11,43 @@ export type Diagnostic =
 export type HealthStatus = {
   ready: boolean;
   mode: 'mock';
-  state: 'idle';
-  manual_activation: 'unavailable';
+  state:
+    | 'idle'
+    | 'acknowledging'
+    | 'listening'
+    | 'thinking'
+    | 'synthesizing'
+    | 'speaking';
+  manual_activation: 'unavailable' | 'mock';
   voice_conversation: 'unavailable';
   audio: 'ready' | 'unavailable';
   audio_diagnostic: Diagnostic | null;
   since_ms: number;
 };
+export type Operation = {
+  type: 'acknowledge' | 'recognize' | 'infer' | 'synthesize' | 'play';
+  operation_id: string;
+  text?: string;
+};
+export type PlaybackReport = { completed: boolean; delivered_chars: number };
 export type Message =
+  | { version: 1; type: 'activate' }
+  | { version: 1; type: 'demo'; text: string }
+  | {
+      version: 1;
+      type: 'audio-operation';
+      operation: Omit<Operation, 'type'> & {
+        type: Exclude<Operation['type'], 'infer'>;
+      };
+    }
+  | {
+      version: 1;
+      type: 'audio-result';
+      operation_id: string;
+      text?: string;
+      completed?: boolean;
+      delivered_chars?: number;
+    }
   | { version: 1; type: 'hello'; role: 'core' | 'cli' }
   | { version: 1; type: 'ready'; service: 'audio'; mode: 'mock' }
   | {

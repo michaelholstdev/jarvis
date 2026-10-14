@@ -1,4 +1,4 @@
-# M0 configuration and model records
+# Configuration and model records
 
 Both services validate the same Draft 7 JSON schema at
 `packages/protocol/schemas/config.schema.json` and apply its defaults before
@@ -24,15 +24,16 @@ prints deliberately requested configuration, while routine logs never print it.
 | VAD | `silero`; end silence 350 ms (50–5000); max utterance 30 s (1–120) |
 | Recognition | `sherpa-onnx`, `to-be-benchmarked`, CPU; no recognizer loaded |
 | Synthesis | `piper`, `de_DE-thorsten-medium`, CPU; no voice loaded |
-| LLM | `ollama`, `http://127.0.0.1:11434`, `user-configured`; context 8192 tokens (512–32768); no inference requested |
+| LLM | `ollama`, `http://127.0.0.1:11434`, `user-configured`; context 8192 tokens (512–32768); no real inference requested |
 | Local endpoint | Only HTTP with literal `127.0.0.1`, `localhost`, or `[::1]` plus a port 1–65535; credentials and remote endpoints rejected |
 | Session | Follow-up 20 s (5–60), duration 300 s (30–3600), extension response 20 s (5–60), extension duration 300 s (30–3600) |
 | Recognition allowance | 5 s (1–30), provisional and unused in M0; requires later adapter validation |
-| Interaction | Single-press activation; activation and conversation-end sounds enabled; no sounds played by mocks |
+| Interaction | Single-press activation; activation and conversation-end sounds enabled; acknowledgment completion simulated by mocks; no audible sounds |
 | Disabled features | Barge-in, external tools, tray, persistence and content logging must remain false in M0 |
 | Transport | Deadline 1000 ms (100–10000), frame 8192 bytes (1024–65536), connections 8 (1–32) |
 
-These settings reserve the agreed product configuration; they do not make
+Manual mock turns use activation sound, utterance, context and transport limits (see README).
+Other settings reserve the agreed product configuration; they do not make
 unimplemented capabilities available. Speech thresholds, sound behavior, German
 quality, device rates, delivered speech precision and CPU/RAM/VRAM/latency are
 unvalidated until the later hardware milestones.

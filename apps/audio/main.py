@@ -149,9 +149,25 @@ async def serve() -> None:
                 if len(frame) > limits["max_frame_bytes"]:
                     raise Diagnostic("frame_too_large")
                 message = parse_message(frame)
-                if message["type"] != "hello" or message["role"] != "core":
+                response: dict[str, Any]
+                if message["type"] == "hello" and message["role"] == "core":
+                    response = {"version": 1, "type": "ready", "service": "audio", "mode": "mock"}
+                elif message["type"] == "audio-operation":
+                    operation = message["operation"]
+                    kind = operation["type"]
+                    response = {"version": 1, "type": "audio-result", "operation_id": operation["operation_id"]}
+                    if kind == "recognize":
+                        if "text" not in operation:
+                            raise Diagnostic("invalid_message")
+                        response["text"] = operation["text"]
+                    elif kind in {"acknowledge", "play"}:
+                        if kind == "play" and "text" not in operation:
+                            raise Diagnostic("invalid_message")
+                        response.update(completed=True, delivered_chars=len(operation.get("text", "").encode("utf-16-le")) // 2)
+                    elif kind == "synthesize" and "text" not in operation:
+                        raise Diagnostic("invalid_message")
+                else:
                     raise Diagnostic("invalid_message")
-                response: dict[str, Any] = {"version": 1, "type": "ready", "service": "audio", "mode": "mock"}
             except asyncio.TimeoutError:
                 raise Diagnostic("timeout") from None
             except asyncio.LimitOverrunError:

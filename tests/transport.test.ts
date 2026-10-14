@@ -18,6 +18,7 @@ test(
       XDG_CONFIG_HOME: join(runtime, 'config'),
     };
     delete env.JARVIS_CONFIG;
+    let routineLogs = '';
     const children: ReturnType<typeof spawn>[] = [];
     const start = async (command: string, args: string[]) => {
       const child = spawn(command, args, {
@@ -25,6 +26,12 @@ test(
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       children.push(child);
+      child.stdout.on('data', (chunk) => {
+        routineLogs += chunk;
+      });
+      child.stderr.on('data', (chunk) => {
+        routineLogs += chunk;
+      });
       let diagnostic = '';
       child.stderr.on('data', (chunk) => {
         diagnostic += chunk;
@@ -56,6 +63,31 @@ test(
           0o600,
         );
       }
+      const runCli = async (args: string[]) => {
+        const child = spawn('node', ['dist/apps/core/main.js', ...args], {
+          env,
+        });
+        let stdout = '';
+        let stderr = '';
+        child.stdout.on('data', (chunk) => {
+          stdout += chunk;
+        });
+        child.stderr.on('data', (chunk) => {
+          stderr += chunk;
+        });
+        const [exit] = await once(child, 'exit');
+        assert.equal(exit, 0, stderr);
+        assert.doesNotMatch(stdout + stderr, /private fixture/);
+        return JSON.parse(stdout);
+      };
+      assert.equal((await runCli(['activate'])).state, 'listening');
+      assert.equal((await runCli(['demo', 'private fixture'])).state, 'idle');
+      assert.equal((await runCli(['demo'])).state, 'idle');
+      assert.doesNotMatch(
+        routineLogs,
+        /private fixture|Wie geht es dir|simulierte Antwort/,
+      );
+      assert.match(routineLogs, /playback_completed/);
       audio.kill('SIGTERM');
       await once(audio, 'exit');
       const degraded = spawn('node', ['dist/apps/core/main.js', 'health'], {

@@ -71,10 +71,17 @@
               "const": "mock"
             },
             "state": {
-              "const": "idle"
+              "enum": [
+                "idle",
+                "acknowledging",
+                "listening",
+                "thinking",
+                "synthesizing",
+                "speaking"
+              ]
             },
             "manual_activation": {
-              "const": "unavailable"
+              "enum": ["mock", "unavailable"]
             },
             "voice_conversation": {
               "const": "unavailable"
@@ -121,6 +128,98 @@
             "unavailable",
             "busy"
           ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "activate"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "text"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "demo"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "operation"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "audio-operation"
+        },
+        "operation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "operation_id"],
+          "properties": {
+            "type": {
+              "enum": ["acknowledge", "recognize", "synthesize", "play"]
+            },
+            "operation_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "text": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "operation_id"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "audio-result"
+        },
+        "operation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "completed": {
+          "type": "boolean"
+        },
+        "delivered_chars": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
         }
       }
     }
