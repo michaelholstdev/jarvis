@@ -695,3 +695,53 @@ test('replacement cancels synthesis and cannot speak its late completion', () =>
   });
   assert.deepEqual(core.operations()[0]?.context, []);
 });
+
+test('inference and synthesis cancellation reject nonzero delivery before replacement listening', () => {
+  for (const stage of ['thinking', 'synthesizing']) {
+    for (const delivered of [
+      123,
+      -1,
+      0.5,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      0,
+    ]) {
+      const { core } = fixture();
+      deliver(core);
+      const recognition = core.operations()[0];
+      assert.ok(recognition);
+      core.dispatch({
+        type: 'recognized',
+        operation_id: recognition.operation_id,
+        text: 'Verworfene Frage',
+      });
+      if (stage === 'synthesizing') {
+        const inference = core.operations()[0];
+        assert.ok(inference);
+        core.dispatch({
+          type: 'inferred',
+          operation_id: inference.operation_id,
+          text: 'Ungehörte Antwort',
+        });
+      }
+      assert.equal(core.status().state, stage);
+      core.activate();
+      const cancellation = core.operations()[0];
+      assert.ok(cancellation);
+      core.dispatch({
+        type: 'playback-completed',
+        operation_id: cancellation.operation_id,
+        completed: false,
+        delivered_chars: delivered,
+      });
+      if (delivered === 0) {
+        assert.equal(core.status().state, 'acknowledging');
+        assert.equal(core.operations()[0]?.type, 'acknowledge');
+      } else {
+        assert.equal(core.status().state, 'idle');
+        assert.deepEqual(core.operations(), []);
+        assert.equal(core.reply(), null);
+      }
+    }
+  }
+});

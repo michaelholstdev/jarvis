@@ -192,7 +192,11 @@ export function createCore(
         cancellation
       ) {
         const pending = cancellation;
-        if (pending.playback && !retainDelivery(event)) {
+        if (
+          pending.playback
+            ? !retainDelivery(event)
+            : event.delivered_chars !== 0
+        ) {
           reset();
           return;
         }

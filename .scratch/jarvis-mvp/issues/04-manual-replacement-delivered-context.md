@@ -47,3 +47,13 @@ Review against baseline `110d6e4`: Standards — no documented violations or
 reportable design smells. Spec — no missing/partial requirements, incorrect
 behavior or scope creep. Both axes reviewed independently via the code-review
 skill. Real acoustic stop and measured delivery remain their separate tickets.
+
+### Cancellation-report review correction
+
+Fixed the P2 Standards finding: cancellation of inference or synthesis now
+requires `delivered_chars: 0` before acknowledgment/listening. Invalid reports
+reset the turn, matching the documented protocol. A public-core regression test
+reproduced the original erroneous acknowledgment before the fix and now covers
+both stages, invalid numeric delivery counts, and valid zero-delivery reports.
+
+Validation: `npm run check` and `npm test` passed (26 Node tests, 3 Python tests).
