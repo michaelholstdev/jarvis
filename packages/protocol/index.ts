@@ -17,7 +17,8 @@ export type HealthStatus = {
     | 'listening'
     | 'thinking'
     | 'synthesizing'
-    | 'speaking';
+    | 'speaking'
+    | 'follow-up';
   manual_activation: 'unavailable' | 'mock';
   voice_conversation: 'unavailable';
   audio: 'ready' | 'unavailable';
@@ -25,10 +26,19 @@ export type HealthStatus = {
   since_ms: number;
   state_since_ms: number;
 };
+export type ConversationExchange = { question: string; reply: string };
 export type Operation = {
-  type: 'acknowledge' | 'recognize' | 'infer' | 'synthesize' | 'play';
+  type:
+    | 'acknowledge'
+    | 'recognize'
+    | 'infer'
+    | 'synthesize'
+    | 'play'
+    | 'close-conversation';
   operation_id: string;
   text?: string;
+  sound?: boolean;
+  context?: ConversationExchange[];
 };
 export type PlaybackReport = { completed: boolean; delivered_chars: number };
 export type Message =

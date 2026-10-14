@@ -82,13 +82,25 @@ test(
         return JSON.parse(stdout);
       };
       assert.equal((await runCli(['activate'])).state, 'listening');
-      assert.equal((await runCli(['demo', 'private fixture'])).state, 'idle');
-      assert.equal((await runCli(['demo'])).state, 'idle');
-      assert.equal((await runCli(['demo', 'ü'.repeat(1500)])).state, 'idle');
-      assert.equal((await runCli(['demo', 'ü'.repeat(2048)])).state, 'idle');
+      assert.equal(
+        (await runCli(['demo', 'private fixture'])).state,
+        'follow-up',
+      );
+      assert.equal((await runCli(['demo'])).state, 'follow-up');
+      assert.equal(
+        (await runCli(['demo', 'ü'.repeat(1500)])).state,
+        'follow-up',
+      );
+      assert.equal(
+        (await runCli(['demo', 'ü'.repeat(2048)])).state,
+        'follow-up',
+      );
+      assert.equal((await runCli(['demo', 'Gespräch beenden'])).state, 'idle');
+      assert.equal((await runCli(['activate'])).state, 'listening');
+      assert.equal((await runCli(['demo', 'Gute Nacht Jarvis'])).state, 'idle');
       assert.doesNotMatch(
         routineLogs,
-        /private fixture|Wie geht es dir|simulierte Antwort/,
+        /private fixture|Wie geht es dir|simulierte Antwort|Gespräch beenden|Gute Nacht Jarvis/,
       );
       assert.match(routineLogs, /playback_completed/);
       audio.kill('SIGTERM');

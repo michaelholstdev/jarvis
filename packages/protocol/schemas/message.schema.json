@@ -78,7 +78,8 @@
                 "listening",
                 "thinking",
                 "synthesizing",
-                "speaking"
+                "speaking",
+                "follow-up"
               ]
             },
             "manual_activation": {
@@ -183,7 +184,13 @@
           "required": ["type", "operation_id"],
           "properties": {
             "type": {
-              "enum": ["acknowledge", "recognize", "synthesize", "play"]
+              "enum": [
+                "acknowledge",
+                "recognize",
+                "synthesize",
+                "play",
+                "close-conversation"
+              ]
             },
             "operation_id": {
               "type": "string",
@@ -193,6 +200,9 @@
             "text": {
               "type": "string",
               "maxLength": 4096
+            },
+            "sound": {
+              "type": "boolean"
             }
           }
         }

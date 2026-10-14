@@ -12,7 +12,7 @@ export async function runMockTurn(
   config: Config,
   utterance?: string,
 ): Promise<void> {
-  for (let step = 0; step < 5; step++) {
+  for (let step = 0; step < 6; step++) {
     const operation = core.operations()[0];
     if (
       !operation ||
@@ -27,11 +27,20 @@ export async function runMockTurn(
         state: core.status().state,
       }),
     );
+    if (operation.type === 'recognize' && utterance !== undefined) {
+      core.dispatch({
+        type: 'speech-started',
+        operation_id: operation.operation_id,
+      });
+    }
     if (operation.type === 'infer') {
+      const previous = operation.context?.at(-1);
       core.dispatch({
         type: 'inferred',
         operation_id: operation.operation_id,
-        text: 'Dies ist eine simulierte Antwort von Jarvis.',
+        text: previous
+          ? `Zur vorherigen Frage „${previous.question.slice(0, 80)}“ lautete die simulierte Antwort: ${previous.reply.slice(0, 80)}`
+          : 'Dies ist eine simulierte Antwort von Jarvis.',
       });
       continue;
     }
@@ -74,6 +83,7 @@ export async function runMockTurn(
           operation_id: response.operation_id,
         });
         break;
+      case 'close-conversation':
       case 'acknowledge':
       case 'play':
         if (

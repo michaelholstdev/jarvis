@@ -83,6 +83,14 @@ async function main() {
   const ticker = setInterval(() => {
     const before = core.status();
     core.dispatch({ type: 'tick' });
+    if (!runningTurn && core.operations()[0]?.type === 'close-conversation') {
+      runningTurn = true;
+      void runMockTurn(core, join(directory, 'audio.sock'), config)
+        .catch(() => core.dispatch({ type: 'audio-lost' }))
+        .finally(() => {
+          runningTurn = false;
+        });
+    }
     if (before.state !== core.status().state)
       console.error(
         JSON.stringify({
@@ -120,7 +128,9 @@ async function main() {
               core.activate();
             if (
               message.type === 'demo' &&
-              !['listening', 'acknowledging'].includes(core.status().state)
+              !['listening', 'acknowledging', 'follow-up'].includes(
+                core.status().state,
+              )
             )
               throw new ProtocolError('busy');
             try {
@@ -138,7 +148,11 @@ async function main() {
               });
               throw error;
             }
-            if (message.type === 'demo' && !core.reply())
+            if (
+              message.type === 'demo' &&
+              !core.reply() &&
+              core.status().state !== 'idle'
+            )
               throw new ProtocolError('invalid_message');
           } finally {
             runningTurn = false;

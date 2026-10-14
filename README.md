@@ -113,7 +113,7 @@ binding, but no hardware. CI runs the same locked installs, checks and tests.
 The public `createCore(clock)` interface accepts scripted service events and
 reports status and requested operations; its clock is controllable in tests.
 Scripted manual turns request mock recognition, inference, synthesis and
-playback operations. Further conversation actions belong to subsequent tickets.
+playback operations. Follow-up timing and ending are implemented at this same public boundary.
 
 Troubleshooting: `command not found` → install the named prerequisite and run
 doctor; `missing_environment` → use the locked install commands above;
@@ -148,7 +148,7 @@ node dist/apps/core/main.js demo
 ```
 
 The core reports `acknowledging → listening → thinking → synthesizing → speaking
-→ idle`. Core operation logs show intermediate statuses and IDs;
+→ follow-up`. Core operation logs show intermediate statuses and IDs;
 `playback_completed` includes completion, delivered UTF-16 character count and
 exchange elapsed time. CLI output contains content-free final status JSON. The
 fixed mock reply is “Dies ist eine simulierte Antwort von Jarvis.” Recognition
@@ -158,15 +158,53 @@ microphone or model is used. Health now reports `manual_activation:mock` when
 ready; real `voice_conversation` remains `unavailable`.
 
 Set `interaction.activation_sound:false` in the shared YAML to skip the
-acknowledgment. `vad.max_utterance_seconds` bounds listening (30 s default);
-`transport.timeout_ms` bounds each other operation (1000 ms default). A stalled
-turn returns to idle without replay. Only one turn and one operation are active;
-another activation during a turn returns `busy`. Each transcript/answer is
-limited to the smaller of 4096 UTF-8 bytes and `llm.max_context_tokens` (8192 by
-default), using bytes as a conservative mock context budget rather than a model
-tokenizer. Transport frame and connection limits still apply. Content stays in
-memory, with no prompt or transcript logs. Completed reply access at the public
-core boundary expires after `transport.timeout_ms` (1000 ms default), and is
-replaced on activation or cleared on service loss.
-Follow-up conversations, cancellation/replacement and real audio are later tickets;
-this slice closes to idle after delivery.
+acknowledgment. `vad.max_utterance_seconds` bounds initial listening (30 s default);
+`transport.timeout_ms` bounds acknowledgment, inference, and synthesis (1000 ms
+default). Playback has a separate 120-second watchdog, so long answers do not
+consume the follow-up window. A stalled turn closes without replay. Only one
+turn and one operation are active; activation during a turn returns `busy`
+(manual replacement is ticket #04).
+
+## Contextual follow-ups and ending (#03)
+
+Submit another scripted question while status is `follow-up`; no activation is
+needed. The mock inference request receives completed question/reply exchanges,
+and its deterministic follow-up answer refers to the previous exchange:
+
+```sh
+node dist/apps/core/main.js demo 'Was ist TypeScript?'
+node dist/apps/core/main.js demo 'Und JavaScript?'
+node dist/apps/core/main.js demo "Danke Jarvis, das war's"
+```
+
+Standalone `Gespräch beenden` and `Gute Nacht Jarvis` also end the conversation
+before inference. Matching ignores case, surrounding whitespace, ordinary
+commas and trailing sentence punctuation; curly apostrophes are accepted in
+`das war’s`. Quoted phrases and phrases embedded in questions remain content.
+
+The follow-up window starts at **playback completion**, defaults to 20 seconds,
+and is configurable with `session.follow_up_seconds` (integer 5–60). Silence
+closes it. Speech onset must arrive strictly before the original deadline.
+Recognition may complete until the earlier of the onset plus
+`vad.max_utterance_seconds`, or the original deadline plus
+`session.recognition_completion_seconds` (default 5 seconds, integer 1–30).
+Results at that bound are too late. Repeated onset events cannot extend it.
+Empty/whitespace/oversized results return to the **original** follow-up deadline;
+if that deadline passed, they close immediately. A valid question gets its next
+window only after its reply finishes. The scripted CLI supplies a simulated
+onset; these rules do not establish acoustic recognition performance.
+
+Closure clears in-memory question, answer, delivered reply and history, and
+requests audio cleanup with a distinct `close-conversation` operation. Its
+`sound` flag uses `interaction.conversation_end_sound` (enabled by default),
+separate from the activation acknowledgment. Python simulates cleanup and
+sound completion; mocks hold no audio buffers and produce no audible sound.
+Real capture, cleanup and sound assets remain later adapter work.
+
+Each transcript/answer is limited to the smaller of 4096 UTF-8 bytes and
+`llm.max_context_tokens`. Completed history evicts oldest exchanges until its
+combined question/reply bytes fit that budget. This is a conservative mock
+byte budget, not a model tokenizer. Transport frame/connection bounds still
+apply. Replies stay available at the public core boundary during the session
+and clear on closure, fresh activation or service loss. Conversation content
+is kept only in memory, with no transcript, prompt or answer logs.

@@ -20,6 +20,10 @@ test('configuration rejects remote endpoints, unsafe features, typos and timer b
     for (const content of [
       'llm:\n  base_url: https://private.example/secret',
       'session:\n  follow_up_seconds: 61',
+      'session:\n  follow_up_seconds: 4',
+      'session:\n  follow_up_seconds: 20.5',
+      'session:\n  recognition_completion_seconds: 0',
+      'session:\n  recognition_completion_seconds: 31',
       'features:\n  external_tools: true',
       'logging:\n  content_logging: true',
       'logging:\n  content_logging: off',
@@ -40,6 +44,32 @@ test('configuration rejects remote endpoints, unsafe features, typos and timer b
     assert.equal(config.audio.input_device, 'headset-stable-id');
     assert.equal(config.audio.output_device, 'default');
     assert.equal(config.interaction.activation_sound, false);
+  } finally {
+    rmSync(directory, { recursive: true });
+  }
+});
+
+test('configuration accepts both follow-up and recognition allowance boundaries', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'jarvis-config-'));
+  try {
+    const path = join(directory, 'config.yaml');
+    for (const [followUp, allowance] of [
+      [5, 1],
+      [60, 30],
+    ]) {
+      writeFileSync(
+        path,
+        JSON.stringify({
+          session: {
+            follow_up_seconds: followUp,
+            recognition_completion_seconds: allowance,
+          },
+        }),
+      );
+      const config = loadConfig(path);
+      assert.equal(config.session.follow_up_seconds, followUp);
+      assert.equal(config.session.recognition_completion_seconds, allowance);
+    }
   } finally {
     rmSync(directory, { recursive: true });
   }

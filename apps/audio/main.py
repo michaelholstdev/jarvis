@@ -166,7 +166,7 @@ async def serve() -> None:
                             if "text" not in operation:
                                 raise Diagnostic("invalid_message")
                             response["text"] = operation["text"]
-                        elif kind in {"acknowledge", "play"}:
+                        elif kind in {"acknowledge", "play", "close-conversation"}:
                             if kind == "play" and "text" not in operation:
                                 raise Diagnostic("invalid_message")
                             response.update(completed=True, delivered_chars=len(operation.get("text", "").encode("utf-16-le")) // 2)

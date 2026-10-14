@@ -27,12 +27,12 @@ prints deliberately requested configuration, while routine logs never print it.
 | LLM | `ollama`, `http://127.0.0.1:11434`, `user-configured`; context 8192 tokens (512–32768); no real inference requested |
 | Local endpoint | Only HTTP with literal `127.0.0.1`, `localhost`, or `[::1]` plus a port 1–65535; credentials and remote endpoints rejected |
 | Session | Follow-up 20 s (5–60), duration 300 s (30–3600), extension response 20 s (5–60), extension duration 300 s (30–3600) |
-| Recognition allowance | 5 s (1–30), provisional and unused in M0; requires later adapter validation |
+| Recognition allowance | 5 s (1–30) beyond the original follow-up deadline for speech begun before it; also bounded by max utterance from onset; acoustic validation pending |
 | Interaction | Single-press activation; activation and conversation-end sounds enabled; acknowledgment completion simulated by mocks; no audible sounds |
 | Disabled features | Barge-in, external tools, tray, persistence and content logging must remain false in M0 |
 | Transport | Deadline 1000 ms (100–10000), frame 8192 bytes (1024–65536), connections 8 (1–32) |
 
-Manual mock turns use activation sound, utterance, context and transport limits (see README).
+Manual mock turns use activation/end sound flags, utterance/context limits, follow-up and recognition allowance timers (see README). Playback has a separate 120-second watchdog; other service operations use the transport deadline.
 Other settings reserve the agreed product configuration; they do not make
 unimplemented capabilities available. Speech thresholds, sound behavior, German
 quality, device rates, delivered speech precision and CPU/RAM/VRAM/latency are

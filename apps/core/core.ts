@@ -1,4 +1,5 @@
 import type {
+  ConversationExchange,
   Diagnostic,
   HealthStatus,
   Operation,
@@ -11,6 +12,7 @@ export type ServiceEvent =
   | { type: 'audio-ready' }
   | { type: 'audio-lost'; diagnostic?: Diagnostic }
   | { type: 'recognized' | 'inferred'; operation_id: string; text: string }
+  | { type: 'speech-started'; operation_id: string }
   | { type: 'synthesized'; operation_id: string }
   | ({ type: 'playback-completed'; operation_id: string } & PlaybackReport)
   | { type: 'tick' };
@@ -24,11 +26,14 @@ export function createCore(
   let readinessChangedAt = clock.now();
   let stateChangedAt = readinessChangedAt;
   let deadline = 0;
+  let followUpDeadline: number | null = null;
   let state: HealthStatus['state'] = 'idle';
   let diagnostic: Diagnostic | null = 'unavailable';
   let operation: Operation | undefined;
   let sequence = 0;
   let answer = '';
+  let question = '';
+  let context: ConversationExchange[] = [];
   let reply: ({ text: string } & PlaybackReport) | null = null;
   const transition = (
     next: HealthStatus['state'],
@@ -42,18 +47,42 @@ export function createCore(
           type,
           operation_id: String(++sequence),
           ...(text === undefined ? {} : { text }),
+          ...(type === 'close-conversation'
+            ? { sound: config.interaction.conversation_end_sound }
+            : {}),
+          ...(type === 'infer'
+            ? { context: context.map((exchange) => ({ ...exchange })) }
+            : {}),
         }
       : undefined;
     deadline =
       stateChangedAt +
-      (next === 'listening'
-        ? config.vad.max_utterance_seconds * 1000
-        : config.transport.timeout_ms);
+      (next === 'follow-up'
+        ? config.session.follow_up_seconds * 1000
+        : next === 'listening'
+          ? config.vad.max_utterance_seconds * 1000
+          : next === 'speaking'
+            ? 120000
+            : config.transport.timeout_ms);
   };
   const reset = () => {
     answer = '';
+    question = '';
+    context = [];
+    followUpDeadline = null;
     reply = null;
     transition('idle');
+  };
+  const close = () => {
+    reset();
+    if (ready) transition('idle', 'close-conversation');
+  };
+  const resumeFollowUp = () => {
+    if (followUpDeadline === null || clock.now() >= followUpDeadline) close();
+    else {
+      transition('follow-up', 'recognize');
+      deadline = followUpDeadline;
+    }
   };
   const bounded = (text: string) =>
     text.trim().length > 0 &&
@@ -81,21 +110,47 @@ export function createCore(
         reset();
         return;
       }
-      if ((state !== 'idle' || reply !== null) && clock.now() >= deadline)
-        reset();
+      if ((state !== 'idle' || operation) && clock.now() >= deadline) {
+        if (followUpDeadline !== null) close();
+        else reset();
+      }
       if (
         event.type === 'tick' ||
         !operation ||
         event.operation_id !== operation.operation_id
       )
         return;
-      if (event.type === 'playback-completed' && state === 'acknowledging') {
+      if (event.type === 'speech-started' && state === 'follow-up') {
+        transition('listening', 'recognize');
+        // The onset keeps the same recognition identity; repeated onset cannot renew it.
+        operation.operation_id = event.operation_id;
+        deadline = Math.min(
+          deadline,
+          (followUpDeadline ?? clock.now()) +
+            config.session.recognition_completion_seconds * 1000,
+        );
+      } else if (
+        event.type === 'playback-completed' &&
+        operation.type === 'close-conversation'
+      ) {
+        transition('idle');
+      } else if (
+        event.type === 'playback-completed' &&
+        state === 'acknowledging'
+      ) {
         if (event.completed && event.delivered_chars === 0)
           transition('listening', 'recognize');
         else reset();
-      } else if (event.type === 'recognized' && state === 'listening') {
-        if (bounded(event.text))
-          transition('thinking', 'infer', event.text.trim());
+      } else if (
+        event.type === 'recognized' &&
+        (state === 'listening' || state === 'follow-up')
+      ) {
+        if (isEndPhrase(event.text)) {
+          close();
+        } else if (bounded(event.text)) {
+          question = event.text.trim();
+          transition('thinking', 'infer', question);
+        } else if (followUpDeadline !== null) resumeFollowUp();
         else reset();
       } else if (event.type === 'inferred' && state === 'thinking') {
         if (!bounded(event.text)) {
@@ -121,8 +176,21 @@ export function createCore(
           completed: event.completed,
           delivered_chars: event.delivered_chars,
         };
+        context.push({ question, reply: reply.text });
+        while (
+          context.reduce(
+            (bytes, exchange) =>
+              bytes +
+              Buffer.byteLength(exchange.question) +
+              Buffer.byteLength(exchange.reply),
+            0,
+          ) > config.llm.max_context_tokens
+        )
+          context.shift();
         answer = '';
-        transition('idle');
+        question = '';
+        transition('follow-up', 'recognize');
+        followUpDeadline = deadline;
       }
     },
     status(): HealthStatus {
@@ -139,10 +207,39 @@ export function createCore(
       };
     },
     operations(): readonly Operation[] {
-      return operation ? [{ ...operation }] : [];
+      return operation
+        ? [
+            {
+              ...operation,
+              ...(operation.context
+                ? {
+                    context: operation.context.map((exchange) => ({
+                      ...exchange,
+                    })),
+                  }
+                : {}),
+            },
+          ]
+        : [];
     },
     reply() {
       return reply ? { ...reply } : null;
     },
   };
+}
+
+/** Normalize spoken casing/punctuation, while preserving quotation marks. */
+function isEndPhrase(text: string): boolean {
+  const normalized = text
+    .trim()
+    .toLocaleLowerCase('de-DE')
+    .replace(/das war’s/g, "das war's")
+    .replace(/[,.!?;:]+$/g, '')
+    .replace(/,/g, '')
+    .replace(/\s+/g, ' ');
+  return [
+    "danke jarvis das war's",
+    'gespräch beenden',
+    'gute nacht jarvis',
+  ].includes(normalized);
 }
