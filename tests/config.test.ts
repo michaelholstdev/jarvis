@@ -22,6 +22,8 @@ test('configuration rejects remote endpoints, unsafe features, typos and timer b
       'session:\n  follow_up_seconds: 61',
       'features:\n  external_tools: true',
       'logging:\n  content_logging: true',
+      'logging:\n  content_logging: off',
+      'audio:\n  1: secret',
       'unknown: secret',
       'wake_word:\n  model_path: unverified-model',
       'llm:\n  base_url: http://127.0.0.1:65536',

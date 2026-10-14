@@ -3,18 +3,24 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Hashable
 import copy
 import json
 import os
+import re
 from pathlib import Path
 import signal
 import socket
 import stat
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import jsonschema
-import yaml
+from ruamel.yaml import YAML
+from ruamel.yaml.error import YAMLError
+from ruamel.yaml.resolver import VersionedResolver
+from ruamel.yaml.tokens import AliasToken, AnchorToken
+
+if TYPE_CHECKING:
+    from ruamel.yaml.compat import VersionType
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG_SCHEMA = json.loads((ROOT / "packages/protocol/schemas/config.schema.json").read_text())
@@ -26,24 +32,32 @@ class Diagnostic(Exception):
     """An allowlisted content-free diagnostic."""
 
 
-class ConfigLoader(yaml.SafeLoader):
-    """Match the core's rejection of ambiguous duplicate configuration keys."""
+class CoreSchemaResolver(VersionedResolver):
+    """Keep YAML 1.1 tag extensions out of YAML 1.2 core scalar resolution."""
 
-    def construct_mapping(self, node: yaml.Node, deep: bool = False) -> dict[Hashable, Any]:
-        if not isinstance(node, yaml.MappingNode):
-            raise Diagnostic("invalid_config: expected_mapping")
-        seen: set[str] = set()
-        for key_node, _ in node.value:
-            if not isinstance(key_node, yaml.ScalarNode) or key_node.tag != "tag:yaml.org,2002:str":
-                raise Diagnostic("invalid_config: expected_string_key")
-            if key_node.value in seen:
-                raise Diagnostic("invalid_config: duplicate_key")
-            seen.add(key_node.value)
-        return super().construct_mapping(node, deep=deep)
+    def add_version_implicit_resolver(
+        self, version: VersionType, tag: Any, regexp: Any, first: Any,
+    ) -> None:
+        if version == (1, 2):
+            if tag in {
+                "tag:yaml.org,2002:timestamp", "tag:yaml.org,2002:merge", "tag:yaml.org,2002:value",
+            }:
+                return
+            if tag == "tag:yaml.org,2002:int":
+                regexp = re.compile(r"^(?:[-+]?[0-9]+|0o[0-7]+|0x[0-9a-fA-F]+)$")
+            elif tag == "tag:yaml.org,2002:float":
+                regexp = re.compile(
+                    r"^(?:[-+]?(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+"
+                    r"|[-+]?(?:\.[0-9]+|[0-9]+\.[0-9]*)"
+                    r"|[-+]?\.(?:inf|Inf|INF)|\.(?:nan|NaN|NAN))$"
+                )
+        super().add_version_implicit_resolver(version, tag, regexp, first)
 
 
 def defaults(value: Any, schema: dict[str, Any]) -> Any:
     if isinstance(value, dict):
+        if any(not isinstance(key, str) for key in value):
+            raise Diagnostic("invalid_config: expected_string_key")
         for key, child in schema.get("properties", {}).items():
             if key not in value and "default" in child:
                 value[key] = copy.deepcopy(child["default"])
@@ -62,11 +76,17 @@ def load_config() -> dict[str, Any]:
             if len(content) > 65536:
                 raise Diagnostic("invalid_config: file_too_large")
             # Aliases are unnecessary for config and can amplify small documents.
-            if any(isinstance(token, (yaml.tokens.AliasToken, yaml.tokens.AnchorToken))
-                   for token in yaml.scan(content)):
+            # Use the pure Python parser so scalar resolution follows YAML 1.2,
+            # matching the core even when the optional C extension is installed.
+            loader = YAML(typ="safe", pure=True)
+            loader.version = (1, 2)
+            loader.Resolver = CoreSchemaResolver
+            loader.allow_duplicate_keys = False
+            if any(isinstance(token, (AliasToken, AnchorToken))
+                   for token in loader.scan(content)):
                 raise Diagnostic("invalid_config: aliases_disabled")
-            value = yaml.load(content, Loader=ConfigLoader)
-        except (OSError, yaml.YAMLError, RecursionError):
+            value = loader.load(content)
+        except (OSError, YAMLError, RecursionError):
             raise Diagnostic("invalid_config: unreadable_or_malformed_yaml") from None
     value = defaults(value, CONFIG_SCHEMA)
     error = next(jsonschema.Draft7Validator(CONFIG_SCHEMA).iter_errors(value), None)
@@ -102,7 +122,7 @@ def runtime_directory() -> Path:
 
 def parse_message(frame: bytes) -> dict[str, Any]:
     try:
-        value = json.loads(frame)
+        value = json.loads(frame.decode("utf-8"))
     except (ValueError, UnicodeError, RecursionError):
         raise Diagnostic("invalid_message") from None
     if isinstance(value, dict) and "version" in value and value["version"] != 1:

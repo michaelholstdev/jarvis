@@ -7,7 +7,9 @@ starting. They read `$JARVIS_CONFIG` when set, otherwise
 uses defaults; an explicitly configured missing file is an error. Files over
 64 KiB, malformed YAML, duplicate mapping keys, incorrect types, unknown keys and unsupported settings
 are errors. Diagnostics name a schema location and constraint without echoing
-its value. Use YAML `true`/`false`, decimal integers and strings for portability.
+its value. Both services use YAML 1.2 scalar resolution: `on`/`off` are strings,
+and a leading zero does not make a decimal integer octal (`01000` means 1000).
+Use YAML `true`/`false` for boolean settings.
 
 `config/defaults.json` is the complete default configuration and can be copied
 directly to `config.yaml`: JSON is valid YAML. `node dist/apps/core/main.js config`

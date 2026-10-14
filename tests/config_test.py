@@ -1,6 +1,8 @@
 """Public audio configuration loader checks; no hardware or sockets."""
 
 import os
+import json
+import subprocess
 from pathlib import Path
 import tempfile
 import unittest
@@ -10,6 +12,28 @@ from apps.audio.main import Diagnostic, load_config
 
 
 class AudioConfigurationTest(unittest.TestCase):
+    def test_both_services_apply_yaml_12_scalars_consistently(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.yaml"
+            path.write_text(
+                "transport:\n  timeout_ms: 01000\naudio:\n  input_device: on\n  pre_roll_ms: 0750\n"
+                "stt:\n  model: 2026-10-14\ntts:\n  voice: 1_000\nllm:\n  model: 0b1000\n"
+            )
+            with patch.dict(os.environ, {"JARVIS_CONFIG": str(path)}):
+                audio = load_config()
+                result = subprocess.run(
+                    ["node", "dist/apps/core/main.js", "config"],
+                    capture_output=True, text=True, check=True,
+                )
+            core = json.loads(result.stdout)
+            self.assertEqual(audio["transport"]["timeout_ms"], 1000)
+            self.assertEqual(audio["audio"]["pre_roll_ms"], 750)
+            self.assertEqual(audio["audio"]["input_device"], "on")
+            self.assertEqual(audio["stt"]["model"], "2026-10-14")
+            self.assertEqual(audio["tts"]["voice"], "1_000")
+            self.assertEqual(audio["llm"]["model"], "0b1000")
+            self.assertEqual(audio, core)
+
     def test_empty_config_has_cpu_defaults(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             with patch.dict(os.environ, {"XDG_CONFIG_HOME": directory}, clear=True):
@@ -25,6 +49,8 @@ class AudioConfigurationTest(unittest.TestCase):
                 "llm:\n  base_url: https://private.example/secret",
                 "session:\n  follow_up_seconds: 61",
                 "features:\n  external_tools: true",
+                "logging:\n  content_logging: off",
+                "audio:\n  1: secret",
                 "wake_word:\n  model_path: unverified-model",
                 "unknown: secret",
                 "llm:\n  base_url: http://127.0.0.1:65536",

@@ -48,7 +48,9 @@ export class ProtocolError extends Error {
 export function parseMessage(frame: Buffer): Message {
   let value: unknown;
   try {
-    value = JSON.parse(frame.toString('utf8'));
+    value = JSON.parse(
+      new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(frame),
+    );
   } catch {
     throw new ProtocolError('invalid_message');
   }

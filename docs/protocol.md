@@ -47,6 +47,9 @@ JSON parser messages or schema values appear in errors. Routine output consists
 of `service_started`, health status and content-free error codes. There are no
 log files or conversation archives.
 
+Both decoders require valid UTF-8. UTF-16/UTF-32 frames and malformed UTF-8
+return `invalid_message`; neither service auto-detects another wire encoding.
+
 Defaults: 8192 bytes per frame including newline, eight concurrent connections
 per service, 1000 ms per exchange. CLI health allows 2000 ms because core may
 spend one exchange deadline waiting for audio. Configuration bounds these

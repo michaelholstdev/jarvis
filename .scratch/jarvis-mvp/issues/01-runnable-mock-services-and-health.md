@@ -44,3 +44,19 @@ Spec — one duplicate-YAML-key discrepancy, reproduced by a failing test, fixed
 and confirmed resolved by the reviewer. No remaining actionable findings.
 
 See the [implementation map](../map.md) and [README](../../../README.md).
+
+## Comments
+
+### 2026-10-14 — Review follow-up
+
+Resolved both P2 findings from the review of `09a1b5d...25a2a4e`:
+
+- Audio now uses a pinned YAML 1.2 parser with core scalar resolution matching
+  TypeScript. Cross-language checks cover leading-zero decimals, boolean-like
+  device names, date-like model identifiers and numeric-looking strings.
+  Duplicate mapping keys and aliases remain rejected.
+- Both protocol decoders require strict UTF-8. Real-socket checks verify that
+  UTF-16BE, UTF-32BE and malformed UTF-8 return `invalid_message` on both services.
+
+`npm run check` and `npm test` passed (five Node tests, three Python tests).
+The focused Standards and Spec reviews confirmed resolution with no new findings.

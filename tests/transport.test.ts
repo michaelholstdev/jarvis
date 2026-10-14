@@ -95,6 +95,32 @@ test(
           assert.equal(JSON.parse(response).code, expected);
           assert.doesNotMatch(response, /secret/);
         }
+        const hello = `{"version":1,"type":"hello","role":"${name === 'audio' ? 'core' : 'cli'}"}\n`;
+        const utf16be = Buffer.from(hello, 'utf16le').swap16();
+        const utf32be = Buffer.concat(
+          Array.from(hello, (character) =>
+            Buffer.from([0, 0, 0, character.charCodeAt(0)]),
+          ),
+        );
+        // Invalid UTF-8 inside a valid JSON string must not become replacement text.
+        const invalidUtf8 = Buffer.concat([
+          Buffer.from(hello.slice(0, hello.indexOf('"role":'))),
+          Buffer.from('"role":"'),
+          Buffer.from([0xff]),
+          Buffer.from('"}\n'),
+        ]);
+        for (const frame of [utf16be, utf32be, invalidUtf8]) {
+          const socket = createConnection(
+            join(runtime, 'jarvis', `${name}.sock`),
+          );
+          socket.write(frame);
+          let response = '';
+          socket.on('data', (chunk) => {
+            response += chunk;
+          });
+          await once(socket, 'close');
+          assert.equal(JSON.parse(response).code, 'invalid_message');
+        }
         // Slow peers must not create an unbounded application queue.
         const peers: {
           socket: import('node:net').Socket;
