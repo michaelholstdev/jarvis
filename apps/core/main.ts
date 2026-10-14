@@ -89,7 +89,7 @@ async function main() {
           event: 'turn_expired',
           code: 'timeout',
           state: core.status().state,
-          elapsed_ms: before.since_ms,
+          elapsed_ms: before.state_since_ms,
         }),
       );
   }, 100);

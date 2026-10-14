@@ -25,13 +25,16 @@ CLI → core:
 
 ```json
 {"version":1,"type":"hello","role":"cli"}
-{"version":1,"type":"ready","service":"core","status":{"ready":true,"mode":"mock","state":"idle","manual_activation":"mock","voice_conversation":"unavailable","audio":"ready","audio_diagnostic":null,"since_ms":0}}
+{"version":1,"type":"ready","service":"core","status":{"ready":true,"mode":"mock","state":"idle","manual_activation":"mock","voice_conversation":"unavailable","audio":"ready","audio_diagnostic":null,"since_ms":0,"state_since_ms":0}}
 ```
 
 Core refreshes audio through a real handshake at startup and on each health
 request. It accepts only the audio readiness response, rather than trusting a
 running PID or arbitrary JSON. `since_ms` is elapsed monotonic time since the
-latest readiness transition. If audio disappears, health returns `ready:false`
+latest readiness transition. `state_since_ms` independently measures elapsed
+time since the latest conversation-state entry or reset, and supplies watchdog
+log timing. Conversation activity never resets the readiness timer. If audio
+disappears, health returns `ready:false`
 and an `audio_diagnostic`; recovery requires another successful handshake and
 never requests speech or inference. This proves mock service readiness only.
 
@@ -48,8 +51,14 @@ of `service_started`, health status, operation/playback status and timing, and
 content-free error codes. There are no
 log files or conversation archives.
 
-Both decoders require valid UTF-8. UTF-16/UTF-32 frames and malformed UTF-8
+Both decoders require valid UTF-8. The audio decoder also rejects escaped lone
+surrogates with `invalid_message`; valid supplementary characters remain
+supported. UTF-16/UTF-32 frames and malformed UTF-8
 return `invalid_message`; neither service auto-detects another wire encoding.
+
+Audio responses use compact UTF-8 JSON without ASCII escaping, and the audio
+service enforces the configured frame byte limit on responses as well as requests.
+Every audio request releases its connection slot on exit, including error paths.
 
 Defaults: 8192 bytes per frame including newline, eight concurrent connections
 per service, 1000 ms per exchange. CLI health allows 2000 ms because core may
@@ -71,7 +80,8 @@ recognition `text`, or playback `completed` and `delivered_chars`. Synthesis
 returns the ID without a delivery report. Inference is a fixed core mock;
 Ollama is never contacted. Text is bounded to 4096 characters at the wire and
 more tightly to the configured byte budget at the conversation boundary.
-Delivery counts use UTF-16 code units in both languages. Full completed delivery
+Delivery counts use UTF-16 code units in both languages, with a wire maximum
+of 8192 units for the permitted 4096 Unicode characters. Full completed delivery
 must match the answer length; synthesis completion alone never proves delivery.
 The public core accepts partial delivery reports but CLI mocks always report
 full completion. IDs are unique during a core process lifetime; stale events

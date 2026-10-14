@@ -23,6 +23,7 @@ export type HealthStatus = {
   audio: 'ready' | 'unavailable';
   audio_diagnostic: Diagnostic | null;
   since_ms: number;
+  state_since_ms: number;
 };
 export type Operation = {
   type: 'acknowledge' | 'recognize' | 'infer' | 'synthesize' | 'play';

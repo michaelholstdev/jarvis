@@ -23,3 +23,18 @@ content-free status/timing/error output. Real audio remains unvalidated.
 
 Validation: `npm run check` and `npm test` passed (10 Node, 3 Python tests).
 Standards review: no remaining findings. Spec review: no remaining findings.
+
+### Review corrections
+
+Resolved the subsequent review findings: lone-surrogate audio requests return
+`invalid_message`, every handler exit releases connection capacity, compact
+UTF-8 responses preserve German scripts within the configured byte/frame
+limits, and readiness age is separate from conversation-state/watchdog timing.
+Aligned the delivery-count schema with supported supplementary Unicode text.
+
+Regression checks cover repeated malformed requests followed by healthy
+service use, a full-budget German CLI script, supplementary-character delivery
+with larger configured frames, and readiness timing across activation,
+watchdog expiry and service transitions. `npm run check` and `npm test` pass
+(12 Node tests, 3 Python tests). Standards and spec re-review found no remaining
+findings.

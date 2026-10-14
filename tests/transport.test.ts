@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtempSync, rmSync, statSync } from 'node:fs';
+import { mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createConnection, createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { request } from '../apps/core/transport.js';
 
 test(
   'CLI reports ready only after a real Python audio handshake',
@@ -83,6 +84,8 @@ test(
       assert.equal((await runCli(['activate'])).state, 'listening');
       assert.equal((await runCli(['demo', 'private fixture'])).state, 'idle');
       assert.equal((await runCli(['demo'])).state, 'idle');
+      assert.equal((await runCli(['demo', 'ü'.repeat(1500)])).state, 'idle');
+      assert.equal((await runCli(['demo', 'ü'.repeat(2048)])).state, 'idle');
       assert.doesNotMatch(
         routineLogs,
         /private fixture|Wie geht es dir|simulierte Antwort/,
@@ -248,6 +251,105 @@ test(
       await once(core, 'exit');
       for (const socket of peers) socket.destroy();
       await new Promise<void>((resolve) => audio.close(() => resolve()));
+      rmSync(runtime, { recursive: true });
+    }
+  },
+);
+
+test(
+  'invalid Unicode audio requests release capacity and return content-free errors',
+  { timeout: 10000 },
+  async () => {
+    const runtime = mkdtempSync(join(tmpdir(), 'jv-'));
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      XDG_RUNTIME_DIR: runtime,
+      XDG_CONFIG_HOME: join(runtime, 'config'),
+    };
+    env.JARVIS_CONFIG = join(runtime, 'config.yaml');
+    writeFileSync(
+      env.JARVIS_CONFIG,
+      JSON.stringify({ transport: { max_frame_bytes: 65536 } }),
+    );
+    const audio = spawn('.venv/bin/python', ['apps/audio/main.py'], { env });
+    let errors = '';
+    audio.stderr.on('data', (chunk) => {
+      errors += chunk;
+    });
+    const limits = {
+      timeout_ms: 1000,
+      max_frame_bytes: 8192,
+      max_connections: 8,
+    };
+    try {
+      await once(audio.stdout, 'data');
+      for (let attempt = 0; attempt < 9; attempt++) {
+        const response = await request(
+          join(runtime, 'jarvis/audio.sock'),
+          'core',
+          limits,
+          {
+            version: 1,
+            type: 'audio-operation',
+            operation: {
+              type: 'play',
+              operation_id: String(attempt),
+              text: 'private fixture \ud800',
+            },
+          },
+        );
+        assert.deepEqual(response, {
+          version: 1,
+          type: 'error',
+          code: 'invalid_message',
+        });
+      }
+      assert.deepEqual(
+        await request(join(runtime, 'jarvis/audio.sock'), 'core', limits),
+        { version: 1, type: 'ready', service: 'audio', mode: 'mock' },
+      );
+      const playback = await request(
+        join(runtime, 'jarvis/audio.sock'),
+        'core',
+        limits,
+        {
+          version: 1,
+          type: 'audio-operation',
+          operation: { type: 'play', operation_id: 'valid', text: 'ü😀' },
+        },
+      );
+      assert.deepEqual(playback, {
+        version: 1,
+        type: 'audio-result',
+        operation_id: 'valid',
+        completed: true,
+        delivered_chars: 3,
+      });
+      const largePlayback = await request(
+        join(runtime, 'jarvis/audio.sock'),
+        'core',
+        limits,
+        {
+          version: 1,
+          type: 'audio-operation',
+          operation: {
+            type: 'play',
+            operation_id: 'supplementary',
+            text: '😀'.repeat(4096),
+          },
+        },
+      );
+      assert.deepEqual(largePlayback, {
+        version: 1,
+        type: 'audio-result',
+        operation_id: 'supplementary',
+        completed: true,
+        delivered_chars: 8192,
+      });
+      assert.equal(errors, '');
+    } finally {
+      audio.kill('SIGTERM');
+      await once(audio, 'exit');
       rmSync(runtime, { recursive: true });
     }
   },

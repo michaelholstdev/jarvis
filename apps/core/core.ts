@@ -21,7 +21,8 @@ export function createCore(
   config: Config = loadConfig(),
 ) {
   let ready = false;
-  let changedAt = clock.now();
+  let readinessChangedAt = clock.now();
+  let stateChangedAt = readinessChangedAt;
   let deadline = 0;
   let state: HealthStatus['state'] = 'idle';
   let diagnostic: Diagnostic | null = 'unavailable';
@@ -35,7 +36,7 @@ export function createCore(
     text?: string,
   ) => {
     state = next;
-    changedAt = clock.now();
+    stateChangedAt = clock.now();
     operation = type
       ? {
           type,
@@ -44,7 +45,7 @@ export function createCore(
         }
       : undefined;
     deadline =
-      changedAt +
+      stateChangedAt +
       (next === 'listening'
         ? config.vad.max_utterance_seconds * 1000
         : config.transport.timeout_ms);
@@ -68,12 +69,13 @@ export function createCore(
     },
     dispatch(event: ServiceEvent): void {
       if (event.type === 'audio-ready') {
-        if (!ready) changedAt = clock.now();
+        if (!ready) readinessChangedAt = clock.now();
         ready = true;
         diagnostic = null;
         return;
       }
       if (event.type === 'audio-lost') {
+        if (ready) readinessChangedAt = clock.now();
         ready = false;
         diagnostic = event.diagnostic ?? 'unavailable';
         reset();
@@ -132,7 +134,8 @@ export function createCore(
         voice_conversation: 'unavailable',
         audio: ready ? 'ready' : 'unavailable',
         audio_diagnostic: diagnostic,
-        since_ms: Math.max(0, clock.now() - changedAt),
+        since_ms: Math.max(0, clock.now() - readinessChangedAt),
+        state_since_ms: Math.max(0, clock.now() - stateChangedAt),
       };
     },
     operations(): readonly Operation[] {

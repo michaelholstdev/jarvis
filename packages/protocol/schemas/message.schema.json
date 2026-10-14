@@ -61,7 +61,8 @@
             "voice_conversation",
             "audio",
             "since_ms",
-            "audio_diagnostic"
+            "audio_diagnostic",
+            "state_since_ms"
           ],
           "properties": {
             "ready": {
@@ -103,6 +104,10 @@
                 "busy",
                 null
               ]
+            },
+            "state_since_ms": {
+              "type": "number",
+              "minimum": 0
             }
           }
         }
@@ -219,7 +224,7 @@
         "delivered_chars": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 4096
+          "maximum": 8192
         }
       }
     }

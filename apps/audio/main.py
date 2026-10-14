@@ -129,6 +129,11 @@ def parse_message(frame: bytes) -> dict[str, Any]:
         raise Diagnostic("incompatible_version")
     if not MESSAGE_VALIDATOR.is_valid(value):
         raise Diagnostic("invalid_message")
+    try:
+        # Escaped lone surrogates are valid JSON syntax, but not Unicode text.
+        json.dumps(value, ensure_ascii=False).encode("utf-8")
+    except UnicodeError:
+        raise Diagnostic("invalid_message") from None
     return dict(value)
 
 
@@ -145,45 +150,49 @@ async def serve() -> None:
         active.add(writer)
         try:
             try:
-                frame = await asyncio.wait_for(reader.readuntil(b"\n"), limits["timeout_ms"] / 1000)
-                if len(frame) > limits["max_frame_bytes"]:
-                    raise Diagnostic("frame_too_large")
-                message = parse_message(frame)
-                response: dict[str, Any]
-                if message["type"] == "hello" and message["role"] == "core":
-                    response = {"version": 1, "type": "ready", "service": "audio", "mode": "mock"}
-                elif message["type"] == "audio-operation":
-                    operation = message["operation"]
-                    kind = operation["type"]
-                    response = {"version": 1, "type": "audio-result", "operation_id": operation["operation_id"]}
-                    if kind == "recognize":
-                        if "text" not in operation:
+                try:
+                    frame = await asyncio.wait_for(reader.readuntil(b"\n"), limits["timeout_ms"] / 1000)
+                    if len(frame) > limits["max_frame_bytes"]:
+                        raise Diagnostic("frame_too_large")
+                    message = parse_message(frame)
+                    response: dict[str, Any]
+                    if message["type"] == "hello" and message["role"] == "core":
+                        response = {"version": 1, "type": "ready", "service": "audio", "mode": "mock"}
+                    elif message["type"] == "audio-operation":
+                        operation = message["operation"]
+                        kind = operation["type"]
+                        response = {"version": 1, "type": "audio-result", "operation_id": operation["operation_id"]}
+                        if kind == "recognize":
+                            if "text" not in operation:
+                                raise Diagnostic("invalid_message")
+                            response["text"] = operation["text"]
+                        elif kind in {"acknowledge", "play"}:
+                            if kind == "play" and "text" not in operation:
+                                raise Diagnostic("invalid_message")
+                            response.update(completed=True, delivered_chars=len(operation.get("text", "").encode("utf-16-le")) // 2)
+                        elif kind == "synthesize" and "text" not in operation:
                             raise Diagnostic("invalid_message")
-                        response["text"] = operation["text"]
-                    elif kind in {"acknowledge", "play"}:
-                        if kind == "play" and "text" not in operation:
-                            raise Diagnostic("invalid_message")
-                        response.update(completed=True, delivered_chars=len(operation.get("text", "").encode("utf-16-le")) // 2)
-                    elif kind == "synthesize" and "text" not in operation:
+                    else:
                         raise Diagnostic("invalid_message")
-                else:
-                    raise Diagnostic("invalid_message")
-            except asyncio.TimeoutError:
-                raise Diagnostic("timeout") from None
-            except asyncio.LimitOverrunError:
-                raise Diagnostic("frame_too_large") from None
-            except asyncio.IncompleteReadError:
-                raise Diagnostic("invalid_message") from None
-        except Diagnostic as error:
-            response = {"version": 1, "type": "error", "code": str(error)}
-        try:
-            writer.write((json.dumps(response) + "\n").encode())
-            await asyncio.wait_for(writer.drain(), limits["timeout_ms"] / 1000)
-        except (ConnectionError, asyncio.TimeoutError):
-            pass
+                except asyncio.TimeoutError:
+                    raise Diagnostic("timeout") from None
+                except asyncio.LimitOverrunError:
+                    raise Diagnostic("frame_too_large") from None
+                except asyncio.IncompleteReadError:
+                    raise Diagnostic("invalid_message") from None
+                payload = (json.dumps(response, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+                if len(payload) > limits["max_frame_bytes"]:
+                    raise Diagnostic("frame_too_large")
+            except Diagnostic as error:
+                payload = (json.dumps({"version": 1, "type": "error", "code": str(error)}, separators=(",", ":")) + "\n").encode("utf-8")
+            try:
+                writer.write(payload)
+                await asyncio.wait_for(writer.drain(), limits["timeout_ms"] / 1000)
+            except (ConnectionError, asyncio.TimeoutError):
+                pass
         finally:
-            writer.close()
             active.discard(writer)
+            writer.close()
 
     # Bind ourselves: asyncio's path API can remove an existing service socket.
     listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
