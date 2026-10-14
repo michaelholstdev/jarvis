@@ -24,9 +24,9 @@ async function main() {
     console.log(JSON.stringify(config, null, 2));
     return;
   }
-  if (!['start', 'health', 'activate', 'demo'].includes(command ?? ''))
+  if (!['start', 'health', 'activate', 'stop', 'demo'].includes(command ?? ''))
     throw new Error(
-      'usage: start | health | config | activate | demo [utterance]',
+      'usage: start | health | config | activate | stop | demo [utterance]',
     );
   const directory = runtimeDirectory();
   const corePath = join(directory, 'core.sock');
@@ -39,8 +39,8 @@ async function main() {
         timeout_ms:
           config.transport.timeout_ms * (command === 'health' ? 2 : 6),
       },
-      command === 'activate'
-        ? { version: 1, type: 'activate' }
+      command === 'activate' || command === 'stop'
+        ? { version: 1, type: command }
         : command === 'demo'
           ? {
               version: 1,
@@ -79,17 +79,21 @@ async function main() {
     }
   };
   await refresh();
-  let runningTurn = false;
+  let runningTurn: symbol | undefined;
+  const drive = async (utterance?: string) => {
+    const run = Symbol();
+    runningTurn = run;
+    try {
+      await runMockTurn(core, join(directory, 'audio.sock'), config, utterance);
+    } finally {
+      if (runningTurn === run) runningTurn = undefined;
+    }
+  };
   const ticker = setInterval(() => {
     const before = core.status();
     core.dispatch({ type: 'tick' });
     if (!runningTurn && core.operations()[0]?.type === 'close-conversation') {
-      runningTurn = true;
-      void runMockTurn(core, join(directory, 'audio.sock'), config)
-        .catch(() => core.dispatch({ type: 'audio-lost' }))
-        .finally(() => {
-          runningTurn = false;
-        });
+      void drive().catch(() => core.dispatch({ type: 'audio-lost' }));
     }
     if (before.state !== core.status().state)
       console.error(
@@ -114,49 +118,52 @@ async function main() {
           !(
             (message.type === 'hello' && message.role === 'cli') ||
             message.type === 'activate' ||
+            message.type === 'stop' ||
             message.type === 'demo'
           )
         )
           throw new ProtocolError('invalid_message');
-        if (message.type === 'activate' || message.type === 'demo') {
-          if (runningTurn) throw new ProtocolError('busy');
-          runningTurn = true;
+        if (
+          message.type === 'activate' ||
+          message.type === 'stop' ||
+          message.type === 'demo'
+        ) {
+          const diagnostic = await refresh();
+          if (runningTurn && message.type === 'demo')
+            throw new ProtocolError('busy');
+          if (diagnostic) throw new ProtocolError(diagnostic);
+          const shouldRun =
+            message.type !== 'stop' || core.status().state === 'speaking';
+          if (message.type === 'stop') core.stop();
+          else if (
+            message.type === 'activate' ||
+            core.status().state === 'idle'
+          )
+            core.activate();
+          if (
+            message.type === 'demo' &&
+            !['listening', 'acknowledging', 'follow-up'].includes(
+              core.status().state,
+            )
+          )
+            throw new ProtocolError('busy');
           try {
-            const diagnostic = await refresh();
-            if (diagnostic) throw new ProtocolError(diagnostic);
-            if (message.type === 'activate' || core.status().state === 'idle')
-              core.activate();
-            if (
-              message.type === 'demo' &&
-              !['listening', 'acknowledging', 'follow-up'].includes(
-                core.status().state,
-              )
-            )
-              throw new ProtocolError('busy');
-            try {
-              await runMockTurn(
-                core,
-                join(directory, 'audio.sock'),
-                config,
-                message.type === 'demo' ? message.text : undefined,
-              );
-            } catch (error) {
-              core.dispatch({
-                type: 'audio-lost',
-                diagnostic:
-                  error instanceof ProtocolError ? error.code : 'unavailable',
-              });
-              throw error;
-            }
-            if (
-              message.type === 'demo' &&
-              !core.reply() &&
-              core.status().state !== 'idle'
-            )
-              throw new ProtocolError('invalid_message');
-          } finally {
-            runningTurn = false;
+            if (shouldRun)
+              await drive(message.type === 'demo' ? message.text : undefined);
+          } catch (error) {
+            core.dispatch({
+              type: 'audio-lost',
+              diagnostic:
+                error instanceof ProtocolError ? error.code : 'unavailable',
+            });
+            throw error;
           }
+          if (
+            message.type === 'demo' &&
+            !core.reply() &&
+            core.status().state !== 'idle'
+          )
+            throw new ProtocolError('invalid_message');
         }
         const diagnostic =
           message.type === 'hello' ? await refresh() : undefined;

@@ -441,3 +441,257 @@ test('each valid reply opens a fresh window and expired recognition cannot reope
   assert.equal(core.status().state, 'idle');
   assert.equal(core.reply(), null);
 });
+
+test('replacement while thinking cancels the unanswered question and retains earlier exchanges', () => {
+  const { core } = fixture();
+  deliver(core);
+  const recognition = core.operations()[0];
+  assert.ok(recognition);
+  core.dispatch({
+    type: 'recognized',
+    operation_id: recognition.operation_id,
+    text: 'Verworfene Frage',
+  });
+  const inference = core.operations()[0];
+  assert.ok(inference);
+  core.activate();
+  const cancellation = core.operations()[0];
+  assert.equal(cancellation?.type, 'cancel');
+  assert.equal(cancellation?.target_operation_id, inference.operation_id);
+  assert.ok(cancellation);
+  core.dispatch({
+    type: 'inferred',
+    operation_id: inference.operation_id,
+    text: 'Späte Antwort',
+  });
+  assert.equal(core.operations()[0]?.operation_id, cancellation.operation_id);
+  core.dispatch({
+    type: 'playback-completed',
+    operation_id: cancellation.operation_id,
+    completed: false,
+    delivered_chars: 0,
+  });
+  assert.equal(core.status().state, 'acknowledging');
+  const ack = core.operations()[0];
+  assert.ok(ack);
+  core.dispatch({
+    type: 'playback-completed',
+    operation_id: ack.operation_id,
+    completed: true,
+    delivered_chars: 0,
+  });
+  const next = core.operations()[0];
+  assert.ok(next);
+  core.dispatch({
+    type: 'recognized',
+    operation_id: next.operation_id,
+    text: 'Ersatzfrage',
+  });
+  assert.deepEqual(core.operations()[0]?.context, [
+    { question: 'Was ist TypeScript?', reply: 'Eine Sprache.' },
+  ]);
+});
+
+test('replacement and stop retain only reported delivery and wait until playback stops', () => {
+  for (const replacement of [true, false]) {
+    for (const delivered of [0, 6]) {
+      const { core, at } = fixture();
+      deliver(core);
+      const recognition = core.operations()[0];
+      assert.ok(recognition);
+      core.dispatch({
+        type: 'recognized',
+        operation_id: recognition.operation_id,
+        text: 'Zweite Frage',
+      });
+      const inference = core.operations()[0];
+      assert.ok(inference);
+      core.dispatch({
+        type: 'inferred',
+        operation_id: inference.operation_id,
+        text: 'Hallo. Ungehörter Rest.',
+      });
+      const synthesis = core.operations()[0];
+      assert.ok(synthesis);
+      core.dispatch({
+        type: 'synthesized',
+        operation_id: synthesis.operation_id,
+      });
+      const playback = core.operations()[0];
+      assert.ok(playback);
+      if (replacement) core.activate();
+      else core.stop();
+      const cancellation = core.operations()[0];
+      assert.equal(cancellation?.type, 'cancel');
+      assert.equal(cancellation?.target_operation_id, playback.operation_id);
+      assert.ok(cancellation);
+      at(500);
+      // Every canceled service stage is unable to affect the pending cancellation.
+      core.dispatch({
+        type: 'recognized',
+        operation_id: recognition.operation_id,
+        text: 'Späte Frage',
+      });
+      core.dispatch({
+        type: 'inferred',
+        operation_id: inference.operation_id,
+        text: 'Späte Antwort',
+      });
+      core.dispatch({
+        type: 'synthesized',
+        operation_id: synthesis.operation_id,
+      });
+      core.dispatch({
+        type: 'playback-completed',
+        operation_id: playback.operation_id,
+        completed: true,
+        delivered_chars: 22,
+      });
+      assert.equal(
+        core.operations()[0]?.operation_id,
+        cancellation.operation_id,
+      );
+      core.dispatch({
+        type: 'playback-completed',
+        operation_id: cancellation.operation_id,
+        completed: false,
+        delivered_chars: delivered,
+      });
+      assert.equal(
+        core.status().state,
+        replacement ? 'acknowledging' : 'follow-up',
+      );
+      if (replacement) {
+        const ack = core.operations()[0];
+        assert.ok(ack);
+        core.dispatch({
+          type: 'playback-completed',
+          operation_id: ack.operation_id,
+          completed: true,
+          delivered_chars: 0,
+        });
+      }
+      at(20499);
+      core.dispatch({
+        type: 'recognized',
+        operation_id: core.operations()[0]?.operation_id ?? '',
+        text: 'Nächste Frage',
+      });
+      assert.deepEqual(core.operations()[0]?.context, [
+        { question: 'Was ist TypeScript?', reply: 'Eine Sprache.' },
+        ...(delivered ? [{ question: 'Zweite Frage', reply: 'Hallo.' }] : []),
+      ]);
+      const next = core.operations()[0];
+      at(100000);
+      core.dispatch({
+        type: 'playback-completed',
+        operation_id: cancellation.operation_id,
+        completed: false,
+        delivered_chars: 0,
+      });
+      assert.deepEqual(core.operations()[0], next);
+    }
+  }
+});
+
+test('standalone recognized stop cancels playback; embedded and quoted stop are ignored', () => {
+  const { core, at } = fixture();
+  const recognition = core.operations()[0];
+  assert.ok(recognition);
+  core.dispatch({
+    type: 'recognized',
+    operation_id: recognition.operation_id,
+    text: 'Frage',
+  });
+  const inference = core.operations()[0];
+  assert.ok(inference);
+  core.dispatch({
+    type: 'inferred',
+    operation_id: inference.operation_id,
+    text: 'Antwort',
+  });
+  const synthesis = core.operations()[0];
+  assert.ok(synthesis);
+  core.dispatch({ type: 'synthesized', operation_id: synthesis.operation_id });
+  const playback = core.operations()[0];
+  assert.ok(playback);
+  for (const text of ['Was bedeutet Stopp?', '„Stopp“', '"Stopp"']) {
+    core.dispatch({
+      type: 'control-recognized',
+      operation_id: playback.operation_id,
+      text,
+    });
+    assert.deepEqual(core.operations()[0], playback);
+  }
+  core.dispatch({
+    type: 'control-recognized',
+    operation_id: playback.operation_id,
+    text: ' STOPP! ',
+  });
+  const cancellation = core.operations()[0];
+  assert.equal(cancellation?.type, 'cancel');
+  assert.ok(cancellation);
+  at(700);
+  core.dispatch({
+    type: 'playback-completed',
+    operation_id: cancellation.operation_id,
+    completed: false,
+    delivered_chars: 0,
+  });
+  at(20699);
+  core.dispatch({ type: 'tick' });
+  assert.equal(core.status().state, 'follow-up');
+  at(20700);
+  core.dispatch({ type: 'tick' });
+  assert.equal(core.status().state, 'idle');
+});
+
+test('replacement cancels synthesis and cannot speak its late completion', () => {
+  const { core } = fixture();
+  const recognition = core.operations()[0];
+  assert.ok(recognition);
+  core.stop();
+  assert.deepEqual(core.operations()[0], recognition);
+  core.dispatch({
+    type: 'recognized',
+    operation_id: recognition.operation_id,
+    text: 'Verworfen',
+  });
+  const inference = core.operations()[0];
+  assert.ok(inference);
+  core.dispatch({
+    type: 'inferred',
+    operation_id: inference.operation_id,
+    text: 'Nie gesprochen',
+  });
+  const synthesis = core.operations()[0];
+  assert.ok(synthesis);
+  core.activate();
+  const cancellation = core.operations()[0];
+  assert.ok(cancellation);
+  assert.equal(cancellation.target_operation_id, synthesis.operation_id);
+  core.dispatch({
+    type: 'playback-completed',
+    operation_id: cancellation.operation_id,
+    completed: false,
+    delivered_chars: 0,
+  });
+  const ack = core.operations()[0];
+  assert.ok(ack);
+  core.dispatch({
+    type: 'playback-completed',
+    operation_id: ack.operation_id,
+    completed: true,
+    delivered_chars: 0,
+  });
+  core.dispatch({ type: 'synthesized', operation_id: synthesis.operation_id });
+  const next = core.operations()[0];
+  assert.equal(next?.type, 'recognize');
+  assert.ok(next);
+  core.dispatch({
+    type: 'recognized',
+    operation_id: next.operation_id,
+    text: 'Ersatz',
+  });
+  assert.deepEqual(core.operations()[0]?.context, []);
+});

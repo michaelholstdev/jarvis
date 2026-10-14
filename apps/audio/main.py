@@ -142,8 +142,10 @@ async def serve() -> None:
     limits = config["transport"]
     path = runtime_directory() / "audio.sock"
     active: set[asyncio.StreamWriter] = set()
+    last_playback: tuple[str, int] | None = None
 
     async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        nonlocal last_playback
         if len(active) >= limits["max_connections"]:
             writer.close()
             return
@@ -162,7 +164,13 @@ async def serve() -> None:
                         operation = message["operation"]
                         kind = operation["type"]
                         response = {"version": 1, "type": "audio-result", "operation_id": operation["operation_id"]}
-                        if kind == "recognize":
+                        if kind == "cancel":
+                            # Operations complete synchronously in this mock. No buffered audio.
+                            delivered = (last_playback[1] if last_playback and
+                                         last_playback[0] == operation["target_operation_id"] else 0)
+                            response.update(completed=False, delivered_chars=delivered)
+                            last_playback = None
+                        elif kind == "recognize":
                             if "text" not in operation:
                                 raise Diagnostic("invalid_message")
                             response["text"] = operation["text"]
@@ -170,6 +178,10 @@ async def serve() -> None:
                             if kind == "play" and "text" not in operation:
                                 raise Diagnostic("invalid_message")
                             response.update(completed=True, delivered_chars=len(operation.get("text", "").encode("utf-16-le")) // 2)
+                            if kind == "play":
+                                last_playback = (operation["operation_id"], response["delivered_chars"])
+                            elif kind == "close-conversation":
+                                last_playback = None
                         elif kind == "synthesize" and "text" not in operation:
                             raise Diagnostic("invalid_message")
                     else:

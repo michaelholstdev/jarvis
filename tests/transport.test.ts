@@ -380,3 +380,120 @@ test(
     }
   },
 );
+
+test(
+  'CLI stop and replacement interrupt pending playback without stale work resuming',
+  { timeout: 10000 },
+  async () => {
+    const runtime = mkdtempSync(join(tmpdir(), 'jv-'));
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      XDG_RUNTIME_DIR: runtime,
+      XDG_CONFIG_HOME: join(runtime, 'config'),
+    };
+    delete env.JARVIS_CONFIG;
+    const core = spawn('node', ['dist/apps/core/main.js', 'start'], { env });
+    let logs = '';
+    core.stdout.on('data', (chunk) => {
+      logs += chunk;
+    });
+    core.stderr.on('data', (chunk) => {
+      logs += chunk;
+    });
+    await once(core.stdout, 'data');
+    const peers = new Set<import('node:net').Socket>();
+    let played: () => void = () => {};
+    let pending: import('node:net').Socket | undefined;
+    let playbackId = '';
+    const cancelled: string[] = [];
+    const audio = createServer((socket) => {
+      peers.add(socket);
+      socket.on('close', () => peers.delete(socket));
+      socket.on('error', () => {});
+      socket.on('data', (frame) => {
+        const message = JSON.parse(frame.toString());
+        if (message.type === 'hello') {
+          socket.end(
+            '{"version":1,"type":"ready","service":"audio","mode":"mock"}\n',
+          );
+          return;
+        }
+        const op = message.operation;
+        if (op.type === 'play') {
+          pending = socket;
+          playbackId = op.operation_id;
+          played();
+          return;
+        }
+        if (op.type === 'cancel') cancelled.push(op.target_operation_id);
+        socket.end(
+          `${JSON.stringify({
+            version: 1,
+            type: 'audio-result',
+            operation_id: op.operation_id,
+            ...(op.type === 'recognize' ? { text: op.text } : {}),
+            ...(['acknowledge', 'close-conversation', 'cancel'].includes(
+              op.type,
+            )
+              ? {
+                  completed: op.type !== 'cancel',
+                  delivered_chars: op.type === 'cancel' ? 4 : 0,
+                }
+              : {}),
+          })}\n`,
+        );
+      });
+    });
+    const cli = async (...args: string[]) => {
+      const child = spawn('node', ['dist/apps/core/main.js', ...args], { env });
+      let output = '';
+      child.stdout.on('data', (chunk) => {
+        output += chunk;
+      });
+      child.stderr.on('data', (chunk) => {
+        logs += chunk;
+      });
+      await once(child, 'exit');
+      return output ? JSON.parse(output) : undefined;
+    };
+    try {
+      audio.listen(join(runtime, 'jarvis/audio.sock'));
+      await once(audio, 'listening');
+      for (const control of ['stop', 'activate']) {
+        const started = new Promise<void>((resolve) => {
+          played = resolve;
+        });
+        const turn = cli('demo', 'private replacement fixture');
+        await started;
+        const interruptedId = playbackId;
+        const result = await cli(control);
+        assert.equal(
+          result.state,
+          control === 'stop' ? 'follow-up' : 'listening',
+        );
+        assert.equal(cancelled.at(-1), interruptedId);
+        if (control === 'activate')
+          assert.equal((await cli('demo', 'Gespräch beenden')).state, 'idle');
+        pending?.end(
+          `${JSON.stringify({ version: 1, type: 'audio-result', operation_id: interruptedId, completed: true, delivered_chars: 42 })}\n`,
+        );
+        await turn;
+        assert.equal(
+          (await cli('health')).state,
+          control === 'activate' ? 'idle' : 'follow-up',
+        );
+      }
+      assert.equal((await cli('demo', 'Gespräch beenden')).state, 'idle');
+      assert.doesNotMatch(
+        logs,
+        /private replacement fixture|simulierte Antwort|Gespräch beenden/,
+      );
+    } finally {
+      core.kill('SIGTERM');
+      await once(core, 'exit');
+      for (const peer of peers) peer.destroy();
+      await new Promise<void>((resolve) => audio.close(() => resolve()));
+      rmSync(runtime, { recursive: true });
+    }
+  },
+);

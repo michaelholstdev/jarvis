@@ -79,7 +79,8 @@
                 "thinking",
                 "synthesizing",
                 "speaking",
-                "follow-up"
+                "follow-up",
+                "cancelling"
               ]
             },
             "manual_activation": {
@@ -146,7 +147,7 @@
           "const": 1
         },
         "type": {
-          "const": "activate"
+          "enum": ["activate", "stop"]
         }
       }
     },
@@ -189,7 +190,8 @@
                 "recognize",
                 "synthesize",
                 "play",
-                "close-conversation"
+                "close-conversation",
+                "cancel"
               ]
             },
             "operation_id": {
@@ -203,8 +205,27 @@
             },
             "sound": {
               "type": "boolean"
+            },
+            "target_operation_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "cancel"
+                  }
+                }
+              },
+              "then": {
+                "required": ["target_operation_id"]
+              }
+            }
+          ]
         }
       }
     },

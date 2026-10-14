@@ -71,10 +71,11 @@ CLI also sends `{"version":1,"type":"activate"}` or
 `{"version":1,"type":"demo","text":"Wie geht es dir?"}` and receives the core
 readiness/status response after the requested mock flow. `manual_activation` is
 `mock` when ready, otherwise `unavailable`; `state` additionally accepts
-`acknowledging`, `listening`, `thinking`, `synthesizing`, `speaking`, `follow-up`.
+`acknowledging`, `listening`, `thinking`, `synthesizing`, `speaking`, `follow-up`,
+`cancelling`.
 
 Core sends `audio-operation` with an `operation` object containing `type`
-(`acknowledge`, `recognize`, `synthesize`, `play`, `close-conversation`), a unique `operation_id`, and
+(`acknowledge`, `recognize`, `synthesize`, `play`, `close-conversation`, `cancel`), a unique `operation_id`, and
 optional bounded `text`. Python returns `audio-result` with matching ID,
 recognition `text`, or playback `completed` and `delivered_chars`. Synthesis
 returns the ID without a delivery report. Inference is a deterministic core mock with completed-exchange context;
@@ -83,8 +84,8 @@ more tightly to the configured byte budget at the conversation boundary.
 Delivery counts use UTF-16 code units in both languages, with a wire maximum
 of 8192 units for the permitted 4096 Unicode characters. Full completed delivery
 must match the answer length; synthesis completion alone never proves delivery.
-The public core accepts partial delivery reports but CLI mocks always report
-full completion. IDs are unique during a core process lifetime; stale events
+The public core accepts partial delivery reports; ordinary Python mock playback
+reports full completion. IDs are unique during a core process lifetime; stale events
 cannot affect a newer operation. These reports are simulated evidence only.
 `close-conversation` requests clearing temporary audio and optionally a distinct
 end sound via its boolean `sound` field. The audio mock has no capture buffers
@@ -95,4 +96,24 @@ content. In-process `speech-started` events identify the current recognition
 operation and enable bounded completion beyond the original follow-up deadline
 (see README). The CLI supplies simulated onset when submitting a script.
 History stays in the core; it is never sent to the audio process or routine logs.
-Cancellation and real audio transport remain later work.
+CLI `{"version":1,"type":"stop"}` requests stop playback, distinct from
+`activate` for replacement and scripted end phrases for closure. Both controls
+are accepted while a previous audio exchange is awaiting its result.
+
+`cancel` includes the required `target_operation_id` of the operation to stop.
+Its own new `operation_id` identifies the cancellation result. Audio responds
+with `audio-result`, that new ID, `completed` and final `delivered_chars` for the
+target playback (zero for recognition/synthesis/inference). Cancellation must
+stop target work before responding; the core ignores all later target results.
+The core enters `cancelling` until this response, then acknowledges replacement
+or opens follow-up for stop. No generation/synthesis text is inferred as heard.
+Counts splitting a UTF-16 surrogate pair are rejected. Zero delivery omits the
+question from history. A missing/invalid delivery report cannot start listening;
+the watchdog resets the turn. The Python mock retains only its latest playback
+ID/count to report already-completed delivery during cancellation; no audio is
+captured, buffered or played.
+
+Public `control-recognized` events carry the current playback ID and text;
+standalone normalized `Stopp` invokes the same stop path. There is no wire or
+acoustic microphone recognition during playback yet. Real audio transport and
+measured delivery tracking remain later work.

@@ -45,11 +45,9 @@ export async function runMockTurn(
       continue;
     }
     const startedAt = performance.now();
-    const response: Message = await request(
-      audioPath,
-      'core',
-      config.transport,
-      {
+    let response: Message;
+    try {
+      response = await request(audioPath, 'core', config.transport, {
         version: 1,
         type: 'audio-operation',
         operation: {
@@ -57,8 +55,12 @@ export async function runMockTurn(
           type: operation.type,
           ...(operation.type === 'recognize' ? { text: utterance } : {}),
         },
-      },
-    );
+      });
+    } catch (error) {
+      if (core.operations()[0]?.operation_id !== operation.operation_id) return;
+      throw error;
+    }
+    if (core.operations()[0]?.operation_id !== operation.operation_id) return;
     if (
       response.type !== 'audio-result' ||
       response.operation_id !== operation.operation_id
@@ -83,6 +85,7 @@ export async function runMockTurn(
           operation_id: response.operation_id,
         });
         break;
+      case 'cancel':
       case 'close-conversation':
       case 'acknowledge':
       case 'play':

@@ -161,9 +161,8 @@ Set `interaction.activation_sound:false` in the shared YAML to skip the
 acknowledgment. `vad.max_utterance_seconds` bounds initial listening (30 s default);
 `transport.timeout_ms` bounds acknowledgment, inference, and synthesis (1000 ms
 default). Playback has a separate 120-second watchdog, so long answers do not
-consume the follow-up window. A stalled turn closes without replay. Only one
-turn and one operation are active; activation during a turn returns `busy`
-(manual replacement is ticket #04).
+consume the follow-up window. A stalled turn closes without replay. Only one turn and one operation are active; manual activation during thinking,
+synthesis or speaking cancels that operation for a replacement question (see #04 below).
 
 ## Contextual follow-ups and ending (#03)
 
@@ -206,5 +205,40 @@ Each transcript/answer is limited to the smaller of 4096 UTF-8 bytes and
 combined question/reply bytes fit that budget. This is a conservative mock
 byte budget, not a model tokenizer. Transport frame/connection bounds still
 apply. Replies stay available at the public core boundary during the session
-and clear on closure, fresh activation or service loss. Conversation content
+and clear on closure, activation from idle or service loss. Conversation content
 is kept only in memory, with no transcript, prompt or answer logs.
+
+## Manual replacement and stop playback (#04)
+
+`activate` during thinking, synthesis or speaking cancels the current operation,
+waits for audio cancellation to report final delivery, then acknowledges and
+listens for a replacement question. Earlier exchanges remain in context.
+Activation from follow-up also keeps context; activation from idle starts fresh.
+Activation during acknowledgment, listening or cancellation returns `busy`.
+
+```sh
+node dist/apps/core/main.js activate  # replace an unfinished turn
+node dist/apps/core/main.js demo 'Meine Ersatzfrage'
+node dist/apps/core/main.js stop      # silence playback, keep the conversation
+node dist/apps/core/main.js demo 'Gespräch beenden'  # close and clear context
+```
+
+`stop` cancels speaking only; otherwise it does nothing. It opens the normal
+follow-up window when cancellation confirms playback has stopped, without an
+activation acknowledgment. Replacement instead waits for acknowledgment before
+listening. End phrases clear the conversation. The core also accepts a scripted
+`control-recognized` event with the current playback operation ID and standalone
+`Stopp`; quoted/embedded words do not stop playback. This is a deterministic
+control boundary, not acoustic recognition during playback (ticket #14).
+
+Only the delivered prefix reported by playback/cancellation enters future
+inference context. Zero delivery excludes the unanswered question entirely.
+Generation and synthesis alone never count as delivery. Reports count UTF-16
+code units and must stop at a Unicode character boundary. Canceled operation
+results cannot deliver speech, change context, or advance the replacement turn.
+Cancellation has the transport watchdog; a missing final report resets the turn.
+
+The Python mock completes playback immediately and retains its latest delivery
+count for a matching cancellation. Delayed/partial/no-delivery scenarios are
+scripted in public-boundary tests, including a delayed socket audio peer. No
+sound or acoustic delivery is measured; real delivery tracking is ticket #15.

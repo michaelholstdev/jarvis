@@ -11,7 +11,11 @@ import { type Config, loadConfig } from './config.js';
 export type ServiceEvent =
   | { type: 'audio-ready' }
   | { type: 'audio-lost'; diagnostic?: Diagnostic }
-  | { type: 'recognized' | 'inferred'; operation_id: string; text: string }
+  | {
+      type: 'recognized' | 'inferred' | 'control-recognized';
+      operation_id: string;
+      text: string;
+    }
   | { type: 'speech-started'; operation_id: string }
   | { type: 'synthesized'; operation_id: string }
   | ({ type: 'playback-completed'; operation_id: string } & PlaybackReport)
@@ -31,6 +35,7 @@ export function createCore(
   let diagnostic: Diagnostic | null = 'unavailable';
   let operation: Operation | undefined;
   let sequence = 0;
+  let cancellation: { replacement: boolean; playback: boolean } | null = null;
   let answer = '';
   let question = '';
   let context: ConversationExchange[] = [];
@@ -66,6 +71,7 @@ export function createCore(
             : config.transport.timeout_ms);
   };
   const reset = () => {
+    cancellation = null;
     answer = '';
     question = '';
     context = [];
@@ -87,14 +93,67 @@ export function createCore(
   const bounded = (text: string) =>
     text.trim().length > 0 &&
     Buffer.byteLength(text) <= Math.min(4096, config.llm.max_context_tokens);
+  const retainDelivery = (report: PlaybackReport) => {
+    if (
+      !Number.isInteger(report.delivered_chars) ||
+      report.delivered_chars < 0 ||
+      report.delivered_chars > answer.length ||
+      (report.completed && report.delivered_chars !== answer.length) ||
+      (report.delivered_chars > 0 &&
+        report.delivered_chars < answer.length &&
+        /[\uD800-\uDBFF]/.test(answer[report.delivered_chars - 1] ?? ''))
+    )
+      return false;
+    reply = {
+      completed: report.completed,
+      delivered_chars: report.delivered_chars,
+      text: answer.slice(0, report.delivered_chars),
+    };
+    if (reply.text) {
+      context.push({ question, reply: reply.text });
+      while (
+        context.reduce(
+          (bytes, exchange) =>
+            bytes +
+            Buffer.byteLength(exchange.question) +
+            Buffer.byteLength(exchange.reply),
+          0,
+        ) > config.llm.max_context_tokens
+      )
+        context.shift();
+    }
+    answer = '';
+    question = '';
+    return true;
+  };
+  const listen = () => {
+    followUpDeadline = null;
+    if (config.interaction.activation_sound)
+      transition('acknowledging', 'acknowledge');
+    else transition('listening', 'recognize');
+  };
+  const cancel = (replacement: boolean) => {
+    const previous = operation;
+    if (!previous) return;
+    cancellation = { replacement, playback: previous.type === 'play' };
+    followUpDeadline = null;
+    transition('cancelling', 'cancel');
+    if (operation) operation.target_operation_id = previous.operation_id;
+  };
   return {
+    stop(): void {
+      if (state === 'speaking') cancel(false);
+    },
     activate(): void {
       if (!ready) throw new ProtocolError('unavailable');
-      if (state !== 'idle') throw new ProtocolError('busy');
-      reset();
-      if (config.interaction.activation_sound)
-        transition('acknowledging', 'acknowledge');
-      else transition('listening', 'recognize');
+      if (['thinking', 'synthesizing', 'speaking'].includes(state)) {
+        cancel(true);
+        return;
+      }
+      if (state !== 'idle' && state !== 'follow-up')
+        throw new ProtocolError('busy');
+      if (state === 'idle') reset();
+      listen();
     },
     dispatch(event: ServiceEvent): void {
       if (event.type === 'audio-ready') {
@@ -110,6 +169,11 @@ export function createCore(
         reset();
         return;
       }
+      if (
+        event.type !== 'tick' &&
+        event.operation_id !== operation?.operation_id
+      )
+        return;
       if ((state !== 'idle' || operation) && clock.now() >= deadline) {
         if (followUpDeadline !== null) close();
         else reset();
@@ -120,7 +184,27 @@ export function createCore(
         event.operation_id !== operation.operation_id
       )
         return;
-      if (event.type === 'speech-started' && state === 'follow-up') {
+      if (event.type === 'control-recognized' && state === 'speaking') {
+        if (normalizePhrase(event.text) === 'stopp') cancel(false);
+      } else if (
+        event.type === 'playback-completed' &&
+        state === 'cancelling' &&
+        cancellation
+      ) {
+        const pending = cancellation;
+        if (pending.playback && !retainDelivery(event)) {
+          reset();
+          return;
+        }
+        answer = '';
+        question = '';
+        cancellation = null;
+        if (pending.replacement) listen();
+        else {
+          transition('follow-up', 'recognize');
+          followUpDeadline = deadline;
+        }
+      } else if (event.type === 'speech-started' && state === 'follow-up') {
         transition('listening', 'recognize');
         // The onset keeps the same recognition identity; repeated onset cannot renew it.
         operation.operation_id = event.operation_id;
@@ -162,33 +246,10 @@ export function createCore(
       } else if (event.type === 'synthesized' && state === 'synthesizing') {
         transition('speaking', 'play', answer);
       } else if (event.type === 'playback-completed' && state === 'speaking') {
-        if (
-          !Number.isInteger(event.delivered_chars) ||
-          event.delivered_chars < 0 ||
-          event.delivered_chars > answer.length ||
-          (event.completed && event.delivered_chars !== answer.length)
-        ) {
+        if (!retainDelivery(event)) {
           reset();
           return;
         }
-        reply = {
-          text: answer.slice(0, event.delivered_chars),
-          completed: event.completed,
-          delivered_chars: event.delivered_chars,
-        };
-        context.push({ question, reply: reply.text });
-        while (
-          context.reduce(
-            (bytes, exchange) =>
-              bytes +
-              Buffer.byteLength(exchange.question) +
-              Buffer.byteLength(exchange.reply),
-            0,
-          ) > config.llm.max_context_tokens
-        )
-          context.shift();
-        answer = '';
-        question = '';
         transition('follow-up', 'recognize');
         followUpDeadline = deadline;
       }
@@ -229,17 +290,20 @@ export function createCore(
 }
 
 /** Normalize spoken casing/punctuation, while preserving quotation marks. */
-function isEndPhrase(text: string): boolean {
-  const normalized = text
+function normalizePhrase(text: string): string {
+  return text
     .trim()
     .toLocaleLowerCase('de-DE')
     .replace(/das war’s/g, "das war's")
     .replace(/[,.!?;:]+$/g, '')
     .replace(/,/g, '')
     .replace(/\s+/g, ' ');
+}
+
+function isEndPhrase(text: string): boolean {
   return [
     "danke jarvis das war's",
     'gespräch beenden',
     'gute nacht jarvis',
-  ].includes(normalized);
+  ].includes(normalizePhrase(text));
 }
