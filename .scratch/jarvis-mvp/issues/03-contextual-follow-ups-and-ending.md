@@ -38,3 +38,14 @@ type cleanup.
 Standards review: no documented violations; resolved the optional duplicated
 exchange-shape suggestion with `ConversationExchange`.
 Spec review: no findings or scope creep. Real acoustic validation remains open.
+
+
+### Unicode review correction
+
+Fixed the P2 contextual-follow-up finding: context excerpts now truncate by
+Unicode code points, preserving supplementary characters in both prior
+questions and replies. The real CLI/socket regression reproduced the original
+`invalid_message` failure before the fix and now verifies successful follow-ups
+at both truncation boundaries, without conversation content in routine logs.
+
+Validation: `npm run check` and `npm test` pass (20 Node tests, 3 Python tests).

@@ -39,7 +39,7 @@ export async function runMockTurn(
         type: 'inferred',
         operation_id: operation.operation_id,
         text: previous
-          ? `Zur vorherigen Frage „${previous.question.slice(0, 80)}“ lautete die simulierte Antwort: ${previous.reply.slice(0, 80)}`
+          ? `Zur vorherigen Frage „${contextExcerpt(previous.question)}“ lautete die simulierte Antwort: ${contextExcerpt(previous.reply)}`
           : 'Dies ist eine simulierte Antwort von Jarvis.',
       });
       continue;
@@ -110,4 +110,8 @@ export async function runMockTurn(
         break;
     }
   }
+}
+
+function contextExcerpt(text: string): string {
+  return Array.from(text).slice(0, 80).join('');
 }

@@ -98,9 +98,23 @@ test(
       assert.equal((await runCli(['demo', 'Gespräch beenden'])).state, 'idle');
       assert.equal((await runCli(['activate'])).state, 'listening');
       assert.equal((await runCli(['demo', 'Gute Nacht Jarvis'])).state, 'idle');
+      assert.equal(
+        (await runCli(['demo', `${'a'.repeat(79)}😀`])).state,
+        'follow-up',
+      );
+      assert.equal((await runCli(['demo', 'Mehr dazu?'])).state, 'follow-up');
+      assert.equal((await runCli(['demo', 'Gespräch beenden'])).state, 'idle');
+      // The contextual answer's 22-unit prefix places this emoji at unit 79.
+      assert.equal(
+        (await runCli(['demo', `${'b'.repeat(57)}😀`])).state,
+        'follow-up',
+      );
+      assert.equal((await runCli(['demo', 'Mehr dazu?'])).state, 'follow-up');
+      assert.equal((await runCli(['demo', 'Und danach?'])).state, 'follow-up');
+      assert.equal((await runCli(['demo', 'Gespräch beenden'])).state, 'idle');
       assert.doesNotMatch(
         routineLogs,
-        /private fixture|Wie geht es dir|simulierte Antwort|Gespräch beenden|Gute Nacht Jarvis/,
+        /private fixture|Wie geht es dir|simulierte Antwort|Gespräch beenden|Gute Nacht Jarvis|😀|Mehr dazu|Und danach/,
       );
       assert.match(routineLogs, /playback_completed/);
       audio.kill('SIGTERM');
