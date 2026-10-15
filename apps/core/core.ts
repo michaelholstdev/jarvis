@@ -202,6 +202,15 @@ export function createCore(
         event.operation_id !== operation?.operation_id
       )
         return;
+      // A current explicit end command wins over simultaneous timer expiry.
+      if (
+        event.type === 'recognized' &&
+        operation?.type === 'recognize' &&
+        isEndPhrase(event.text)
+      ) {
+        close();
+        return;
+      }
       if (
         state === 'follow-up' &&
         expired() &&
@@ -240,8 +249,7 @@ export function createCore(
           event.type === 'recognized' &&
           operation.type === 'recognize'
         ) {
-          if (isEndPhrase(event.text)) close();
-          else if (normalizePhrase(event.text) === 'weiter') {
+          if (normalizePhrase(event.text) === 'weiter') {
             conversationDeadline =
               clock.now() + config.session.extension_duration_seconds * 1000;
             finishTurn();
@@ -299,9 +307,7 @@ export function createCore(
         event.type === 'recognized' &&
         (state === 'listening' || state === 'follow-up')
       ) {
-        if (isEndPhrase(event.text)) {
-          close();
-        } else if (bounded(event.text)) {
+        if (bounded(event.text)) {
           question = event.text.trim();
           transition('thinking', 'infer', question);
         } else if (followUpDeadline !== null) resumeFollowUp();

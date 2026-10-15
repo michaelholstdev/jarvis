@@ -4,5 +4,6 @@
 - [02: Manual activation with scripted answer](issues/02-manual-activation-scripted-answer.md) — resolved; scripted turn and delivery checks pass.
 - [03: Contextual follow-ups and explicit ending](issues/03-contextual-follow-ups-and-ending.md#answer) — resolved; fake-clock and socket checks pass.
 - [04: Manual replacement and delivered context](issues/04-manual-replacement-delivered-context.md#answer) — resolved; cancellation, delivery-context and CLI checks pass.
-- Next: [05: Conversation expiry and extension](issues/05-conversation-expiry-and-extension.md).
+- [05: Conversation expiry and extension](issues/05-conversation-expiry-and-extension.md#answer) — resolved; fake-clock expiry/extension and daemon/Python socket checks pass.
+- Next: [06: Lock and mute privacy](issues/06-lock-and-mute-privacy.md).
 - Remaining tickets are in [issues/](issues/); M1–M4 remain unimplemented.

@@ -37,3 +37,16 @@ cleanup, cancellation boundaries, stale events and separate watchdog behavior.
 A real daemon/Python socket integration exercises automatic expiry with no CLI
 request, then explicit renewal and contextual follow-up. Configuration tests
 cover defaults and integer bounds. Review baseline: 3375328.
+
+
+### Review and final validation
+
+Standards review found one incomplete map pointer; #05 is now resolved in the
+implementation map with an Answer link and #06 is next. Spec review found one
+P2: an end command arriving exactly at allowance expiry could be displaced by
+the prompt transition. End commands now take priority over timer reconciliation
+while stale operation IDs remain rejected. Red/green regression tests cover all
+three end phrases and cleared context. Both independent review follow-ups report
+zero open findings.
+
+Final validation: `npm run check` and `npm test` pass (51 Node tests, 3 Python tests).

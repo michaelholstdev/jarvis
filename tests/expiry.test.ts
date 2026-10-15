@@ -381,3 +381,22 @@ test('incomplete extension prompt closes instead of opening the response window'
   assert.equal(c.core.reply(), null);
   c.operation('close-conversation');
 });
+
+for (const text of [
+  "Danke Jarvis, das war's",
+  'Gespräch beenden',
+  'Gute Nacht Jarvis',
+]) {
+  test(`end command ${text} takes priority over allowance expiry between turns`, () => {
+    const c = conversation();
+    finishBeforeExpiry(c);
+    c.at(30000);
+    c.recognize(text);
+    assert.equal(c.core.status().state, 'idle');
+    assert.equal(c.core.reply(), null);
+    c.operation('close-conversation');
+    c.core.activate();
+    c.recognize('Neue Frage');
+    assert.deepEqual(c.operation('infer').context, []);
+  });
+}
