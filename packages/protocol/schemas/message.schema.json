@@ -32,7 +32,7 @@
           "const": "audio"
         },
         "mode": {
-          "enum": ["mock", "piper"]
+          "enum": ["mock", "piper", "voice"]
         },
         "capabilities": {
           "$ref": "#/definitions/capabilities"

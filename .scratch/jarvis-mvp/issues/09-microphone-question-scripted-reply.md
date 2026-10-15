@@ -14,3 +14,7 @@
 - [ ] A consented or synthetic German fixture exercises recognition, synthesis, and selected-device playback; timings are recorded without retaining/logging fixture or live conversation content.
 - [ ] Exact models, checksums, revisions, licensing, provenance, runtime compatibility, and recognition limitations are recorded; endpointed/chunked recognition is not presented as true partial streaming.
 - [ ] Document VAD/STT runtime and model installation, verification, device discovery, capture/resampling settings, fixture/demo commands, and troubleshooting; retain provisional thresholds until hardware validation.
+
+## Comments
+
+Claimed for implementation on the current branch; baseline `18e7c69e56449bcd70311e87c4995721b7959f23`.

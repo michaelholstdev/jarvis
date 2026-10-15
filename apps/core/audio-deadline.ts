@@ -6,8 +6,14 @@ export function audioDeadlineMs(
   config: Config,
   type?: Operation['type'],
 ): number {
+  if (type === 'recognize' && config.audio.mode === 'voice')
+    return (
+      (config.vad.max_utterance_seconds +
+        config.session.recognition_completion_seconds) *
+      1000
+    );
   return type === 'play' ||
-    (config.audio.mode === 'piper' &&
+    (config.audio.mode !== 'mock' &&
       [
         'synthesize',
         'acknowledge',

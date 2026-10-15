@@ -20,7 +20,9 @@ export async function runMockTurn(
     const operation = core.operations()[0];
     if (
       !operation ||
-      (operation.type === 'recognize' && utterance === undefined)
+      (operation.type === 'recognize' &&
+        utterance === undefined &&
+        (config.audio.mode !== 'voice' || core.status().state !== 'listening'))
     )
       return;
     logDiagnostic({
@@ -76,7 +78,9 @@ export async function runMockTurn(
           operation: {
             ...operation,
             type: operation.type,
-            ...(operation.type === 'recognize' ? { text: utterance } : {}),
+            ...(operation.type === 'recognize' && config.audio.mode !== 'voice'
+              ? { text: utterance }
+              : {}),
           },
         },
       );

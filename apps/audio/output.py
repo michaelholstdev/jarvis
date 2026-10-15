@@ -5,6 +5,8 @@ import asyncio
 from collections.abc import Coroutine
 import hashlib
 import json
+import os
+import signal
 from pathlib import Path
 import sys
 from typing import Any
@@ -32,6 +34,17 @@ def verify_voice(config: dict[str, Any]) -> None:
             raise OutputError('voice_checksum_mismatch')
 
 
+def report_diagnostic(event: dict[str, Any]) -> None:
+    known = {
+        'missing_input_model', 'input_checksum_mismatch', 'unsupported_input_runtime',
+        'input_device_missing', 'input_device_muted', 'input_format_unsupported',
+        'input_disconnected', 'output_device_missing', 'output_device_muted',
+    }
+    code = event.get('diagnostic')
+    print(json.dumps({'event': 'audio_diagnostic',
+                      'code': code if code in known else 'audio_runtime_failed'}), flush=True)
+
+
 class Output:
     def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
@@ -46,7 +59,7 @@ class Output:
         spawning = asyncio.create_task(asyncio.create_subprocess_exec(
             sys.executable, str(Path(__file__).with_name('output_worker.py')),
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.DEVNULL, limit=8192,
+            stderr=asyncio.subprocess.DEVNULL, limit=8192, start_new_session=True,
         ))
         self.spawning = spawning
         process: asyncio.subprocess.Process | None = None
@@ -60,6 +73,10 @@ class Output:
             await process.stdin.drain()
             line = await asyncio.wait_for(process.stdout.readline(), 30)
             if generation != self.generation or line != b'{"event":"ready"}\n':
+                try:
+                    report_diagnostic(json.loads(line))
+                except (ValueError, TypeError):
+                    pass
                 raise OutputError('output_runtime_unavailable')
         except (OSError, asyncio.TimeoutError, OutputError):
             if process is not None:
@@ -73,11 +90,10 @@ class Output:
 
     @staticmethod
     async def destroy(process: asyncio.subprocess.Process) -> None:
-        if process.returncode is None:
-            try:
-                process.kill()
-            except ProcessLookupError:
-                pass
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
         await process.wait()
 
     async def stop(self) -> None:
@@ -107,10 +123,12 @@ class Output:
             return {'completed': False, 'delivered_chars': delivered}
         if generation != self.generation:
             raise OutputError('unavailable')
-        if kind == 'recognize':
+        if kind == 'recognize' and self.config.get('audio', {}).get('mode') != 'voice':
             if 'text' not in operation:
                 raise OutputError('invalid_message')
             return {'text': operation['text']}
+        if kind == 'recognize' and 'text' in operation:
+            raise OutputError('invalid_message')
         if self.busy:
             raise OutputError('busy')
         self.busy = True
@@ -135,8 +153,10 @@ class Output:
                         self.completed = (operation['operation_id'], result['delivered_chars'])
                     return result
                 if event['event'] == 'error':
+                    report_diagnostic(event)
                     raise OutputError('unavailable')
-                print(json.dumps({'event': event['event'], 'operation_id': operation['operation_id']}), flush=True)
+                print(json.dumps({'event': event['event'], 'operation_id': operation['operation_id'],
+                                  **({'elapsed_ms': event['elapsed_ms']} if 'elapsed_ms' in event else {})}), flush=True)
         except (OSError, ValueError, asyncio.TimeoutError, OutputError):
             if generation == self.generation:
                 await self.stop()

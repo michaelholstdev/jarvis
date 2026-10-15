@@ -56,3 +56,26 @@ class OutputProtocolTest(unittest.IsolatedAsyncioTestCase):
         message = parse_message(b'{"version":1,"type":"audio-operation","operation":{"type":"recognize","operation_id":"recognize"}}')
         with self.assertRaisesRegex(OutputError, '^invalid_message$'):
             await Output({}).run(message['operation'])
+
+
+class VoiceRecognitionTest(unittest.IsolatedAsyncioTestCase):
+    async def test_voice_recognition_uses_worker_final_transcript(self) -> None:
+        import sys
+        config = {'audio': {'mode': 'voice'}, 'recovery': {'playback_timeout_ms': 1000}}
+        output = Output(config)
+        spawn = asyncio.create_subprocess_exec
+        # Substitute the external audio/model process, keeping the real pipe boundary.
+        worker = ('import sys,json; json.loads(sys.stdin.readline()); '
+                  'print(\'{"event":"ready"}\',flush=True); '
+                  'op=json.loads(sys.stdin.readline()); '
+                  'print(json.dumps({"event":"result","result":{"text":"Wie spät ist es?"}}),flush=True)')
+
+        async def fixture_process(*args, **kwargs):
+            return await spawn(sys.executable, '-c', worker, **kwargs)
+
+        with patch('asyncio.create_subprocess_exec', side_effect=fixture_process):
+            try:
+                result = await output.run({'type': 'recognize', 'operation_id': 'mic'})
+                self.assertEqual(result, {'text': 'Wie spät ist es?'})
+            finally:
+                await output.stop()

@@ -95,7 +95,11 @@ export function createCore(
       (next === 'follow-up'
         ? config.session.follow_up_seconds * 1000
         : next === 'listening'
-          ? config.vad.max_utterance_seconds * 1000
+          ? (config.vad.max_utterance_seconds +
+              (config.audio.mode === 'voice'
+                ? config.session.recognition_completion_seconds
+                : 0)) *
+            1000
           : audioDeadlineMs(config, type));
   };
   const reset = () => {

@@ -92,7 +92,7 @@ export type Message =
       version: 1;
       type: 'ready';
       service: 'audio';
-      mode: 'mock' | 'piper';
+      mode: 'mock' | 'piper' | 'voice';
       capabilities?: Partial<Capabilities>;
     }
   | {

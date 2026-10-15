@@ -147,7 +147,7 @@ def parse_message(frame: bytes) -> dict[str, Any]:
 async def serve() -> None:
     config = load_config()
     output: Output | None = None
-    if config["audio"]["mode"] == "piper":
+    if config["audio"]["mode"] in {"piper", "voice"}:
         verify_voice(config)
         output = Output(config)
         await output.start()
@@ -173,7 +173,7 @@ async def serve() -> None:
                     response: dict[str, Any]
                     if message["type"] == "hello" and message["role"] == "core":
                         response = {"version": 1, "type": "ready", "service": "audio", "mode": config["audio"]["mode"],
-                                    "capabilities": {"wake": "unavailable", "stt": "mock", "tts": "ready" if output else "mock"}}
+                                    "capabilities": {"wake": "unavailable", "stt": "ready" if config["audio"]["mode"] == "voice" else "mock", "tts": "ready" if output else "mock"}}
                     elif message["type"] == "audio-operation":
                         operation = message["operation"]
                         kind = operation["type"]
@@ -188,7 +188,7 @@ async def serve() -> None:
                         elif inhibited:
                             raise Diagnostic("unavailable")
                         elif output:
-                            if kind in {"cancel", "recognize"}:
+                            if kind == "cancel" or (kind == "recognize" and config["audio"]["mode"] != "voice"):
                                 response.update(await output.run(operation))
                             else:
                                 work = asyncio.create_task(output.run(operation))

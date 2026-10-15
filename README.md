@@ -346,3 +346,5 @@ separate adapter and hardware validation.
 Optional CPU Piper synthesis and PipeWire-compatible output are available for
 scripted answers. Follow [installation, device selection, replay and validation](docs/audio-output.md).
 The default remains hardware-free mock mode; microphone, STT and inference are still scripted.
+
+Manual microphone turns: see [German capture and recognition setup](docs/audio-input.md).

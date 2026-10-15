@@ -69,18 +69,36 @@ def main() -> None:
     # Discover by stable sink name, never a transient numeric index or default.
     import subprocess
     sinks = json.loads(subprocess.check_output(['pactl', '--format=json', 'list', 'sinks'], timeout=5))
-    sink = next(s for s in sinks if s['name'] == config['audio']['output_device'])
+    sink = next((s for s in sinks if s['name'] == config['audio']['output_device'] and s['name'] != 'default'), None)
+    if sink is None:
+        raise RuntimeError('output_device_missing')
+    if sink['mute']:
+        raise RuntimeError('output_device_muted')
     rate = int(sink['sample_specification'].split()[-1].removesuffix('Hz'))
     if not 8000 <= rate <= 192000:
         raise RuntimeError('unsupported_rate')
     C.CDLL('libpulse-simple.so.0')
+    microphone = None
+    if config['audio']['mode'] == 'voice':
+        microphone = importlib.import_module('apps.audio.input' if __package__ else 'input').Input(config)
     pcm = b''
     cached_text = ''
     emit('ready')
     for line in sys.stdin:
         operation = json.loads(line)
         kind = operation['type']
-        if kind == 'synthesize':
+        if kind != 'recognize':
+            current = json.loads(subprocess.check_output(['pactl', '--format=json', 'list', 'sinks'], timeout=2))
+            selected = next((s for s in current if s['name'] == sink['name']), None)
+            if selected is None:
+                raise RuntimeError('output_device_missing')
+            if selected['mute']:
+                raise RuntimeError('output_device_muted')
+        if kind == 'recognize':
+            if microphone is None or 'text' in operation:
+                raise RuntimeError('invalid_recognition')
+            emit('result', result=microphone.recognize(emit))
+        elif kind == 'synthesize':
             text = operation['text']
             if len(text) > 2048:
                 raise RuntimeError('text_too_large')
@@ -117,6 +135,11 @@ def main() -> None:
 if __name__ == '__main__':
     try:
         main()
-    except Exception:
-        emit('error')
+    except Exception as error:
+        known = {
+            'missing_input_model', 'input_checksum_mismatch', 'unsupported_input_runtime',
+            'input_device_missing', 'input_device_muted', 'input_format_unsupported',
+            'input_disconnected', 'output_device_missing', 'output_device_muted',
+        }
+        emit('error', diagnostic=str(error) if str(error) in known else 'audio_runtime_failed')
         raise SystemExit(1) from None

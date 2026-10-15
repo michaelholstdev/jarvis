@@ -45,7 +45,7 @@
           "const": false
         },
         "mode": {
-          "enum": ["mock", "piper"],
+          "enum": ["mock", "piper", "voice"],
           "default": "mock"
         }
       }
@@ -122,6 +122,12 @@
           "maxLength": 256,
           "default": "cpu",
           "const": "cpu"
+        },
+        "model_dir": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "default": "models/input"
         }
       }
     },

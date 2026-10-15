@@ -266,8 +266,12 @@ async function main() {
           )
             throw new ProtocolError('busy');
           try {
-            if (shouldRun)
-              await drive(message.type === 'demo' ? message.text : undefined);
+            if (shouldRun) {
+              if (config.audio.mode === 'voice' && message.type === 'activate')
+                void drive().catch(() => loseAudio());
+              else
+                await drive(message.type === 'demo' ? message.text : undefined);
+            }
           } catch (error) {
             loseAudio(
               error instanceof ProtocolError ? error.code : 'unavailable',

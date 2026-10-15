@@ -21,7 +21,8 @@
   "stt": {
     "engine": "sherpa-onnx",
     "model": "to-be-benchmarked",
-    "device": "cpu"
+    "device": "cpu",
+    "model_dir": "models/input"
   },
   "tts": {
     "engine": "piper",
