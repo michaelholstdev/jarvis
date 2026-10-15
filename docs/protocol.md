@@ -72,7 +72,7 @@ CLI also sends `{"version":1,"type":"activate"}` or
 readiness/status response after the requested mock flow. `manual_activation` is
 `mock` when ready, otherwise `unavailable`; `state` additionally accepts
 `acknowledging`, `listening`, `thinking`, `synthesizing`, `speaking`, `follow-up`,
-`cancelling`.
+`cancelling`, `awaiting-extension`.
 
 Core sends `audio-operation` with an `operation` object containing `type`
 (`acknowledge`, `recognize`, `synthesize`, `play`, `close-conversation`, `cancel`), a unique `operation_id`, and
@@ -117,3 +117,14 @@ Public `control-recognized` events carry the current playback ID and text;
 standalone normalized `Stopp` invokes the same stop path. There is no wire or
 acoustic microphone recognition during playback yet. Real audio transport and
 measured delivery tracking remain later work.
+
+
+Conversation expiry uses `awaiting-extension` throughout prompt synthesis,
+playback and command recognition. It reuses `synthesize`/`play`/`recognize`
+operations with new IDs; prompt delivery never becomes a conversational exchange.
+The daemon drives the prompt even without a CLI request. A scripted `demo` while
+awaiting the extension response accepts only standalone `Weiter` or an end
+phrase; all other text is ignored and gets another recognition operation under
+the same deadline, without inference. `activate` returns `busy` during the prompt
+or extension response. Expiry itself never cancels healthy operations. Stop or
+replacement finishing at expiry prompts before another turn can start.

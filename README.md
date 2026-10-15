@@ -242,3 +242,42 @@ The Python mock completes playback immediately and retains its latest delivery
 count for a matching cancellation. Delayed/partial/no-delivery scenarios are
 scripted in public-boundary tests, including a delayed socket audio peer. No
 sound or acoustic delivery is measured; real delivery tracking is ticket #15.
+
+
+## Conversation expiry and extension (#05)
+
+A conversation has a five-minute allowance from activation, separate from the
+20-second inactivity follow-up window. Normal questions and manual replacement
+do not restart this allowance. On expiry, a healthy listening/thinking/synthesis/
+playback turn finishes. Jarvis then asks whether to continue, rather than opening
+normal follow-up. Expiry between turns triggers the prompt immediately.
+
+After the prompt finishes, the extension response window lasts 20 seconds.
+Only standalone **Weiter** renews the allowance for five more minutes with
+existing delivered context. The existing end phrases close immediately; silence
+closes and clears context and temporary reply access. Questions, quoted commands,
+noise and repeated speech onset cannot renew the window or invoke inference.
+Manual activation cannot bypass the extension requirement. Renewal opens the
+normal follow-up window, so ask the next question before that inactivity deadline.
+
+In the mock mode, submit these commands after health reports `awaiting-extension`:
+
+```sh
+node dist/apps/core/main.js demo 'Weiter'
+node dist/apps/core/main.js demo 'Und danach?'
+node dist/apps/core/main.js demo 'Gespräch beenden'
+```
+
+Configure `session.max_duration_seconds` (default 300, range 30–3600),
+`session.extension_duration_seconds` (300, 30–3600), and
+`session.extension_response_seconds` (20, 5–60) independently of
+`session.follow_up_seconds`. Extension recognition has a strict response deadline;
+no extra recognition-completion allowance is added. Separate watchdogs can still
+interrupt stalled work: maximum utterance for listening, 120 seconds for playback,
+and the transport deadline for acknowledgment, inference, synthesis and cancellation.
+These watchdogs do not turn normal expiry into playback cancellation.
+
+Prompt synthesis, playback and recognition remain simulated. Fake-clock tests
+verify lifecycle behavior; the socket integration verifies the daemon's own
+expiry prompt and explicit scripted renewal through Python. Audible speech and
+acoustic command recognition remain later hardware milestones.

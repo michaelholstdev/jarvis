@@ -31,6 +31,9 @@ export function createCore(
   let stateChangedAt = readinessChangedAt;
   let deadline = 0;
   let followUpDeadline: number | null = null;
+  let conversationDeadline: number | null = null;
+  const extensionPrompt =
+    'Möchtest du weitermachen? Sag „Weiter“ oder „Gespräch beenden“.';
   let state: HealthStatus['state'] = 'idle';
   let diagnostic: Diagnostic | null = 'unavailable';
   let operation: Operation | undefined;
@@ -66,7 +69,7 @@ export function createCore(
         ? config.session.follow_up_seconds * 1000
         : next === 'listening'
           ? config.vad.max_utterance_seconds * 1000
-          : next === 'speaking'
+          : next === 'speaking' || type === 'play'
             ? 120000
             : config.transport.timeout_ms);
   };
@@ -76,6 +79,7 @@ export function createCore(
     question = '';
     context = [];
     followUpDeadline = null;
+    conversationDeadline = null;
     reply = null;
     transition('idle');
   };
@@ -83,7 +87,24 @@ export function createCore(
     reset();
     if (ready) transition('idle', 'close-conversation');
   };
+  const expired = () =>
+    conversationDeadline !== null && clock.now() >= conversationDeadline;
+  const promptForExtension = () => {
+    followUpDeadline = null;
+    transition('awaiting-extension', 'synthesize', extensionPrompt);
+  };
+  const finishTurn = () => {
+    if (expired()) promptForExtension();
+    else {
+      transition('follow-up', 'recognize');
+      followUpDeadline = deadline;
+    }
+  };
   const resumeFollowUp = () => {
+    if (expired()) {
+      promptForExtension();
+      return;
+    }
     if (followUpDeadline === null || clock.now() >= followUpDeadline) close();
     else {
       transition('follow-up', 'recognize');
@@ -152,7 +173,14 @@ export function createCore(
       }
       if (state !== 'idle' && state !== 'follow-up')
         throw new ProtocolError('busy');
-      if (state === 'idle') reset();
+      if (state === 'idle') {
+        reset();
+        conversationDeadline =
+          clock.now() + config.session.max_duration_seconds * 1000;
+      } else if (expired()) {
+        promptForExtension();
+        return;
+      }
       listen();
     },
     dispatch(event: ServiceEvent): void {
@@ -174,8 +202,15 @@ export function createCore(
         event.operation_id !== operation?.operation_id
       )
         return;
+      if (
+        state === 'follow-up' &&
+        expired() &&
+        (conversationDeadline ?? Infinity) <= deadline
+      )
+        promptForExtension();
       if ((state !== 'idle' || operation) && clock.now() >= deadline) {
-        if (followUpDeadline !== null) close();
+        if (followUpDeadline !== null || state === 'awaiting-extension')
+          close();
         else reset();
       }
       if (
@@ -184,6 +219,40 @@ export function createCore(
         event.operation_id !== operation.operation_id
       )
         return;
+      if (state === 'awaiting-extension') {
+        if (event.type === 'synthesized' && operation.type === 'synthesize') {
+          transition('awaiting-extension', 'play', extensionPrompt);
+        } else if (
+          event.type === 'playback-completed' &&
+          operation.type === 'play'
+        ) {
+          if (
+            !event.completed ||
+            event.delivered_chars !== extensionPrompt.length
+          )
+            close();
+          else {
+            transition('awaiting-extension', 'recognize');
+            deadline =
+              clock.now() + config.session.extension_response_seconds * 1000;
+          }
+        } else if (
+          event.type === 'recognized' &&
+          operation.type === 'recognize'
+        ) {
+          if (isEndPhrase(event.text)) close();
+          else if (normalizePhrase(event.text) === 'weiter') {
+            conversationDeadline =
+              clock.now() + config.session.extension_duration_seconds * 1000;
+            finishTurn();
+          } else {
+            const responseDeadline = deadline;
+            transition('awaiting-extension', 'recognize');
+            deadline = responseDeadline;
+          }
+        }
+        return;
+      }
       if (event.type === 'control-recognized' && state === 'speaking') {
         if (normalizePhrase(event.text) === 'stopp') cancel(false);
       } else if (
@@ -203,11 +272,8 @@ export function createCore(
         answer = '';
         question = '';
         cancellation = null;
-        if (pending.replacement) listen();
-        else {
-          transition('follow-up', 'recognize');
-          followUpDeadline = deadline;
-        }
+        if (pending.replacement && !expired()) listen();
+        else finishTurn();
       } else if (event.type === 'speech-started' && state === 'follow-up') {
         transition('listening', 'recognize');
         // The onset keeps the same recognition identity; repeated onset cannot renew it.
@@ -254,8 +320,7 @@ export function createCore(
           reset();
           return;
         }
-        transition('follow-up', 'recognize');
-        followUpDeadline = deadline;
+        finishTurn();
       }
     },
     status(): HealthStatus {

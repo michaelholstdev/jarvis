@@ -19,6 +19,7 @@ export type HealthStatus = {
     | 'synthesizing'
     | 'speaking'
     | 'follow-up'
+    | 'awaiting-extension'
     | 'cancelling';
   manual_activation: 'unavailable' | 'mock';
   voice_conversation: 'unavailable';

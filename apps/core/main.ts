@@ -92,14 +92,25 @@ async function main() {
   const ticker = setInterval(() => {
     const before = core.status();
     core.dispatch({ type: 'tick' });
-    if (!runningTurn && core.operations()[0]?.type === 'close-conversation') {
+    const operation = core.operations()[0];
+    if (
+      !runningTurn &&
+      (operation?.type === 'close-conversation' ||
+        (core.status().state === 'awaiting-extension' &&
+          (operation?.type === 'synthesize' || operation?.type === 'play')))
+    ) {
       void drive().catch(() => core.dispatch({ type: 'audio-lost' }));
     }
     if (before.state !== core.status().state)
       console.error(
         JSON.stringify({
-          event: 'turn_expired',
-          code: 'timeout',
+          event:
+            core.status().state === 'awaiting-extension'
+              ? 'conversation_expired'
+              : 'turn_expired',
+          ...(core.status().state === 'awaiting-extension'
+            ? {}
+            : { code: 'timeout' }),
           state: core.status().state,
           elapsed_ms: before.state_since_ms,
         }),
@@ -142,9 +153,12 @@ async function main() {
             core.activate();
           if (
             message.type === 'demo' &&
-            !['listening', 'acknowledging', 'follow-up'].includes(
-              core.status().state,
-            )
+            ![
+              'listening',
+              'acknowledging',
+              'follow-up',
+              'awaiting-extension',
+            ].includes(core.status().state)
           )
             throw new ProtocolError('busy');
           try {
@@ -161,7 +175,9 @@ async function main() {
           if (
             message.type === 'demo' &&
             !core.reply() &&
-            core.status().state !== 'idle'
+            !['idle', 'follow-up', 'awaiting-extension'].includes(
+              core.status().state,
+            )
           )
             throw new ProtocolError('invalid_message');
         }

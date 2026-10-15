@@ -12,7 +12,8 @@ export async function runMockTurn(
   config: Config,
   utterance?: string,
 ): Promise<void> {
-  for (let step = 0; step < 6; step++) {
+  // A reply may finish with synthesis/playback of the extension prompt.
+  for (let step = 0; step < 8; step++) {
     const operation = core.operations()[0];
     if (
       !operation ||

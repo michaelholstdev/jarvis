@@ -80,6 +80,7 @@
                 "synthesizing",
                 "speaking",
                 "follow-up",
+                "awaiting-extension",
                 "cancelling"
               ]
             },

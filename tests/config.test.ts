@@ -9,6 +9,9 @@ test('empty configuration gives private German CPU defaults', () => {
   const config = loadConfig();
   assert.equal(config.locale, 'de-DE');
   assert.equal(config.session.follow_up_seconds, 20);
+  assert.equal(config.session.max_duration_seconds, 300);
+  assert.equal(config.session.extension_response_seconds, 20);
+  assert.equal(config.session.extension_duration_seconds, 300);
   assert.equal(config.stt.device, 'cpu');
   assert.equal(config.features.external_tools, false);
 });
@@ -69,6 +72,29 @@ test('configuration accepts both follow-up and recognition allowance boundaries'
       const config = loadConfig(path);
       assert.equal(config.session.follow_up_seconds, followUp);
       assert.equal(config.session.recognition_completion_seconds, allowance);
+    }
+  } finally {
+    rmSync(directory, { recursive: true });
+  }
+});
+
+test('conversation allowance and extension settings validate their own integer bounds', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'jarvis-config-'));
+  try {
+    const path = join(directory, 'config.yaml');
+    for (const [key, minimum, maximum] of [
+      ['max_duration_seconds', 30, 3600],
+      ['extension_duration_seconds', 30, 3600],
+      ['extension_response_seconds', 5, 60],
+    ] as const) {
+      for (const value of [minimum, maximum]) {
+        writeFileSync(path, JSON.stringify({ session: { [key]: value } }));
+        assert.equal(loadConfig(path).session[key], value);
+      }
+      for (const value of [minimum - 1, maximum + 1, minimum + 0.5]) {
+        writeFileSync(path, JSON.stringify({ session: { [key]: value } }));
+        assert.throws(() => loadConfig(path), /^Error: invalid_config:/);
+      }
     }
   } finally {
     rmSync(directory, { recursive: true });

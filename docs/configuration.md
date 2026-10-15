@@ -32,7 +32,19 @@ prints deliberately requested configuration, while routine logs never print it.
 | Disabled features | Barge-in, external tools, tray, persistence and content logging must remain false in M0 |
 | Transport | Deadline 1000 ms (100–10000), frame 8192 bytes (1024–65536), connections 8 (1–32) |
 
-Manual mock turns use activation/end sound flags, utterance/context limits, follow-up and recognition allowance timers (see README). Playback has a separate 120-second watchdog; other service operations use the transport deadline.
+Manual mock turns use activation/end sound flags, utterance/context limits, follow-up, recognition allowance, conversation duration and extension timers (see README). Playback has a separate 120-second watchdog; other service operations use the transport deadline.
+The conversation allowance starts at activation and does not restart on normal
+follow-ups or manual replacement. Its default is five minutes. Healthy turns
+finish after expiry; between turns Jarvis prompts immediately. The extension
+response window starts after the prompt is fully delivered. Only standalone
+`Weiter` or an end phrase is accepted in that window; other speech neither
+invokes inference nor renews the deadline. `Weiter` starts a fresh extension
+allowance from the command and preserves delivered context. Silence clears it.
+The response deadline is strict, including recognition completion: speech onset
+near its end does not add the normal follow-up recognition allowance. A renewal
+opens the normal follow-up window; inactivity can therefore close the conversation
+before the renewed duration allowance is used up. Prompt synthesis and playback
+have the same independent stalled-operation watchdogs as other turns.
 Other settings reserve the agreed product configuration; they do not make
 unimplemented capabilities available. Speech thresholds, sound behavior, German
 quality, device rates, delivered speech precision and CPU/RAM/VRAM/latency are
