@@ -65,3 +65,22 @@ barge-in are not claimed; reactivate for each real microphone turn. The models
 remain `validated: false`, and voice_conversation remains unavailable in health.
 
 Map pointer: [implementation map](../map.md).
+
+### Review correction: independent recognition watchdog
+
+Fixed the P2 finding from review of `18e7c69...21aba81`: the audio parent used
+`recovery.playback_timeout_ms` while waiting for microphone recognition, so a
+valid one-second playback watchdog killed an otherwise healthy question after
+about one second. Recognition now uses the configured utterance cap plus
+recognition completion allowance, matching the core/socket policy. This is a
+fixed monotonic deadline: worker speech/endpoint events cannot renew it. Timeout
+still destroys the worker and capture process group; playback policy is unchanged.
+
+Two public audio-adapter regressions failed before their corrections and now
+pass: a delayed 1.2-second recognition result survives the one-second playback
+watchdog, and worker progress events cannot postpone a two-second recognition
+bound or leave timed-out capture alive. Standards re-review found no issues;
+Spec re-review confirmed the P2 resolved with no remaining findings.
+
+Validation: `npm run check` passed and the full `npm test` passed **124 Node tests
+and 9 Python tests**. `git diff --check` passed.

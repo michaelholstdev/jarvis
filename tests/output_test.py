@@ -3,7 +3,7 @@ import asyncio
 import unittest
 from unittest.mock import patch
 
-from apps.audio.main import parse_message
+from apps.audio.main import load_config, parse_message
 from apps.audio.output import Output, OutputError
 
 
@@ -61,7 +61,9 @@ class OutputProtocolTest(unittest.IsolatedAsyncioTestCase):
 class VoiceRecognitionTest(unittest.IsolatedAsyncioTestCase):
     async def test_voice_recognition_uses_worker_final_transcript(self) -> None:
         import sys
-        config = {'audio': {'mode': 'voice'}, 'recovery': {'playback_timeout_ms': 1000}}
+        config = load_config()
+        config['audio']['mode'] = 'voice'
+        config['recovery']['playback_timeout_ms'] = 1000
         output = Output(config)
         spawn = asyncio.create_subprocess_exec
         # Substitute the external audio/model process, keeping the real pipe boundary.
@@ -77,5 +79,55 @@ class VoiceRecognitionTest(unittest.IsolatedAsyncioTestCase):
             try:
                 result = await output.run({'type': 'recognize', 'operation_id': 'mic'})
                 self.assertEqual(result, {'text': 'Wie spät ist es?'})
+            finally:
+                await output.stop()
+
+
+    async def test_microphone_recognition_outlasts_a_short_playback_watchdog(self) -> None:
+        import sys
+        config = load_config()
+        config['audio']['mode'] = 'voice'
+        config['recovery']['playback_timeout_ms'] = 1000
+        output = Output(config)
+        spawn = asyncio.create_subprocess_exec
+        worker = ('import sys,json,time; json.loads(sys.stdin.readline()); '
+                  'print(\'{"event":"ready"}\',flush=True); '
+                  'json.loads(sys.stdin.readline()); time.sleep(1.2); '
+                  'print(\'{"event":"result","result":{"text":"Eine Testfrage"}}\',flush=True)')
+
+        async def fixture_process(*args, **kwargs):
+            return await spawn(sys.executable, '-c', worker, **kwargs)
+
+        with patch('asyncio.create_subprocess_exec', side_effect=fixture_process):
+            try:
+                result = await output.run({'type': 'recognize', 'operation_id': 'mic'})
+                self.assertEqual(result, {'text': 'Eine Testfrage'})
+            finally:
+                await output.stop()
+
+    async def test_worker_events_cannot_renew_the_recognition_deadline(self) -> None:
+        import sys
+        config = load_config()
+        config['audio']['mode'] = 'voice'
+        config['vad']['max_utterance_seconds'] = 1
+        config['session']['recognition_completion_seconds'] = 1
+        config['recovery']['playback_timeout_ms'] = 10000
+        output = Output(config)
+        spawn = asyncio.create_subprocess_exec
+        worker = ('import sys,json,time; json.loads(sys.stdin.readline()); '
+                  'print(\'{"event":"ready"}\',flush=True); '
+                  'json.loads(sys.stdin.readline()); '
+                  'time.sleep(.75); print(\'{"event":"speech_started"}\',flush=True); '
+                  'time.sleep(.75); print(\'{"event":"endpoint"}\',flush=True); '
+                  'time.sleep(.75); print(\'{"event":"result","result":{"text":"late"}}\',flush=True)')
+
+        async def fixture_process(*args, **kwargs):
+            return await spawn(sys.executable, '-c', worker, **kwargs)
+
+        with patch('asyncio.create_subprocess_exec', side_effect=fixture_process):
+            try:
+                with self.assertRaisesRegex(OutputError, '^unavailable$'):
+                    await output.run({'type': 'recognize', 'operation_id': 'mic'})
+                self.assertIsNone(output.process, 'timed-out capture must be destroyed')
             finally:
                 await output.stop()

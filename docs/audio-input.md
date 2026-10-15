@@ -108,8 +108,10 @@ and cleared on closure. There is no pre-activation idle capture. Native-rate sig
 16-bit multichannel PCM is explicitly averaged to mono, then libsoxr resamples
 continuously to 16 kHz float32. VAD consumes 512-sample windows, threshold **0.5**,
 minimum speech **128 ms**, illustrative end silence **350 ms**. The total listen cap
-is **30 seconds**, including initial silence; the core/socket permits the configured
-recognition completion allowance (default **5 seconds**) afterward. A timeout closes
+is **30 seconds**, including initial silence; the core, socket and worker permit the
+configured recognition completion allowance (default **5 seconds**) afterward.
+The worker uses one fixed listen-plus-recognition deadline, independent of the
+playback watchdog; speech/endpoint events cannot renew it. A timeout closes
 the request and destroys the worker, never delivering an obsolete transcript.
 All thresholds remain provisional pending real headset/speaker tests. Speech shorter
 than the minimum can be ignored; Whisper tiny can hallucinate or misrecognize German,

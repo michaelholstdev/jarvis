@@ -139,8 +139,16 @@ class Output:
             assert process and process.stdin and process.stdout
             process.stdin.write((json.dumps(operation) + '\n').encode())
             await process.stdin.drain()
+            timeout = (
+                self.config['vad']['max_utterance_seconds'] +
+                self.config['session']['recognition_completion_seconds']
+                if kind == 'recognize' else self.config['recovery']['playback_timeout_ms'] / 1000
+            )
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + timeout if kind == 'recognize' else None
             while True:
-                line = await asyncio.wait_for(process.stdout.readline(), self.config['recovery']['playback_timeout_ms'] / 1000)
+                remaining = max(0, deadline - loop.time()) if deadline is not None else timeout
+                line = await asyncio.wait_for(process.stdout.readline(), remaining)
                 if not line:
                     if self.process is process:
                         raise OutputError('unavailable')
