@@ -23,7 +23,10 @@ def verify_voice(config: dict[str, Any]) -> None:
         if not file.is_file():
             raise OutputError('missing_voice')
         with file.open('rb') as source:
-            digest = hashlib.file_digest(source, 'sha256').hexdigest() if sys.version_info >= (3, 11) else hashlib.sha256(source.read()).hexdigest()
+            hasher = hashlib.sha256()
+            while block := source.read(1024 * 1024):
+                hasher.update(block)
+            digest = hasher.hexdigest()
         if digest != checksum:
             raise OutputError('voice_checksum_mismatch')
 
@@ -33,32 +36,62 @@ class Output:
         self.config = config
         self.process: asyncio.subprocess.Process | None = None
         self.busy = False
+        self.generation = 0
+        self.spawning: asyncio.Task[asyncio.subprocess.Process] | None = None
         self.completed: tuple[str, int] | None = None
 
     async def start(self) -> None:
-        self.process = await asyncio.create_subprocess_exec(
+        generation = self.generation
+        spawning = asyncio.create_task(asyncio.create_subprocess_exec(
             sys.executable, str(Path(__file__).with_name('output_worker.py')),
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL, limit=8192,
-        )
-        assert self.process.stdin and self.process.stdout
-        self.process.stdin.write((json.dumps(self.config) + '\n').encode())
-        await self.process.stdin.drain()
+        ))
+        self.spawning = spawning
+        process: asyncio.subprocess.Process | None = None
         try:
-            line = await asyncio.wait_for(self.process.stdout.readline(), 30)
-            if line != b'{"event":"ready"}\n':
+            process = await spawning
+            if generation != self.generation:
+                raise OutputError('unavailable')
+            self.process = process
+            assert process.stdin and process.stdout
+            process.stdin.write((json.dumps(self.config) + '\n').encode())
+            await process.stdin.drain()
+            line = await asyncio.wait_for(process.stdout.readline(), 30)
+            if generation != self.generation or line != b'{"event":"ready"}\n':
                 raise OutputError('output_runtime_unavailable')
         except (OSError, asyncio.TimeoutError, OutputError):
-            await self.stop()
+            if process is not None:
+                await self.destroy(process)
+            if self.process is process:
+                self.process = None
             raise OutputError('output_runtime_unavailable') from None
+        finally:
+            if self.spawning is spawning:
+                self.spawning = None
+
+    @staticmethod
+    async def destroy(process: asyncio.subprocess.Process) -> None:
+        if process.returncode is None:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
+        await process.wait()
 
     async def stop(self) -> None:
+        self.generation += 1
         process, self.process = self.process, None
+        spawning = self.spawning
         self.completed = None
+        if spawning is not None:
+            try:
+                pending = await spawning
+                await self.destroy(pending)
+            except OSError:
+                pass
         if process is not None:
-            if process.returncode is None:
-                process.kill()
-            await process.wait()
+            await self.destroy(process)
 
     async def run(self, operation: dict[str, Any]) -> dict[str, Any]:
         kind = operation['type']

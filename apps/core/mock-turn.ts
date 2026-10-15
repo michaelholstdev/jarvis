@@ -1,6 +1,7 @@
 import { performance } from 'node:perf_hooks';
 import type { Message } from '../../packages/protocol/index.js';
 import { ProtocolError } from '../../packages/protocol/index.js';
+import { audioDeadlineMs } from './audio-deadline.js';
 import type { Config } from './config.js';
 import type { createCore } from './core.js';
 import { diagnostic as logDiagnostic } from './diagnostics.js';
@@ -67,17 +68,7 @@ export async function runMockTurn(
         'core',
         {
           ...config.transport,
-          timeout_ms:
-            config.audio.mode === 'piper' &&
-            [
-              'synthesize',
-              'play',
-              'acknowledge',
-              'close-conversation',
-              'indicate-failure',
-            ].includes(operation.type)
-              ? config.recovery.playback_timeout_ms
-              : config.transport.timeout_ms,
+          timeout_ms: audioDeadlineMs(config, operation.type),
         },
         {
           version: 1,

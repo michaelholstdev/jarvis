@@ -1,12 +1,11 @@
-# Jarvis — scripted mock conversations
+# Jarvis — scripted conversations with optional German output
 
 A Node.js/TypeScript core and a separate Python audio service exchange validated
 messages over private Unix sockets. No microphone, speaker, speech model,
 Ollama, cloud fallback or external tool is needed. This milestone verifies the
-runnable foundation. Real German voice conversation is **unavailable**; scripted manual activation
-is available as a mock; a successful health check means only the mock services are ready.
+runnable foundation in default mock mode. Optional [CPU Piper output](docs/audio-output.md) speaks scripted answers through PipeWire. Real German voice conversation is **unavailable**; recognition and inference remain scripted.
 
-Layout: `apps/core` (CLI and orchestration), `apps/audio` (Python mock),
+Layout: `apps/core` (CLI and orchestration), `apps/audio` (Python mock/optional Piper output),
 `packages/protocol` (shared schemas/types), `config` (defaults and model records),
 `tests` (hardware-free checks), `systemd` (future deployment notes).
 

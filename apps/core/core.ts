@@ -9,6 +9,7 @@ import type {
   PlaybackReport,
 } from '../../packages/protocol/index.js';
 import { ProtocolError } from '../../packages/protocol/index.js';
+import { audioDeadlineMs } from './audio-deadline.js';
 import { type Config, loadConfig } from './config.js';
 import { operationCapability } from './operation-capability.js';
 
@@ -95,17 +96,7 @@ export function createCore(
         ? config.session.follow_up_seconds * 1000
         : next === 'listening'
           ? config.vad.max_utterance_seconds * 1000
-          : next === 'speaking' ||
-              type === 'play' ||
-              (config.audio.mode === 'piper' &&
-                [
-                  'synthesize',
-                  'acknowledge',
-                  'close-conversation',
-                  'indicate-failure',
-                ].includes(type ?? ''))
-            ? config.recovery.playback_timeout_ms
-            : config.transport.timeout_ms);
+          : audioDeadlineMs(config, type));
   };
   const reset = () => {
     cancellation = null;

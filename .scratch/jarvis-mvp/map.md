@@ -7,4 +7,5 @@
 - [05: Conversation expiry and extension](issues/05-conversation-expiry-and-extension.md#answer) — resolved; fake-clock expiry/extension and daemon/Python socket checks pass.
 - [06: Lock and mute privacy](issues/06-lock-and-mute-privacy.md#answer) — resolved; independent inhibition, cleanup and socket checks pass.
 - [07: Failure, retry and capability recovery](issues/07-failure-retry-capability-recovery.md#answer) — resolved; explicit retry, capability health, bounded socket recovery and diagnostics implemented.
-- Remaining tickets are in [issues/](issues/); M1–M4 remain unimplemented.
+- [08: Real German synthesis and playback](issues/08-german-synthesis-and-playback.md#answer) — resolved; pinned CPU Piper output, stable sink selection, resampling, drained completion and cancellation verified on a silent PipeWire sink.
+- Remaining tickets are in [issues/](issues/); other M1–M4 gates remain open.

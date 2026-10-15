@@ -57,6 +57,7 @@ def main() -> None:
     if version('piper-tts') != '1.3.0':
         raise RuntimeError('unsupported_runtime')
     ort = importlib.import_module('onnxruntime')
+    ort.disable_telemetry_events()
     options = ort.SessionOptions()
     options.intra_op_num_threads = 2
     options.inter_op_num_threads = 1
