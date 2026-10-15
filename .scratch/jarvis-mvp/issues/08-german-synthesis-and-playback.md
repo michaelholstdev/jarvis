@@ -56,3 +56,25 @@ checks do not require a model or audio session.
 Final validation: `npm run check` passed (TypeScript, Biome, Ruff, mypy).
 `npm test` passed: 123 Node tests and 4 Python tests. The separate pinned
 Piper/PipeWire silent-sink check also passed after the review corrections.
+
+### Follow-up review corrections
+
+Fixed both findings from the review of `e93d3f0...60464b6`:
+
+- Work now captures its cancellation generation synchronously at public `run`
+  submission, before `create_task` can queue it. Privacy, cancel and stop invalidate
+  queued work before it can spawn a worker. Stale error cleanup also cannot stop
+  a newer generation.
+- Scripted recognition without `text` now raises the allowlisted
+  `invalid_message` diagnostic instead of an uncaught `KeyError`.
+
+Both regressions failed before their corrections and pass afterward at the
+approved public output-adapter seam. The cancellation test covers privacy,
+explicit cancellation and stop, confirms no obsolete child starts, and accepts
+fresh work after cleanup. The protocol test uses a schema-valid missing-text
+request. Ten consecutive focused runs passed. Both independent review axes
+confirmed the findings resolved with no remaining actionable concerns.
+
+Correction validation: `npm run check` passed; `npm test` passed (123 Node tests,
+6 Python tests). The separate real pinned Piper/core/socket check also passed
+against the temporary silent 48 kHz PipeWire null sink.

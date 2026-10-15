@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Coroutine
 import hashlib
 import json
 from pathlib import Path
@@ -93,14 +94,22 @@ class Output:
         if process is not None:
             await self.destroy(process)
 
-    async def run(self, operation: dict[str, Any]) -> dict[str, Any]:
+    def run(self, operation: dict[str, Any]) -> Coroutine[Any, Any, dict[str, Any]]:
+        # Capture admission before create_task can queue work behind a privacy barrier.
+        return self._run(operation, self.generation)
+
+    async def _run(self, operation: dict[str, Any], generation: int) -> dict[str, Any]:
         kind = operation['type']
         if kind in {'cancel', 'privacy'}:
             delivered = self.completed[1] if self.completed and self.completed[0] == operation.get('target_operation_id') else 0
             await self.stop()
             print(json.dumps({'event': 'playback_cancelled', 'operation_id': operation['operation_id']}), flush=True)
             return {'completed': False, 'delivered_chars': delivered}
+        if generation != self.generation:
+            raise OutputError('unavailable')
         if kind == 'recognize':
+            if 'text' not in operation:
+                raise OutputError('invalid_message')
             return {'text': operation['text']}
         if self.busy:
             raise OutputError('busy')
@@ -129,7 +138,8 @@ class Output:
                     raise OutputError('unavailable')
                 print(json.dumps({'event': event['event'], 'operation_id': operation['operation_id']}), flush=True)
         except (OSError, ValueError, asyncio.TimeoutError, OutputError):
-            await self.stop()
+            if generation == self.generation:
+                await self.stop()
             raise OutputError('unavailable') from None
         finally:
             self.busy = False

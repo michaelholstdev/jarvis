@@ -3,7 +3,8 @@ import asyncio
 import unittest
 from unittest.mock import patch
 
-from apps.audio.output import Output
+from apps.audio.main import parse_message
+from apps.audio.output import Output, OutputError
 
 
 class OutputCancellationTest(unittest.IsolatedAsyncioTestCase):
@@ -30,3 +31,28 @@ class OutputCancellationTest(unittest.IsolatedAsyncioTestCase):
                 await asyncio.gather(start, stop, return_exceptions=True)
                 await output.stop()
             self.assertIsNone(output.process)
+
+    async def test_cleanup_invalidates_work_queued_before_the_barrier(self) -> None:
+        for control in ('privacy', 'cancel', 'stop'):
+            with self.subTest(control=control):
+                output = Output({'tts': {'model_path': '/nonexistent/voice.onnx'}})
+                with patch('asyncio.create_subprocess_exec', wraps=asyncio.create_subprocess_exec) as spawn:
+                    queued = asyncio.create_task(output.run({'type': 'acknowledge', 'operation_id': 'old'}))
+                    if control == 'stop':
+                        await output.stop()
+                    else:
+                        await output.run({'type': control, 'operation_id': 'barrier'})
+                    try:
+                        with self.assertRaisesRegex(OutputError, '^unavailable$'):
+                            await queued
+                        spawn.assert_not_called()
+                        self.assertEqual(await output.run({'type': 'recognize', 'operation_id': 'fresh', 'text': 'fixture'}), {'text': 'fixture'})
+                    finally:
+                        await output.stop()
+
+
+class OutputProtocolTest(unittest.IsolatedAsyncioTestCase):
+    async def test_missing_recognition_text_returns_allowlisted_error(self) -> None:
+        message = parse_message(b'{"version":1,"type":"audio-operation","operation":{"type":"recognize","operation_id":"recognize"}}')
+        with self.assertRaisesRegex(OutputError, '^invalid_message$'):
+            await Output({}).run(message['operation'])
