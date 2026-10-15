@@ -70,7 +70,8 @@
             "privacy_pending",
             "capabilities",
             "retry_available",
-            "last_failure"
+            "last_failure",
+            "audio_cleanup_pending"
           ],
           "properties": {
             "ready": {
@@ -175,6 +176,9 @@
                   }
                 }
               ]
+            },
+            "audio_cleanup_pending": {
+              "type": "boolean"
             }
           }
         }

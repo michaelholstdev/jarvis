@@ -10,6 +10,7 @@ import type {
 } from '../../packages/protocol/index.js';
 import { ProtocolError } from '../../packages/protocol/index.js';
 import { type Config, loadConfig } from './config.js';
+import { operationCapability } from './operation-capability.js';
 
 export type ServiceEvent =
   | { type: 'inhibition-changed'; source: InhibitionSource; active: boolean }
@@ -50,6 +51,7 @@ export function createCore(
   let failureCancellation = false;
   const inhibitions = { locked: false, muted: false, hardware_muted: false };
   let privacyPending = false;
+  let cleanupPending = false;
   const inhibited = () => Object.values(inhibitions).some(Boolean);
   let readinessChangedAt = clock.now();
   let stateChangedAt = readinessChangedAt;
@@ -210,7 +212,7 @@ export function createCore(
       if (state === 'speaking') cancel(false);
     },
     activate(): void {
-      if (!ready || inhibited() || privacyPending)
+      if (!ready || inhibited() || privacyPending || cleanupPending)
         throw new ProtocolError('unavailable');
       if (['thinking', 'synthesizing', 'speaking'].includes(state)) {
         cancel(true);
@@ -242,6 +244,20 @@ export function createCore(
       }
       if (event.type === 'audio-ready') {
         Object.assign(capabilities, event.capabilities);
+        if (cleanupPending) {
+          if (privacyPending) {
+            if (operation?.type !== 'privacy') synchronizePrivacy();
+            return;
+          }
+          if (operation?.type !== 'privacy') {
+            const remaining = followUpDeadline;
+            transition(state, 'privacy');
+            deadline = clock.now() + config.transport.timeout_ms;
+            if (operation) operation.inhibitions = { ...inhibitions };
+            followUpDeadline = remaining;
+          }
+          return;
+        }
         if (!ready) readinessChangedAt = clock.now();
         ready = true;
         diagnostic = null;
@@ -260,6 +276,7 @@ export function createCore(
         return;
       }
       if (event.type === 'audio-lost') {
+        cleanupPending ||= !!operation;
         if (ready) readinessChangedAt = clock.now();
         ready = false;
         diagnostic = event.diagnostic ?? 'unavailable';
@@ -290,6 +307,10 @@ export function createCore(
           event.operation_id === operation.operation_id
         ) {
           privacyPending = false;
+          cleanupPending = false;
+          if (!ready) readinessChangedAt = clock.now();
+          ready = true;
+          diagnostic = null;
           transition('idle');
         } else if (
           event.type === 'tick' &&
@@ -300,6 +321,41 @@ export function createCore(
           ready = false;
           diagnostic = 'timeout';
           reset();
+        }
+        return;
+      }
+      if (cleanupPending) {
+        if (
+          event.type === 'privacy-applied' &&
+          operation?.type === 'privacy' &&
+          event.operation_id === operation.operation_id
+        ) {
+          cleanupPending = false;
+          if (!ready) readinessChangedAt = clock.now();
+          ready = true;
+          diagnostic = null;
+          if (
+            conversationDeadline !== null &&
+            followUpDeadline !== null &&
+            clock.now() < followUpDeadline
+          ) {
+            const remaining = followUpDeadline;
+            transition('follow-up', 'recognize');
+            deadline = remaining;
+          } else reset();
+        } else if (event.type === 'tick') {
+          if (followUpDeadline !== null && clock.now() >= followUpDeadline) {
+            // Expire content without forgetting the outstanding audio barrier.
+            const cleanup = operation;
+            const cleanupDeadline = deadline;
+            reset();
+            operation = cleanup;
+            deadline = cleanupDeadline;
+          }
+          if (operation && clock.now() >= deadline) {
+            operation = undefined;
+            diagnostic = 'timeout';
+          }
         }
         return;
       }
@@ -337,11 +393,9 @@ export function createCore(
         } else if (['thinking', 'synthesizing', 'speaking'].includes(state)) {
           fail(
             'timeout',
-            operation?.type === 'infer'
-              ? 'inference'
-              : operation?.type === 'synthesize'
-                ? 'tts'
-                : 'audio',
+            operation
+              ? (operationCapability(operation.type) ?? 'audio')
+              : 'audio',
           );
         } else if (followUpDeadline !== null || state === 'awaiting-extension')
           close();
@@ -490,10 +544,13 @@ export function createCore(
         last_failure: lastFailure ? { ...lastFailure } : null,
         inhibitions: { ...inhibitions },
         privacy_pending: privacyPending,
+        audio_cleanup_pending: cleanupPending,
         mode: 'mock',
         state,
         manual_activation:
-          ready && !inhibited() && !privacyPending ? 'mock' : 'unavailable',
+          ready && !inhibited() && !privacyPending && !cleanupPending
+            ? 'mock'
+            : 'unavailable',
         voice_conversation: 'unavailable',
         audio: ready ? 'ready' : 'unavailable',
         audio_diagnostic: diagnostic,

@@ -25,7 +25,7 @@ CLI → core:
 
 ```json
 {"version":1,"type":"hello","role":"cli"}
-{"version":1,"type":"ready","service":"core","status":{"ready":true,"mode":"mock","state":"idle","manual_activation":"mock","voice_conversation":"unavailable","audio":"ready","audio_diagnostic":null,"since_ms":0,"state_since_ms":0,"inhibitions":{"locked":false,"muted":false,"hardware_muted":false},"privacy_pending":false,"capabilities":{"wake":"unavailable","stt":"mock","tts":"mock","inference":"mock"},"retry_available":false,"last_failure":null}}
+{"version":1,"type":"ready","service":"core","status":{"ready":true,"mode":"mock","state":"idle","manual_activation":"mock","voice_conversation":"unavailable","audio":"ready","audio_diagnostic":null,"since_ms":0,"state_since_ms":0,"inhibitions":{"locked":false,"muted":false,"hardware_muted":false},"privacy_pending":false,"audio_cleanup_pending":false,"capabilities":{"wake":"unavailable","stt":"mock","tts":"mock","inference":"mock"},"retry_available":false,"last_failure":null}}
 ```
 
 Core refreshes audio through a real handshake at startup and on each health
@@ -35,8 +35,7 @@ latest readiness transition. `state_since_ms` independently measures elapsed
 time since the latest conversation-state entry or reset, and supplies watchdog
 log timing. Conversation activity never resets the readiness timer. If audio
 disappears, health returns `ready:false`
-and an `audio_diagnostic`; recovery requires another successful handshake and
-never requests speech or inference. This proves mock service readiness only.
+and an `audio_diagnostic`; recovery requires another successful handshake and, if old work might still be active, a confirmed cleanup barrier before readiness returns. It never replays a question. This proves mock service readiness only.
 
 Errors have only an allowlisted code, with no input content:
 
@@ -180,7 +179,7 @@ scripted inference; wake defaults to unavailable. There is no `ready` real-model
 capability in this mock protocol. `voice_conversation` remains `unavailable`.
 Core health additionally requires `capabilities`, `retry_available`, and
 `last_failure` (null or `{code,capability}` with allowlisted values, including
-`audio`). `ready` describes the audio handshake; inspect capabilities separately.
+`audio`). `ready` describes the audio handshake plus any required recovery cleanup; inspect capabilities separately.
 The most recent failure remains visible after recovery without storing content.
 
 Core probes audio at startup, on CLI health/control requests, and periodically
@@ -220,3 +219,23 @@ routine diagnostics discard messages beyond 100 per 30-second monotonic window
 without buffering; readiness logs report transitions rather than every failed
 probe. Deliberate CLI status/config output is separate. Jarvis writes no log
 files. Collector disk retention must be bounded independently (see recovery guide).
+
+
+### Confirming cleanup after uncertain audio work
+
+If an audio operation loses its connection or cancellation fails/times out,
+`audio_cleanup_pending:true` survives further handshakes and conversation expiry.
+A successful hello alone cannot restore `ready` or manual activation. Core
+requests a silent `privacy` operation with the current inhibition snapshot as a
+stop-all barrier. This reuses the existing audio contract: stop all outstanding
+work and clear temporary audio/delivery state before acknowledging. For recovery
+alone, core context and retry access retain their original follow-up deadline;
+the audio-side reset does not close or renew the core conversation.
+
+Only `privacy-applied` for the current cleanup operation releases the barrier.
+Late target/cancellation results and old cleanup acknowledgments remain stale.
+Cleanup failure or timeout leaves readiness unavailable; subsequent probes can
+request a new bounded cleanup attempt. Expiry clears conversation data without
+forgetting the barrier. A lock/mute change supersedes recovery with the latest
+privacy snapshot and immediately clears context as usual. No cue, question or
+reply is replayed by a recovered handshake or cleanup acknowledgment.

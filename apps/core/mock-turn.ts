@@ -4,6 +4,7 @@ import { ProtocolError } from '../../packages/protocol/index.js';
 import type { Config } from './config.js';
 import type { createCore } from './core.js';
 import { diagnostic as logDiagnostic } from './diagnostics.js';
+import { operationCapability } from './operation-capability.js';
 import { request } from './transport.js';
 
 /** Runs mock service operations until listening needs a scripted utterance. */
@@ -27,14 +28,7 @@ export async function runMockTurn(
       operation_id: operation.operation_id,
       state: core.status().state,
     });
-    const capability =
-      operation.type === 'infer'
-        ? 'inference'
-        : operation.type === 'recognize'
-          ? 'stt'
-          : operation.type === 'synthesize'
-            ? 'tts'
-            : undefined;
+    const capability = operationCapability(operation.type);
     if (
       capability &&
       core.status().capabilities[capability] === 'unavailable'
@@ -98,12 +92,7 @@ export async function runMockTurn(
         type: 'operation-failed',
         operation_id: operation.operation_id,
         code: response.code,
-        capability:
-          operation.type === 'synthesize'
-            ? 'tts'
-            : operation.type === 'recognize'
-              ? 'stt'
-              : 'audio',
+        capability: operationCapability(operation.type) ?? 'audio',
       });
       continue;
     }

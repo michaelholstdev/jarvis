@@ -96,6 +96,11 @@ test('socket loss retains context only within the original recovery window and n
   at(1000);
   core.dispatch({ type: 'audio-lost' });
   core.dispatch({ type: 'audio-ready' });
+  assert.equal(current().type, 'privacy');
+  core.dispatch({
+    type: 'privacy-applied',
+    operation_id: current().operation_id,
+  });
   assert.equal(current().type, 'recognize');
   core.dispatch({
     type: 'inferred',
@@ -248,4 +253,113 @@ test('an interrupted playback completion keeps its failed question available for
       ...(delivered ? [{ question: 'Unvollständig', reply: 'Hallo.' }] : []),
     ]);
   }
+});
+
+test('a healthy handshake cannot release uncertain playback until silent cleanup is acknowledged', () => {
+  const { core, current, recognize, at } = fixture();
+  recognize('Fehlgeschlagene Wiedergabe');
+  core.dispatch({
+    type: 'inferred',
+    operation_id: current().operation_id,
+    text: 'Unbestätigte Antwort',
+  });
+  core.dispatch({ type: 'synthesized', operation_id: current().operation_id });
+  const playback = current();
+  at(120000);
+  core.dispatch({ type: 'tick' });
+  const cancellation = current();
+  at(121000);
+  core.dispatch({ type: 'tick' });
+  core.dispatch({ type: 'audio-ready' });
+  assert.equal(core.status().ready, false);
+  assert.equal(core.status().manual_activation, 'unavailable');
+  assert.throws(() => core.activate(), /unavailable/);
+  const cleanup = current();
+  assert.equal(cleanup.type, 'privacy');
+  assert.deepEqual(cleanup.inhibitions, {
+    locked: false,
+    muted: false,
+    hardware_muted: false,
+  });
+  for (const old of [playback, cancellation])
+    core.dispatch({
+      type: 'playback-completed',
+      operation_id: old.operation_id,
+      completed: true,
+      delivered_chars: 0,
+    });
+  assert.deepEqual(core.operations(), [cleanup]);
+  core.dispatch({ type: 'audio-ready' });
+  assert.deepEqual(core.operations(), [cleanup]);
+  core.dispatch({
+    type: 'privacy-applied',
+    operation_id: cleanup.operation_id,
+  });
+  assert.equal(core.status().ready, true);
+  assert.equal(current().type, 'recognize');
+  assert.equal(core.status().retry_available, true);
+  recognize('Noch einmal');
+  assert.equal(current().text, 'Fehlgeschlagene Wiedergabe');
+  assert.deepEqual(current().context, [
+    { question: 'Erste Frage', reply: 'Erste Antwort' },
+  ]);
+});
+
+test('failed cleanup remains gated across expiry and reconnect until a current acknowledgment', () => {
+  const { core, current, recognize, at } = fixture();
+  recognize('Ausstehende Frage');
+  core.dispatch({ type: 'audio-lost' });
+  core.dispatch({ type: 'audio-ready' });
+  const oldCleanup = current();
+  at(1000);
+  core.dispatch({ type: 'tick' });
+  assert.deepEqual(core.operations(), []);
+  assert.equal(core.status().audio_cleanup_pending, true);
+  at(20000);
+  core.dispatch({ type: 'tick' });
+  assert.equal(core.status().retry_available, false);
+  assert.equal(core.reply(), null);
+  core.dispatch({ type: 'audio-ready' });
+  const freshCleanup = current();
+  assert.notEqual(freshCleanup.operation_id, oldCleanup.operation_id);
+  core.dispatch({
+    type: 'privacy-applied',
+    operation_id: oldCleanup.operation_id,
+  });
+  assert.throws(() => core.activate(), /unavailable/);
+  core.dispatch({
+    type: 'privacy-applied',
+    operation_id: freshCleanup.operation_id,
+  });
+  assert.equal(core.status().state, 'idle');
+  assert.equal(core.status().audio_cleanup_pending, false);
+  assert.deepEqual(core.operations(), []);
+  core.activate();
+  assert.equal(current().type, 'acknowledge');
+});
+
+test('mute supersedes recovery cleanup and cannot release it through a stale acknowledgment', () => {
+  const { core, current, recognize } = fixture();
+  recognize('Ausstehende Frage');
+  core.dispatch({ type: 'audio-lost' });
+  core.dispatch({ type: 'audio-ready' });
+  const recovery = current();
+  core.dispatch({ type: 'inhibition-changed', source: 'muted', active: true });
+  const mute = current();
+  core.dispatch({
+    type: 'privacy-applied',
+    operation_id: recovery.operation_id,
+  });
+  assert.throws(() => core.activate(), /unavailable/);
+  assert.equal(core.status().retry_available, false);
+  core.dispatch({ type: 'privacy-applied', operation_id: mute.operation_id });
+  assert.equal(core.status().audio_cleanup_pending, false);
+  assert.throws(() => core.activate(), /unavailable/);
+  core.dispatch({ type: 'inhibition-changed', source: 'muted', active: false });
+  core.dispatch({
+    type: 'privacy-applied',
+    operation_id: current().operation_id,
+  });
+  core.activate();
+  assert.equal(current().type, 'acknowledge');
 });

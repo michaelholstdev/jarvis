@@ -68,7 +68,7 @@ In terminal 3 inspect health (direct CLI gives machine-readable JSON):
 node dist/apps/core/main.js health
 ```
 
-Exit code 0 means both mock services completed the handshake; exit code 1 means
+Exit code 0 means both mock services completed the handshake and any required recovery cleanup; exit code 1 means
 degraded/unavailable, an invalid configuration or a protocol failure. Output distinguishes mock readiness and scripted manual activation from
 unavailable real voice conversation. `npm run health` runs the same command with npm's heading.
 
@@ -333,7 +333,8 @@ Health now reports separate mock/unavailable capabilities, the last content-free
 failure and whether an unsuccessful question is available. Standalone
 `demo 'Noch einmal'` retries it while the conversation remains open. A new
 question replaces it; recovery alone never replays it. Audio reconnect is probed
-automatically with bounded requests, and stalled work requires cancellation
+automatically with bounded requests; uncertain old work requires acknowledged
+silent cleanup before readiness returns, and stalled work requires cancellation
 before one simulated failure cue. Idle failures stay silent.
 
 See [health, troubleshooting, restart and log commands](docs/recovery.md),

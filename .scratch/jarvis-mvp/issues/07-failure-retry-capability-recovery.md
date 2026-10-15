@@ -59,3 +59,22 @@ coverage. Spec review verified the correction and reports no remaining findings.
 Standards review also reports no remaining actionable findings after the cleanup
 error correction. Both review axes used the code-review skill against baseline
 `9531e83`; implementation validation was run by the primary agent.
+
+
+### Follow-up review corrections
+
+Fixed the P1 unconfirmed-cancellation recovery finding: an outstanding audio
+cleanup barrier now survives socket loss, cancellation timeout, reconnect and
+conversation expiry. A healthy hello cannot release readiness; the current
+silent stop-all acknowledgment is required. Core context and retry retain their
+original expiry, and lock/mute supersede recovery cleanup without allowing stale
+acknowledgments to release either gate. Health exposes `audio_cleanup_pending`.
+Public-core and real-socket regressions cover the reported sequence, failed
+cleanup, expiry, stale reports and privacy precedence.
+
+Fixed the P3 duplicated classification finding by sharing operation-to-capability
+mapping between adapter availability checks, service errors and core watchdogs.
+
+Correction validation: `npm run check` passed; `npm test` passed (121 Node tests,
+3 Python tests). Independent targeted Standards and Spec reviews confirmed both
+findings resolved with no remaining actionable findings in the correction.

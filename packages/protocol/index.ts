@@ -22,6 +22,7 @@ export type HealthStatus = {
   last_failure: { code: Diagnostic; capability: Capability | 'audio' } | null;
   inhibitions: Inhibitions;
   privacy_pending: boolean;
+  audio_cleanup_pending: boolean;
   ready: boolean;
   mode: 'mock';
   state:

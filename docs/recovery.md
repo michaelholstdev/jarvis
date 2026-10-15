@@ -7,7 +7,7 @@ node dist/apps/core/main.js health
 node dist/apps/core/main.js config
 ```
 
-Health exit 0 means the audio handshake works, including while muted; exit 1
+Health exit 0 means the audio handshake and any required recovery cleanup succeeded, including while muted; exit 1
 means an unavailable peer, timeout or protocol/configuration failure. `audio`
 and `audio_diagnostic` identify that connection. `capabilities` separates wake,
 STT, TTS and inference. Missing wake permits `manual_activation:mock`; missing
@@ -44,7 +44,7 @@ node dist/apps/core/main.js start
 
 Audio is probed every two seconds by default, with at most one ordinary probe in
 flight. A peer's process exit/disconnect is detected on the next request/probe;
-reconnect restores readiness. For SIGKILL/crashes, confirm the specific process
+reconnect restores readiness after any required cleanup is acknowledged. For SIGKILL/crashes, confirm the specific process
 is stopped (`ps -ef`), then remove only its stale socket before restarting:
 
 ```sh
@@ -94,3 +94,13 @@ systemctl --user start jarvis-audio.service
 
 These systemctl commands do not apply until the units exist. No hardware,
 acoustic cue, real-model recovery, or restart timing is claimed as validated.
+
+
+If `audio_cleanup_pending:true`, the peer may still have old work running.
+Healthy hello responses do not release this gate. Jarvis requests a silent
+stop-all barrier and waits for its acknowledgment before activation or follow-up
+recognition. An unresponsive barrier exposes a timeout and remains gated across
+reconnect and conversation expiry. Restart the stopped/stalled audio service as
+above; the fresh peer must still acknowledge cleanup. This clears audio-side
+work without replaying the retained question. Core context expires on its
+original follow-up deadline even while cleanup is blocked.
