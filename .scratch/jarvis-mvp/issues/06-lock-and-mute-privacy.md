@@ -37,3 +37,16 @@ precedence/release orders, stale inference/playback/onset, extension phases,
 cleanup timeout and reconnect. Socket checks cover the actual Python gate and a
 delayed peer with overlapping inhibitions, pending cleanup and fresh activation
 before the old transport completes. Implementation map links this resolution.
+
+
+### Review and validation
+
+Full validation: `npm run check` and `npm test` pass (100 Node tests,
+3 Python tests). Independent code-review axes used baseline
+`1dac1959d3b290526d888466deb42aeebba9cf03` and implementation commit `f01651a`.
+Standards found no hard violations and one low-priority duplicated inhibition
+schema; consolidated it into a shared Draft 7 definition. The standards reviewer
+confirmed the fix with zero outstanding findings. Spec review found zero
+missing, incorrect or out-of-scope requirements. After schema consolidation,
+`npm run check` and all 50 privacy/transport regression tests pass.
+Real KDE/device verification remains explicitly unvalidated in ticket #12.

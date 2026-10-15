@@ -115,20 +115,7 @@
               "minimum": 0
             },
             "inhibitions": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["locked", "muted", "hardware_muted"],
-              "properties": {
-                "locked": {
-                  "type": "boolean"
-                },
-                "muted": {
-                  "type": "boolean"
-                },
-                "hardware_muted": {
-                  "type": "boolean"
-                }
-              }
+              "$ref": "#/definitions/inhibitions"
             },
             "privacy_pending": {
               "type": "boolean"
@@ -235,20 +222,7 @@
               "maxLength": 64
             },
             "inhibitions": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["locked", "muted", "hardware_muted"],
-              "properties": {
-                "locked": {
-                  "type": "boolean"
-                },
-                "muted": {
-                  "type": "boolean"
-                },
-                "hardware_muted": {
-                  "type": "boolean"
-                }
-              }
+              "$ref": "#/definitions/inhibitions"
             }
           },
           "allOf": [
@@ -329,5 +303,23 @@
         }
       }
     }
-  ]
+  ],
+  "definitions": {
+    "inhibitions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locked", "muted", "hardware_muted"],
+      "properties": {
+        "locked": {
+          "type": "boolean"
+        },
+        "muted": {
+          "type": "boolean"
+        },
+        "hardware_muted": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
 }
