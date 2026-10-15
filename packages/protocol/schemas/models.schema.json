@@ -4,8 +4,12 @@
   "additionalProperties": false,
   "required": ["version", "models"],
   "properties": {
-    "$schema": { "type": "string" },
-    "version": { "const": 1 },
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "const": 1
+    },
     "models": {
       "type": "array",
       "items": {
@@ -23,15 +27,44 @@
           "validated"
         ],
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "role": { "enum": ["wake", "vad", "stt", "tts", "llm"] },
-          "revision": { "type": "string", "minLength": 1 },
-          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-          "license": { "type": "string", "minLength": 1 },
-          "source_url": { "type": "string", "pattern": "^https://" },
-          "provenance": { "type": "string", "minLength": 1 },
-          "local_path": { "type": "string", "minLength": 1 },
-          "validated": { "type": "boolean" }
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "enum": ["wake", "vad", "stt", "tts", "llm"]
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "license": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_url": {
+            "type": "string",
+            "pattern": "^https://"
+          },
+          "provenance": {
+            "type": "string",
+            "minLength": 1
+          },
+          "local_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "validated": {
+            "type": "boolean"
+          },
+          "config_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
         }
       }
     }

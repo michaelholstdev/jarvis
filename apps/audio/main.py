@@ -1,4 +1,4 @@
-"""Hardware-free audio handshake service. No speech libraries or network listeners."""
+"""Bounded local audio service with mock and optional CPU Piper output."""
 
 from __future__ import annotations
 
@@ -12,6 +12,13 @@ import signal
 import socket
 import stat
 from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from apps.audio.output import Output, OutputError, verify_voice
+else:
+    from importlib import import_module
+    _output = import_module("apps.audio.output" if __package__ else "output")
+    Output, OutputError, verify_voice = _output.Output, _output.OutputError, _output.verify_voice
 
 import jsonschema
 from ruamel.yaml import YAML
@@ -139,6 +146,11 @@ def parse_message(frame: bytes) -> dict[str, Any]:
 
 async def serve() -> None:
     config = load_config()
+    output: Output | None = None
+    if config["audio"]["mode"] == "piper":
+        verify_voice(config)
+        output = Output(config)
+        await output.start()
     limits = config["transport"]
     path = runtime_directory() / "audio.sock"
     active: set[asyncio.StreamWriter] = set()
@@ -160,8 +172,8 @@ async def serve() -> None:
                     message = parse_message(frame)
                     response: dict[str, Any]
                     if message["type"] == "hello" and message["role"] == "core":
-                        response = {"version": 1, "type": "ready", "service": "audio", "mode": "mock",
-                                    "capabilities": {"wake": "unavailable", "stt": "mock", "tts": "mock"}}
+                        response = {"version": 1, "type": "ready", "service": "audio", "mode": config["audio"]["mode"],
+                                    "capabilities": {"wake": "unavailable", "stt": "mock", "tts": "ready" if output else "mock"}}
                     elif message["type"] == "audio-operation":
                         operation = message["operation"]
                         kind = operation["type"]
@@ -171,8 +183,26 @@ async def serve() -> None:
                             # temporary audio/pre-roll before acknowledging this barrier.
                             inhibited = any(operation["inhibitions"].values())
                             last_playback = None
+                            if output:
+                                await output.run(operation)
                         elif inhibited:
                             raise Diagnostic("unavailable")
+                        elif output:
+                            if kind in {"cancel", "recognize"}:
+                                response.update(await output.run(operation))
+                            else:
+                                work = asyncio.create_task(output.run(operation))
+                                disconnected = asyncio.create_task(reader.read(1))
+                                try:
+                                    done, _ = await asyncio.wait({work, disconnected}, return_when=asyncio.FIRST_COMPLETED)
+                                    if work not in done:
+                                        await output.stop()
+                                        await work
+                                        raise Diagnostic("unavailable")
+                                    response.update(await work)
+                                finally:
+                                    disconnected.cancel()
+                                    await asyncio.gather(disconnected, return_exceptions=True)
                         elif kind == "cancel":
                             # Operations complete synchronously in this mock. No buffered audio.
                             delivered = (last_playback[1] if last_playback and
@@ -204,7 +234,7 @@ async def serve() -> None:
                 payload = (json.dumps(response, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
                 if len(payload) > limits["max_frame_bytes"]:
                     raise Diagnostic("frame_too_large")
-            except Diagnostic as error:
+            except (Diagnostic, OutputError) as error:
                 payload = (json.dumps({"version": 1, "type": "error", "code": str(error)}, separators=(",", ":")) + "\n").encode("utf-8")
             try:
                 writer.write(payload)
@@ -233,10 +263,12 @@ async def serve() -> None:
     try:
         server = await asyncio.start_unix_server(handle, sock=listener, limit=limits["max_frame_bytes"])
         async with server:
-            print(json.dumps({"event": "service_started", "service": "audio", "mode": "mock"}), flush=True)
+            print(json.dumps({"event": "service_started", "service": "audio", "mode": config["audio"]["mode"]}), flush=True)
             await stop.wait()
     finally:
         listener.close()
+        if output:
+            await output.stop()
         for writer in active:
             writer.close()
         if path.exists() and path.lstat().st_ino == identity:
@@ -247,7 +279,7 @@ if __name__ == "__main__":
     os.umask(0o077)
     try:
         asyncio.run(serve())
-    except (Diagnostic, OSError) as error:
-        code = str(error) if isinstance(error, Diagnostic) else "startup_failed"
+    except (Diagnostic, OutputError, OSError) as error:
+        code = str(error) if isinstance(error, (Diagnostic, OutputError)) else "startup_failed"
         print(json.dumps({"event": "error", "code": code}), file=__import__("sys").stderr)
         raise SystemExit(1) from None

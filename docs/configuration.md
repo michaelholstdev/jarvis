@@ -23,7 +23,7 @@ prints deliberately requested configuration, while routine logs never print it.
 | Wake | `Hey Jarvis`, model path/threshold `null`; unverified wake models rejected in M0 |
 | VAD | `silero`; end silence 350 ms (50–5000); max utterance 30 s (1–120) |
 | Recognition | `sherpa-onnx`, `to-be-benchmarked`, CPU; no recognizer loaded |
-| Synthesis | `piper`, `de_DE-thorsten-medium`, CPU; no voice loaded |
+| Synthesis | `piper`, `de_DE-thorsten-medium`, CPU; `model_path` defaults to `models/de_DE-thorsten-medium.onnx`; loaded only in `audio.mode: piper` |
 | LLM | `ollama`, `http://127.0.0.1:11434`, `user-configured`; context 8192 tokens (512–32768); no real inference requested |
 | Local endpoint | Only HTTP with literal `127.0.0.1`, `localhost`, or `[::1]` plus a port 1–65535; credentials and remote endpoints rejected |
 | Session | Follow-up 20 s (5–60), duration 300 s (30–3600), extension response 20 s (5–60), extension duration 300 s (30–3600) |
@@ -50,11 +50,10 @@ unimplemented capabilities available. Speech thresholds, sound behavior, German
 quality, device rates, delivered speech precision and CPU/RAM/VRAM/latency are
 unvalidated until the later hardware milestones.
 
-`config/models.json` starts with an empty model list. Its linked schema requires
+`config/models.json` pins the provisional Thorsten medium model and configuration; see [real output](audio-output.md). Its linked schema requires
 an exact revision, SHA-256, license, original source URL, provenance, local path,
 role and validation flag for every future model record. Record each downloaded
-artifact separately. No download/install code exists, no unverified models are
-bundled, and entries alone never enable a model. Later model installation must
+artifact separately. No models are bundled, and entries alone never enable a model. Later model installation must
 verify checksums, licensing and provenance before enabling any speech engine.
 
 Failure recovery uses `recovery.probe_interval_ms` (2000 ms, range 500–30000)
@@ -64,7 +63,7 @@ obsolete one. Old replies cannot change current readiness. Each request still
 has the transport deadline. `recovery.playback_timeout_ms` (120000 ms, range
 1000–300000) bounds playback independently of conversation expiry. Recognition
 uses the utterance/completion limits; inference, synthesis, acknowledgment,
-cancellation and the failure cue use `transport.timeout_ms`.
+cancellation and the failure cue use `transport.timeout_ms` in mock mode. In Piper mode synthesis, acknowledgment, end/failure sounds and playback use the playback watchdog.
 
 A stalled inference/synthesis/playback requests cancellation and, after its
 acknowledgment, one failure cue. Stalled cancellation or cue degrades audio

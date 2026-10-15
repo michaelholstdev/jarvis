@@ -95,7 +95,15 @@ export function createCore(
         ? config.session.follow_up_seconds * 1000
         : next === 'listening'
           ? config.vad.max_utterance_seconds * 1000
-          : next === 'speaking' || type === 'play'
+          : next === 'speaking' ||
+              type === 'play' ||
+              (config.audio.mode === 'piper' &&
+                [
+                  'synthesize',
+                  'acknowledge',
+                  'close-conversation',
+                  'indicate-failure',
+                ].includes(type ?? ''))
             ? config.recovery.playback_timeout_ms
             : config.transport.timeout_ms);
   };

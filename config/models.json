@@ -1,5 +1,18 @@
 {
   "$schema": "../packages/protocol/schemas/models.schema.json",
   "version": 1,
-  "models": []
+  "models": [
+    {
+      "id": "de_DE-thorsten-medium",
+      "role": "tts",
+      "revision": "c10ece1aade47bb51c153c893d14e5bf8e5b7117",
+      "sha256": "7e64762d8e5118bb578f2eea6207e1a35a8e0c30595010b666f983fc87bb7819",
+      "config_sha256": "974adee790533adb273a1ac88f49027d2a1b8f0f2cf4905954a4791e79264e85",
+      "license": "CC0 dataset; see pinned MODEL_CARD (fine-tuned from lessac medium)",
+      "source_url": "https://huggingface.co/rhasspy/piper-voices/tree/c10ece1aade47bb51c153c893d14e5bf8e5b7117/de/de_DE/thorsten/medium",
+      "provenance": "Thorsten Voice German single speaker; upstream MODEL_CARD declares CC0 dataset and fine-tuning from lessac medium. Piper runtime 1.3.0 GPL-3.0; provisional selection, hardware unvalidated.",
+      "local_path": "models/de_DE-thorsten-medium.onnx",
+      "validated": false
+    }
+  ]
 }

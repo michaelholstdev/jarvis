@@ -43,6 +43,10 @@
           "type": "boolean",
           "default": false,
           "const": false
+        },
+        "mode": {
+          "enum": ["mock", "piper"],
+          "default": "mock"
         }
       }
     },
@@ -145,6 +149,12 @@
           "maxLength": 256,
           "default": "cpu",
           "const": "cpu"
+        },
+        "model_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "default": "models/de_DE-thorsten-medium.onnx"
         }
       }
     },

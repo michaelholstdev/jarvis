@@ -5,7 +5,8 @@
     "output_device": "default",
     "sample_rate_hz": 16000,
     "pre_roll_ms": 750,
-    "echo_cancellation": false
+    "echo_cancellation": false,
+    "mode": "mock"
   },
   "wake_word": {
     "phrase": "Hey Jarvis",
@@ -25,7 +26,8 @@
   "tts": {
     "engine": "piper",
     "voice": "de_DE-thorsten-medium",
-    "device": "cpu"
+    "device": "cpu",
+    "model_path": "models/de_DE-thorsten-medium.onnx"
   },
   "llm": {
     "provider": "ollama",

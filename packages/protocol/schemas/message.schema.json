@@ -32,7 +32,7 @@
           "const": "audio"
         },
         "mode": {
-          "const": "mock"
+          "enum": ["mock", "piper"]
         },
         "capabilities": {
           "$ref": "#/definitions/capabilities"
@@ -133,16 +133,16 @@
               "additionalProperties": false,
               "properties": {
                 "wake": {
-                  "enum": ["mock", "unavailable"]
+                  "enum": ["mock", "ready", "unavailable"]
                 },
                 "stt": {
-                  "enum": ["mock", "unavailable"]
+                  "enum": ["mock", "ready", "unavailable"]
                 },
                 "tts": {
-                  "enum": ["mock", "unavailable"]
+                  "enum": ["mock", "ready", "unavailable"]
                 },
                 "inference": {
-                  "enum": ["mock", "unavailable"]
+                  "enum": ["mock", "ready", "unavailable"]
                 }
               },
               "required": ["wake", "stt", "tts", "inference"]
@@ -387,16 +387,16 @@
       "additionalProperties": false,
       "properties": {
         "wake": {
-          "enum": ["mock", "unavailable"]
+          "enum": ["mock", "ready", "unavailable"]
         },
         "stt": {
-          "enum": ["mock", "unavailable"]
+          "enum": ["mock", "ready", "unavailable"]
         },
         "tts": {
-          "enum": ["mock", "unavailable"]
+          "enum": ["mock", "ready", "unavailable"]
         },
         "inference": {
-          "enum": ["mock", "unavailable"]
+          "enum": ["mock", "ready", "unavailable"]
         }
       }
     }

@@ -13,3 +13,7 @@
 - [ ] A synthetic or consented scripted answer exercises the public core-to-audio path; real model/device integration checks are separate from deterministic unit checks.
 - [ ] Pin the selected voice and runtime with exact revision/checksum plus license/provenance; document supported runtime verification and missing-model errors.
 - [ ] Document required local audio/runtime dependencies, voice download and checksum verification, installation, device discovery/selection, configuration, replay, stop, and troubleshooting commands; install only what this integration needs.
+
+## Comments
+
+Claimed for implementation on the current branch; baseline `e93d3f0`. Using the previously agreed public core and Unix-socket contract test seams.

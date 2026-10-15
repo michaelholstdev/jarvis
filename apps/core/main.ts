@@ -51,7 +51,9 @@ async function main() {
       {
         ...config.transport,
         timeout_ms:
-          config.transport.timeout_ms * (command === 'health' ? 2 : 6),
+          command === 'demo' && config.audio.mode === 'piper'
+            ? config.recovery.playback_timeout_ms * 3
+            : config.transport.timeout_ms * (command === 'health' ? 2 : 6),
       },
       privacyControl
         ? {

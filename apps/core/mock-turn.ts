@@ -62,15 +62,33 @@ export async function runMockTurn(
     const startedAt = performance.now();
     let response: Message;
     try {
-      response = await request(audioPath, 'core', config.transport, {
-        version: 1,
-        type: 'audio-operation',
-        operation: {
-          ...operation,
-          type: operation.type,
-          ...(operation.type === 'recognize' ? { text: utterance } : {}),
+      response = await request(
+        audioPath,
+        'core',
+        {
+          ...config.transport,
+          timeout_ms:
+            config.audio.mode === 'piper' &&
+            [
+              'synthesize',
+              'play',
+              'acknowledge',
+              'close-conversation',
+              'indicate-failure',
+            ].includes(operation.type)
+              ? config.recovery.playback_timeout_ms
+              : config.transport.timeout_ms,
         },
-      });
+        {
+          version: 1,
+          type: 'audio-operation',
+          operation: {
+            ...operation,
+            type: operation.type,
+            ...(operation.type === 'recognize' ? { text: utterance } : {}),
+          },
+        },
+      );
     } catch (error) {
       if (core.operations()[0]?.operation_id !== operation.operation_id) return;
       throw error;

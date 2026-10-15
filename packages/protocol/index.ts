@@ -15,7 +15,7 @@ export type Inhibitions = {
 };
 export type InhibitionSource = keyof Inhibitions;
 export type Capability = 'wake' | 'stt' | 'tts' | 'inference';
-export type Capabilities = Record<Capability, 'mock' | 'unavailable'>;
+export type Capabilities = Record<Capability, 'mock' | 'ready' | 'unavailable'>;
 export type HealthStatus = {
   capabilities: Capabilities;
   retry_available: boolean;
@@ -92,7 +92,7 @@ export type Message =
       version: 1;
       type: 'ready';
       service: 'audio';
-      mode: 'mock';
+      mode: 'mock' | 'piper';
       capabilities?: Partial<Capabilities>;
     }
   | {

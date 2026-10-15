@@ -1,0 +1,121 @@
+"""Private worker protocol. PCM stays here; PulseAudio's drain confirms completion."""
+from __future__ import annotations
+
+import ctypes as C
+import importlib
+import json
+import math
+import sys
+from typing import Any
+
+
+def emit(event: str, **values: Any) -> None:
+    print(json.dumps({'event': event, **values}, separators=(',', ':')), flush=True)
+
+
+class SampleSpec(C.Structure):
+    _fields_ = [('format', C.c_int), ('rate', C.c_uint32), ('channels', C.c_uint8)]
+
+
+class Pulse:
+    def __init__(self, device: str, rate: int) -> None:
+        self.lib = C.CDLL('libpulse-simple.so.0')
+        self.lib.pa_simple_new.restype = C.c_void_p
+        self.lib.pa_simple_new.argtypes = [C.c_char_p, C.c_char_p, C.c_int, C.c_char_p, C.c_char_p, C.POINTER(SampleSpec), C.c_void_p, C.c_void_p, C.POINTER(C.c_int)]
+        self.lib.pa_simple_write.argtypes = [C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_int)]
+        self.lib.pa_simple_drain.argtypes = [C.c_void_p, C.POINTER(C.c_int)]
+        self.lib.pa_simple_free.argtypes = [C.c_void_p]
+        error = C.c_int()
+        self.stream = self.lib.pa_simple_new(None, b'Jarvis', 1, device.encode(), b'answer', C.byref(SampleSpec(3, rate, 1)), None, None, C.byref(error))
+        if not self.stream:
+            raise RuntimeError('output_unavailable')
+
+    def play(self, pcm: bytes, rate: int) -> None:
+        error = C.c_int()
+        try:
+            # 20 ms writes; completion requires server drain, never synthesis EOF.
+            size = rate // 50 * 2
+            for offset in range(0, len(pcm), size):
+                block = pcm[offset:offset + size]
+                if self.lib.pa_simple_write(self.stream, block, len(block), C.byref(error)) < 0:
+                    raise RuntimeError('write_failed')
+                if offset == 0:
+                    emit('playback_started')
+            if self.lib.pa_simple_drain(self.stream, C.byref(error)) < 0:
+                raise RuntimeError('drain_failed')
+            emit('playback_completed')
+        finally:
+            self.lib.pa_simple_free(self.stream)
+
+
+def main() -> None:
+    config = json.loads(sys.stdin.readline())
+    piper = importlib.import_module('piper')
+    np = importlib.import_module('numpy')
+    soxr = importlib.import_module('soxr')
+    from importlib.metadata import version
+    if version('piper-tts') != '1.3.0':
+        raise RuntimeError('unsupported_runtime')
+    ort = importlib.import_module('onnxruntime')
+    options = ort.SessionOptions()
+    options.intra_op_num_threads = 2
+    options.inter_op_num_threads = 1
+    options.enable_cpu_mem_arena = False
+    session = ort.InferenceSession(config['tts']['model_path'], sess_options=options, providers=['CPUExecutionProvider'])
+    voice = piper.PiperVoice(session=session, config=piper.PiperConfig.from_dict(json.loads(open(config['tts']['model_path'] + '.json').read())))
+    if voice.session.get_providers() != ['CPUExecutionProvider']:
+        raise RuntimeError('cpu_required')
+    # Discover by stable sink name, never a transient numeric index or default.
+    import subprocess
+    sinks = json.loads(subprocess.check_output(['pactl', '--format=json', 'list', 'sinks'], timeout=5))
+    sink = next(s for s in sinks if s['name'] == config['audio']['output_device'])
+    rate = int(sink['sample_specification'].split()[-1].removesuffix('Hz'))
+    if not 8000 <= rate <= 192000:
+        raise RuntimeError('unsupported_rate')
+    C.CDLL('libpulse-simple.so.0')
+    pcm = b''
+    cached_text = ''
+    emit('ready')
+    for line in sys.stdin:
+        operation = json.loads(line)
+        kind = operation['type']
+        if kind == 'synthesize':
+            text = operation['text']
+            if len(text) > 2048:
+                raise RuntimeError('text_too_large')
+            chunks = []
+            samples = 0
+            for chunk in voice.synthesize(text):
+                samples += len(chunk.audio_float_array)
+                if samples > voice.config.sample_rate * 60:
+                    raise RuntimeError('audio_too_large')
+                chunks.append(chunk.audio_float_array)
+            audio = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
+            if voice.config.sample_rate != rate:
+                audio = soxr.resample(audio, voice.config.sample_rate, rate)
+            pcm = (np.clip(audio, -1, 1) * 32767).astype('<i2').tobytes()
+            cached_text = text
+            emit('result', result={})
+        elif kind == 'play':
+            if not pcm or operation.get('text') != cached_text:
+                raise RuntimeError('missing_synthesis')
+            Pulse(sink['name'], rate).play(pcm, rate)
+            delivered = len(cached_text.encode('utf-16-le')) // 2
+            pcm, cached_text = b'', ''
+            emit('result', result={'completed': True, 'delivered_chars': delivered})
+        else:
+            pcm, cached_text = b'', ''
+            if operation.get('sound', True):
+                frequency = {'acknowledge': 880, 'close-conversation': 440, 'indicate-failure': 220}[kind]
+                t = np.arange(int(rate * .12)) / rate
+                tone = (.12 * np.sin(2 * math.pi * frequency * t) * np.sin(math.pi * t / .12)).astype(np.float32)
+                Pulse(sink['name'], rate).play((tone * 32767).astype('<i2').tobytes(), rate)
+            emit('result', result={'completed': True, 'delivered_chars': 0})
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception:
+        emit('error')
+        raise SystemExit(1) from None

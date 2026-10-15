@@ -6,3 +6,4 @@ __pycache__/
 .ruff_cache/
 *.pyc
 .scratch/**/review-*.md
+models/

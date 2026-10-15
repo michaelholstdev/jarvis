@@ -239,3 +239,13 @@ request a new bounded cleanup attempt. Expiry clears conversation data without
 forgetting the barrier. A lock/mute change supersedes recovery with the latest
 privacy snapshot and immediately clears context as usual. No cue, question or
 reply is replayed by a recovered handshake or cleanup acknowledgment.
+
+## Optional real output
+
+Audio readiness may advertise `mode: piper` and `tts: ready`. Core remains scripted
+and voice conversation unavailable. Audio operation results wait for real synthesis
+or successful PulseAudio drain; sound flags suppress the corresponding cue. Stop
+and privacy destroy the bounded resident worker. Content-free audio events mark
+first successful PCM write, drained completion, or cancellation. Partial canceled
+speech reports zero delivered characters conservatively; completed text counts
+UTF-16 units. See [runtime limits and verification](audio-output.md).

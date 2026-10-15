@@ -341,3 +341,9 @@ See [health, troubleshooting, restart and log commands](docs/recovery.md),
 [watchdog settings](docs/configuration.md) and the [socket contract](docs/protocol.md).
 Speech, inference and cues remain mocked; real model/device recovery needs
 separate adapter and hardware validation.
+
+## Real German output (ticket 08)
+
+Optional CPU Piper synthesis and PipeWire-compatible output are available for
+scripted answers. Follow [installation, device selection, replay and validation](docs/audio-output.md).
+The default remains hardware-free mock mode; microphone, STT and inference are still scripted.
