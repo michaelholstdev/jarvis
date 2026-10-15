@@ -290,3 +290,139 @@ test(
     }
   },
 );
+
+for (const [command, source] of [
+  ['demo', 'muted'],
+  ['activate', 'locked'],
+  ['stop', 'hardware_muted'],
+] as const) {
+  for (const failedHandshake of [false, true]) {
+    test(
+      `pending ${command} is canceled by ${source}; stale handshake failure=${failedHandshake}`,
+      { timeout: 10000 },
+      async () => {
+        const runtime = mkdtempSync(join(tmpdir(), 'jv-wait-'));
+        const env: NodeJS.ProcessEnv = {
+          ...process.env,
+          XDG_RUNTIME_DIR: runtime,
+          XDG_CONFIG_HOME: join(runtime, 'config'),
+        };
+        delete env.JARVIS_CONFIG;
+        const peers = new Set<Socket>();
+        let holdHandshake = false;
+        let releaseHandshake = () => {};
+        let notifyHandshake = () => {};
+        const recognized: string[] = [];
+        const audio = createServer((socket) => {
+          peers.add(socket);
+          socket.on('close', () => peers.delete(socket));
+          socket.on('error', () => {});
+          socket.on('data', (frame) => {
+            const message = parseMessage(frame);
+            if (message.type === 'hello') {
+              const respond = () =>
+                socket.end(
+                  encodeMessage({
+                    version: 1,
+                    type: 'ready',
+                    service: 'audio',
+                    mode: 'mock',
+                  }),
+                );
+              if (holdHandshake) {
+                holdHandshake = false;
+                releaseHandshake = failedHandshake
+                  ? () =>
+                      socket.end(
+                        encodeMessage({
+                          version: 1,
+                          type: 'error',
+                          code: 'invalid_message',
+                        }),
+                      )
+                  : respond;
+                notifyHandshake();
+              } else respond();
+              return;
+            }
+            assert.ok(message.type === 'audio-operation');
+            const op = message.operation;
+            if (op.type === 'recognize') recognized.push(op.text ?? '');
+            socket.end(
+              encodeMessage({
+                version: 1,
+                type: 'audio-result',
+                operation_id: op.operation_id,
+                ...(op.type === 'recognize' ? { text: op.text } : {}),
+                ...(['play', 'acknowledge'].includes(op.type)
+                  ? { completed: true, delivered_chars: op.text?.length ?? 0 }
+                  : {}),
+              }),
+            );
+          });
+        });
+        const core = spawn('node', ['dist/apps/core/main.js', 'start'], {
+          env,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        const limits = {
+          timeout_ms: 6000,
+          max_frame_bytes: 8192,
+          max_connections: 8,
+        };
+        const send = (message?: Message) =>
+          request(join(runtime, 'jarvis/core.sock'), 'cli', limits, message);
+        try {
+          await once(core.stdout, 'data');
+          audio.listen(join(runtime, 'jarvis/audio.sock'));
+          await once(audio, 'listening');
+          holdHandshake = true;
+          const waiting = new Promise<void>((resolve) => {
+            notifyHandshake = resolve;
+          });
+          const oldRequest = send(
+            command === 'demo'
+              ? { version: 1, type: 'demo', text: 'Pre-mute question' }
+              : { version: 1, type: command },
+          );
+          await waiting;
+          for (const active of [true, false]) {
+            const signal = await send({
+              version: 1,
+              type: 'inhibition-changed',
+              source,
+              active,
+            });
+            assert.ok(signal.type === 'ready' && signal.service === 'core');
+            assert.equal(signal.status.privacy_pending, false);
+          }
+          assert.deepEqual(recognized, []);
+          const fresh = await send({
+            version: 1,
+            type: 'demo',
+            text: 'Fresh question',
+          });
+          assert.ok(fresh.type === 'ready' && fresh.service === 'core');
+          assert.equal(fresh.status.state, 'follow-up');
+          releaseHandshake();
+          assert.deepEqual(await oldRequest, {
+            version: 1,
+            type: 'error',
+            code: 'unavailable',
+          });
+          const status = await send();
+          assert.ok(status.type === 'ready' && status.service === 'core');
+          assert.equal(status.status.state, 'follow-up');
+          assert.equal(status.status.ready, true);
+          assert.deepEqual(recognized, ['Fresh question']);
+        } finally {
+          core.kill('SIGTERM');
+          await once(core, 'exit');
+          for (const peer of peers) peer.destroy();
+          await new Promise<void>((resolve) => audio.close(() => resolve()));
+          rmSync(runtime, { recursive: true });
+        }
+      },
+    );
+  }
+}

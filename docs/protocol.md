@@ -163,3 +163,10 @@ Real adapters must enforce the barrier before acknowledgment, including rejectin
 late tasks from canceled work and preserving local hardware inhibition. The
 current sockets exercise simulated signals only; real KDE/PipeWire monitoring,
 startup state synchronization and acoustic stop/cleanup validation are ticket #12.
+
+
+Pending CLI activation, demo and stop requests are invalidated by any change to
+an inhibition, even if all flags clear before their audio handshake or cleanup
+wait completes. A privacy generation check prevents those requests from starting
+old work or stopping a fresh conversation. Readiness results from an earlier
+privacy generation cannot change current audio readiness or clear current work.

@@ -50,3 +50,23 @@ confirmed the fix with zero outstanding findings. Spec review found zero
 missing, incorrect or out-of-scope requirements. After schema consolidation,
 `npm run check` and all 50 privacy/transport regression tests pass.
 Real KDE/device verification remains explicitly unvalidated in ticket #12.
+
+
+### Follow-up review corrections
+
+Fixed the P2 pending-request race: requests awaiting audio readiness or cleanup
+now check the privacy generation before acting. Readiness replies and failures
+from a superseded generation cannot update availability or reset a fresh
+conversation. A daemon/socket regression first failed on the pre-mute demo and
+now verifies pending demo, activate and stop across software mute, lock and
+hardware mute, with both late successful and failed handshakes. A fresh
+conversation remains intact when the stale handshake completes.
+
+Resolved the P3 test setup concern with an explicit stage setup map and assertions
+of the intended state and operation before every inhibition case. Extension
+fixtures use a short configured allowance instead of repeating turns.
+
+
+Follow-up validation: `npm run check` and `npm test` pass (106 Node tests,
+3 Python tests). Independent standards and spec follow-ups confirm both findings
+resolved with zero outstanding findings; all 52 focused privacy tests pass.

@@ -78,7 +78,9 @@ async function main() {
     return;
   }
   const core = createCore({ now: () => performance.now() }, config);
+  let privacyGeneration = 0;
   const refresh = async () => {
+    const generation = privacyGeneration;
     try {
       const response = await request(
         join(directory, 'audio.sock'),
@@ -89,12 +91,14 @@ async function main() {
         throw new ProtocolError(
           response.type === 'error' ? response.code : 'invalid_message',
         );
+      if (generation !== privacyGeneration) return 'unavailable';
       core.dispatch({ type: 'audio-ready' });
       return undefined;
     } catch (error) {
       const diagnostic =
         error instanceof ProtocolError ? error.code : 'unavailable';
-      core.dispatch({ type: 'audio-lost', diagnostic });
+      if (generation === privacyGeneration)
+        core.dispatch({ type: 'audio-lost', diagnostic });
       return diagnostic;
     }
   };
@@ -167,6 +171,8 @@ async function main() {
           throw new ProtocolError('invalid_message');
         if (message.type === 'inhibition-changed') {
           // Apply privacy before any asynchronous readiness/cleanup request.
+          if (core.status().inhibitions[message.source] !== message.active)
+            privacyGeneration++;
           core.dispatch(message);
           if (core.status().privacy_pending) runningTurn = undefined;
           try {
@@ -181,10 +187,12 @@ async function main() {
           message.type === 'stop' ||
           message.type === 'demo'
         ) {
+          const generation = privacyGeneration;
           const diagnostic = await refresh();
           if (core.operations()[0]?.type === 'privacy')
             await synchronizePrivacy();
           if (
+            generation !== privacyGeneration ||
             core.status().privacy_pending ||
             Object.values(core.status().inhibitions).some(Boolean)
           )

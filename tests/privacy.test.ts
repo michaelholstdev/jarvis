@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { loadConfig } from '../apps/core/config.js';
 import { createCore } from '../apps/core/core.js';
+import type { HealthStatus, Operation } from '../packages/protocol/index.js';
 
 function pending(core: ReturnType<typeof createCore>) {
   const operation = core.operations()[0];
@@ -79,24 +81,31 @@ for (const first of ['locked', 'muted', 'hardware_muted'] as const) {
   }
 }
 
+const stages = {
+  idle: ['idle', undefined],
+  acknowledging: ['acknowledging', 'acknowledge'],
+  listening: ['listening', 'recognize'],
+  thinking: ['thinking', 'infer'],
+  synthesizing: ['synthesizing', 'synthesize'],
+  speaking: ['speaking', 'play'],
+  'follow-up': ['follow-up', 'recognize'],
+  'extension-synthesis': ['awaiting-extension', 'synthesize'],
+  'extension-playback': ['awaiting-extension', 'play'],
+  'extension-listening': ['awaiting-extension', 'recognize'],
+  cancelling: ['cancelling', 'cancel'],
+  closing: ['idle', 'close-conversation'],
+} as const satisfies Record<
+  string,
+  readonly [HealthStatus['state'], Operation['type'] | undefined]
+>;
+
 for (const source of ['locked', 'muted', 'hardware_muted'] as const) {
-  for (const stage of [
-    'idle',
-    'acknowledging',
-    'listening',
-    'thinking',
-    'synthesizing',
-    'speaking',
-    'follow-up',
-    'extension-synthesis',
-    'extension-playback',
-    'extension-listening',
-    'cancelling',
-    'closing',
-  ] as const) {
+  for (const stage of Object.keys(stages) as (keyof typeof stages)[]) {
     test(`${source} clears ${stage} and rejects stale work before and after release`, () => {
       let now = 0;
-      const core = createCore({ now: () => now });
+      const config = loadConfig();
+      config.session.max_duration_seconds = 30;
+      const core = createCore({ now: () => now }, config);
       core.dispatch({ type: 'audio-ready' });
       const current = () => pending(core);
       const play = (delivered_chars = 0) =>
@@ -123,53 +132,61 @@ for (const source of ['locked', 'muted', 'hardware_muted'] as const) {
           type: 'synthesized',
           operation_id: current().operation_id,
         });
-      if (stage !== 'idle') core.activate();
-      if (!['idle', 'acknowledging'].includes(stage)) play();
-      if (!['idle', 'acknowledging', 'listening'].includes(stage))
-        recognize('Private Frage');
-      if (!['idle', 'acknowledging', 'listening', 'thinking'].includes(stage))
-        infer();
-      if (
-        ![
-          'idle',
-          'acknowledging',
-          'listening',
-          'thinking',
-          'synthesizing',
-        ].includes(stage)
-      )
-        synthesize();
-      if (
-        [
-          'follow-up',
-          'extension-synthesis',
-          'extension-playback',
-          'extension-listening',
-          'closing',
-        ].includes(stage)
-      ) {
-        play(15);
-        assert.equal(core.reply()?.text, 'Private Antwort');
-      }
-      if (stage.startsWith('extension-')) {
-        // Keep the inactivity window open while reaching the allowance.
-        for (now = 19000; now < 300000; now += 19000) {
-          recognize('Weitere Frage');
+      const enter: Record<keyof typeof stages, () => void> = {
+        idle: () => {},
+        acknowledging: () => core.activate(),
+        listening: () => {
+          enter.acknowledging();
+          play();
+        },
+        thinking: () => {
+          enter.listening();
+          recognize('Private Frage');
+        },
+        synthesizing: () => {
+          enter.thinking();
+          infer();
+        },
+        speaking: () => {
+          enter.synthesizing();
+          synthesize();
+        },
+        'follow-up': () => {
+          enter.speaking();
+          play(15);
+        },
+        'extension-synthesis': () => {
+          enter.listening();
+          now = 29000;
+          recognize('Private Frage');
           infer();
           synthesize();
           play(15);
-        }
-        now = 300000;
-        core.dispatch({ type: 'tick' });
-        if (stage !== 'extension-synthesis') synthesize();
-        if (stage === 'extension-listening') {
+          now = 30000;
+          core.dispatch({ type: 'tick' });
+        },
+        'extension-playback': () => {
+          enter['extension-synthesis']();
+          synthesize();
+        },
+        'extension-listening': () => {
+          enter['extension-playback']();
           const prompt = current().text;
           assert.ok(prompt);
           play(prompt.length);
-        }
-      }
-      if (stage === 'cancelling') core.stop();
-      if (stage === 'closing') recognize('Gespräch beenden');
+        },
+        cancelling: () => {
+          enter.speaking();
+          core.stop();
+        },
+        closing: () => {
+          enter['follow-up']();
+          recognize('Gespräch beenden');
+        },
+      };
+      enter[stage]();
+      assert.equal(core.status().state, stages[stage][0]);
+      assert.equal(core.operations()[0]?.type, stages[stage][1]);
       const stale = core.operations()[0];
       core.dispatch({ type: 'inhibition-changed', source, active: true });
       assert.equal(core.status().state, 'idle');
