@@ -56,3 +56,19 @@ role and validation flag for every future model record. Record each downloaded
 artifact separately. No download/install code exists, no unverified models are
 bundled, and entries alone never enable a model. Later model installation must
 verify checksums, licensing and provenance before enabling any speech engine.
+
+Failure recovery uses `recovery.probe_interval_ms` (2000 ms, range 500–30000)
+for audio health probes; probes in the same privacy/audio generation share one
+request. A new privacy generation can issue a fresh probe without waiting for an
+obsolete one. Old replies cannot change current readiness. Each request still
+has the transport deadline. `recovery.playback_timeout_ms` (120000 ms, range
+1000–300000) bounds playback independently of conversation expiry. Recognition
+uses the utterance/completion limits; inference, synthesis, acknowledgment,
+cancellation and the failure cue use `transport.timeout_ms`.
+
+A stalled inference/synthesis/playback requests cancellation and, after its
+acknowledgment, one failure cue. Stalled cancellation or cue degrades audio
+health instead of retrying cleanup forever. Audio loss preserves completed
+context and the unsuccessful question in memory only until follow-up expiry;
+repeated failed probes do not extend that deadline. Lock/mute and conversation
+closure still clear everything. Real model/device watchdogs are unvalidated.

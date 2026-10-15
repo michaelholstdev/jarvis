@@ -332,7 +332,13 @@ test(
       }
       assert.deepEqual(
         await request(join(runtime, 'jarvis/audio.sock'), 'core', limits),
-        { version: 1, type: 'ready', service: 'audio', mode: 'mock' },
+        {
+          version: 1,
+          type: 'ready',
+          service: 'audio',
+          mode: 'mock',
+          capabilities: { wake: 'unavailable', stt: 'mock', tts: 'mock' },
+        },
       );
       const playback = await request(
         join(runtime, 'jarvis/audio.sock'),
@@ -354,7 +360,7 @@ test(
       const largePlayback = await request(
         join(runtime, 'jarvis/audio.sock'),
         'core',
-        limits,
+        { ...limits, max_frame_bytes: 65536 },
         {
           version: 1,
           type: 'audio-operation',

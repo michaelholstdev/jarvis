@@ -6,10 +6,56 @@
 
 **Status:** ready-for-agent
 
-- [ ] Unavailable wake detection reports manual activation available; unavailable STT/TTS reports voice conversation unavailable, and Ollama failure reports the unavailable inference capability.
-- [ ] An active-turn failure gives one brief indication where possible and retains context while the conversation remains open; idle failures do not produce repeated audible announcements.
-- [ ] Standalone “Noch einmal” retries the available unsuccessful question, or a new question starts new work; service recovery alone never replays a question.
-- [ ] Real local-socket disconnect/reconnect, process failure, operation timeout, and stalled-audio watchdog cases recover or expose degraded health without busy loops or stale reply delivery.
-- [ ] Backpressure and queue limits prevent unbounded pending control/audio work; failure diagnostics and bounded logs contain no user content.
-- [ ] Public-boundary and socket-contract checks prove explicit retry, unavailable capabilities, bounded recovery, queue limits, and immunity to canceled results.
-- [ ] Document capability states, troubleshooting, watchdog/restart settings, service-recovery commands, and exact health/log-inspection steps.
+- [x] Unavailable wake detection reports manual activation available; unavailable STT/TTS reports voice conversation unavailable, and Ollama failure reports the unavailable inference capability.
+- [x] An active-turn failure gives one brief indication where possible and retains context while the conversation remains open; idle failures do not produce repeated audible announcements.
+- [x] Standalone “Noch einmal” retries the available unsuccessful question, or a new question starts new work; service recovery alone never replays a question.
+- [x] Real local-socket disconnect/reconnect, process failure, operation timeout, and stalled-audio watchdog cases recover or expose degraded health without busy loops or stale reply delivery.
+- [x] Backpressure and queue limits prevent unbounded pending control/audio work; failure diagnostics and bounded logs contain no user content.
+- [x] Public-boundary and socket-contract checks prove explicit retry, unavailable capabilities, bounded recovery, queue limits, and immunity to canceled results.
+- [x] Document capability states, troubleshooting, watchdog/restart settings, service-recovery commands, and exact health/log-inspection steps.
+
+
+## Comments
+
+Implemented on the current branch against baseline `9531e83`. Tests use the
+already agreed public conversation-core and real socket contract seams.
+
+## Answer
+
+Implemented explicit unsuccessful-question retry, one simulated failure cue
+following confirmed cancellation, capability-specific health, and bounded
+background audio recovery. Failed socket exchanges retain completed context and
+the unsuccessful question only while the conversation remains open. Recovery
+cannot replay a question; only standalone “Noch einmal” or a new question starts
+work. Watchdogs cancel stalled inference/synthesis/playback; failed cancellation
+or cue degrades audio without a retry loop. Late results and stale readiness
+probes cannot affect current work or cross privacy generations.
+
+Outbound frame bounds, existing connection/time bounds, coalesced probes and
+privacy workers limit pending work. Routine diagnostics drop excess output
+beyond 100 lines per 30 seconds and never buffer user content. Added recovery,
+capability, watchdog, log collection and restart documentation in
+`docs/recovery.md`, the protocol, configuration reference and README.
+
+Voice, inference and cues remain simulated. Real Ollama/STT/TTS, device
+hotplug/suspend, acoustic cues and installed systemd user units remain their
+later adapter/hardware tickets; no real capability or measurement is claimed.
+
+Map pointer: [implementation map](../map.md).
+
+Validation: `npm run check` passed (TypeScript, Biome, Ruff, mypy);
+`npm test` passed (117 Node tests, 3 Python tests). Focused socket contracts also
+passed after adding explicit Python mock-capability advertisement. Tests cover
+explicit retry, new questions, zero/partial playback failure, cancellation,
+stale successes/failures, service disconnect/reconnect and timeout, privacy
+races, connection/frame capacity and bounded diagnostic flooding. The older
+expiry-watchdog assertion now expects cancellation followed by degraded audio
+on missing acknowledgment, matching this ticket's failure behavior.
+
+Review corrections: unsolicited incomplete playback retains its unsuccessful
+question and emits one cue; explicit privacy/closure errors fail the exchange
+immediately instead of retrying the same cleanup operation. Both have regression
+coverage. Spec review verified the correction and reports no remaining findings.
+Standards review also reports no remaining actionable findings after the cleanup
+error correction. Both review axes used the code-review skill against baseline
+`9531e83`; implementation validation was run by the primary agent.

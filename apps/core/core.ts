@@ -1,4 +1,6 @@
 import type {
+  Capabilities,
+  Capability,
   ConversationExchange,
   Diagnostic,
   HealthStatus,
@@ -12,7 +14,14 @@ import { type Config, loadConfig } from './config.js';
 export type ServiceEvent =
   | { type: 'inhibition-changed'; source: InhibitionSource; active: boolean }
   | { type: 'privacy-applied'; operation_id: string }
-  | { type: 'audio-ready' }
+  | { type: 'audio-ready'; capabilities?: Partial<Capabilities> }
+  | { type: 'capabilities-changed'; capabilities: Partial<Capabilities> }
+  | {
+      type: 'operation-failed';
+      operation_id: string;
+      code: Diagnostic;
+      capability: Capability | 'audio';
+    }
   | { type: 'audio-lost'; diagnostic?: Diagnostic }
   | {
       type: 'recognized' | 'inferred' | 'control-recognized';
@@ -30,6 +39,15 @@ export function createCore(
   config: Config = loadConfig(),
 ) {
   let ready = false;
+  const capabilities: Capabilities = {
+    wake: 'unavailable',
+    stt: 'mock',
+    tts: 'mock',
+    inference: 'mock',
+  };
+  let lastFailure: HealthStatus['last_failure'] = null;
+  let retryQuestion = '';
+  let failureCancellation = false;
   const inhibitions = { locked: false, muted: false, hardware_muted: false };
   let privacyPending = false;
   const inhibited = () => Object.values(inhibitions).some(Boolean);
@@ -76,11 +94,13 @@ export function createCore(
         : next === 'listening'
           ? config.vad.max_utterance_seconds * 1000
           : next === 'speaking' || type === 'play'
-            ? 120000
+            ? config.recovery.playback_timeout_ms
             : config.transport.timeout_ms);
   };
   const reset = () => {
     cancellation = null;
+    failureCancellation = false;
+    retryQuestion = '';
     answer = '';
     question = '';
     context = [];
@@ -164,6 +184,21 @@ export function createCore(
     transition('cancelling', 'cancel');
     if (operation) operation.target_operation_id = previous.operation_id;
   };
+  const indicateFailure = () =>
+    transition('indicating-failure', 'indicate-failure');
+  const fail = (code: Diagnostic, capability: Capability | 'audio') => {
+    lastFailure = { code, capability };
+    if (capability !== 'audio') capabilities[capability] = 'unavailable';
+    if (question) retryQuestion = question;
+    if (state === 'awaiting-extension') {
+      close();
+      return;
+    }
+    if (operation && operation.type !== 'cancel') {
+      cancel(false);
+      failureCancellation = true;
+    } else finishTurn();
+  };
   const synchronizePrivacy = () => {
     reset();
     privacyPending = true;
@@ -201,10 +236,25 @@ export function createCore(
         }
         return;
       }
+      if (event.type === 'capabilities-changed') {
+        Object.assign(capabilities, event.capabilities);
+        return;
+      }
       if (event.type === 'audio-ready') {
+        Object.assign(capabilities, event.capabilities);
         if (!ready) readinessChangedAt = clock.now();
         ready = true;
         diagnostic = null;
+        if (
+          state === 'follow-up' &&
+          !operation &&
+          followUpDeadline !== null &&
+          clock.now() < followUpDeadline
+        ) {
+          const remaining = followUpDeadline;
+          transition('follow-up', 'recognize');
+          deadline = remaining;
+        }
         if (privacyPending && operation?.type !== 'privacy')
           synchronizePrivacy();
         return;
@@ -214,7 +264,23 @@ export function createCore(
         ready = false;
         diagnostic = event.diagnostic ?? 'unavailable';
         privacyPending ||= inhibited();
-        reset();
+        if (
+          conversationDeadline !== null &&
+          !privacyPending &&
+          !inhibited() &&
+          state !== 'awaiting-extension'
+        ) {
+          if (question) retryQuestion = question;
+          lastFailure = { code: diagnostic, capability: 'audio' };
+          answer = '';
+          question = '';
+          cancellation = null;
+          failureCancellation = false;
+          if (state !== 'follow-up') {
+            transition('follow-up');
+            followUpDeadline = deadline;
+          } else operation = undefined;
+        } else reset();
         return;
       }
       if (privacyPending) {
@@ -243,6 +309,13 @@ export function createCore(
         event.operation_id !== operation?.operation_id
       )
         return;
+      if (event.type === 'operation-failed') {
+        if (state === 'indicating-failure' || state === 'cancelling') {
+          // Failed cleanup cannot authorize further audio work.
+          this.dispatch({ type: 'audio-lost', diagnostic: event.code });
+        } else if (state !== 'idle') fail(event.code, event.capability);
+        return;
+      }
       // A current explicit end command wins over simultaneous timer expiry.
       if (
         event.type === 'recognized' &&
@@ -259,7 +332,18 @@ export function createCore(
       )
         promptForExtension();
       if ((state !== 'idle' || operation) && clock.now() >= deadline) {
-        if (followUpDeadline !== null || state === 'awaiting-extension')
+        if (state === 'cancelling' || state === 'indicating-failure') {
+          this.dispatch({ type: 'audio-lost', diagnostic: 'timeout' });
+        } else if (['thinking', 'synthesizing', 'speaking'].includes(state)) {
+          fail(
+            'timeout',
+            operation?.type === 'infer'
+              ? 'inference'
+              : operation?.type === 'synthesize'
+                ? 'tts'
+                : 'audio',
+          );
+        } else if (followUpDeadline !== null || state === 'awaiting-extension')
           close();
         else reset();
       }
@@ -306,6 +390,13 @@ export function createCore(
         if (normalizePhrase(event.text) === 'stopp') cancel(false);
       } else if (
         event.type === 'playback-completed' &&
+        state === 'indicating-failure'
+      ) {
+        answer = '';
+        question = '';
+        finishTurn();
+      } else if (
+        event.type === 'playback-completed' &&
         state === 'cancelling' &&
         cancellation
       ) {
@@ -321,7 +412,10 @@ export function createCore(
         answer = '';
         question = '';
         cancellation = null;
-        if (pending.replacement && !expired()) listen();
+        if (failureCancellation) {
+          failureCancellation = false;
+          indicateFailure();
+        } else if (pending.replacement && !expired()) listen();
         else finishTurn();
       } else if (event.type === 'speech-started' && state === 'follow-up') {
         transition('listening', 'recognize');
@@ -349,30 +443,51 @@ export function createCore(
         (state === 'listening' || state === 'follow-up')
       ) {
         if (bounded(event.text)) {
-          question = event.text.trim();
+          if (normalizePhrase(event.text) === 'noch einmal') {
+            if (!retryQuestion) {
+              resumeFollowUp();
+              return;
+            }
+            question = retryQuestion;
+          } else {
+            question = event.text.trim();
+            retryQuestion = '';
+          }
+          followUpDeadline = null;
           transition('thinking', 'infer', question);
+          if (capabilities.inference === 'unavailable')
+            fail('unavailable', 'inference');
         } else if (followUpDeadline !== null) resumeFollowUp();
         else reset();
       } else if (event.type === 'inferred' && state === 'thinking') {
         if (!bounded(event.text)) {
-          reset();
+          fail('invalid_message', 'inference');
           return;
         }
+        retryQuestion = '';
         answer = event.text;
         transition('synthesizing', 'synthesize', answer);
       } else if (event.type === 'synthesized' && state === 'synthesizing') {
         transition('speaking', 'play', answer);
       } else if (event.type === 'playback-completed' && state === 'speaking') {
+        const unsuccessful = question;
         if (!retainDelivery(event)) {
           reset();
           return;
         }
-        finishTurn();
+        if (!event.completed) {
+          retryQuestion = unsuccessful;
+          lastFailure = { code: 'unavailable', capability: 'audio' };
+          indicateFailure();
+        } else finishTurn();
       }
     },
     status(): HealthStatus {
       return {
         ready,
+        capabilities: { ...capabilities },
+        retry_available: !!retryQuestion,
+        last_failure: lastFailure ? { ...lastFailure } : null,
         inhibitions: { ...inhibitions },
         privacy_pending: privacyPending,
         mode: 'mock',

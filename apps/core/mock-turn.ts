@@ -3,6 +3,7 @@ import type { Message } from '../../packages/protocol/index.js';
 import { ProtocolError } from '../../packages/protocol/index.js';
 import type { Config } from './config.js';
 import type { createCore } from './core.js';
+import { diagnostic as logDiagnostic } from './diagnostics.js';
 import { request } from './transport.js';
 
 /** Runs mock service operations until listening needs a scripted utterance. */
@@ -20,14 +21,33 @@ export async function runMockTurn(
       (operation.type === 'recognize' && utterance === undefined)
     )
       return;
-    console.log(
-      JSON.stringify({
-        event: 'operation_started',
-        operation: operation.type,
+    logDiagnostic({
+      event: 'operation_started',
+      operation: operation.type,
+      operation_id: operation.operation_id,
+      state: core.status().state,
+    });
+    const capability =
+      operation.type === 'infer'
+        ? 'inference'
+        : operation.type === 'recognize'
+          ? 'stt'
+          : operation.type === 'synthesize'
+            ? 'tts'
+            : undefined;
+    if (
+      capability &&
+      core.status().capabilities[capability] === 'unavailable'
+    ) {
+      if (operation.type === 'recognize') utterance = undefined;
+      core.dispatch({
+        type: 'operation-failed',
         operation_id: operation.operation_id,
-        state: core.status().state,
-      }),
-    );
+        code: 'unavailable',
+        capability,
+      });
+      continue;
+    }
     if (operation.type === 'recognize' && utterance !== undefined) {
       core.dispatch({
         type: 'speech-started',
@@ -62,13 +82,36 @@ export async function runMockTurn(
       throw error;
     }
     if (core.operations()[0]?.operation_id !== operation.operation_id) return;
+    if (response.type === 'error') {
+      if (
+        operation.type === 'privacy' ||
+        operation.type === 'close-conversation'
+      )
+        throw new ProtocolError(response.code);
+      if (operation.type === 'recognize') utterance = undefined;
+      logDiagnostic({
+        event: 'operation_failed',
+        operation: operation.type,
+        code: response.code,
+      });
+      core.dispatch({
+        type: 'operation-failed',
+        operation_id: operation.operation_id,
+        code: response.code,
+        capability:
+          operation.type === 'synthesize'
+            ? 'tts'
+            : operation.type === 'recognize'
+              ? 'stt'
+              : 'audio',
+      });
+      continue;
+    }
     if (
       response.type !== 'audio-result' ||
       response.operation_id !== operation.operation_id
     )
-      throw new ProtocolError(
-        response.type === 'error' ? response.code : 'invalid_message',
-      );
+      throw new ProtocolError('invalid_message');
     switch (operation.type) {
       case 'privacy':
         core.dispatch({
@@ -92,6 +135,7 @@ export async function runMockTurn(
           operation_id: response.operation_id,
         });
         break;
+      case 'indicate-failure':
       case 'cancel':
       case 'close-conversation':
       case 'acknowledge':
@@ -107,16 +151,14 @@ export async function runMockTurn(
           completed: response.completed,
           delivered_chars: response.delivered_chars,
         });
-        console.log(
-          JSON.stringify({
-            event: 'playback_completed',
-            operation_id: response.operation_id,
-            completed: response.completed,
-            delivered_chars: response.delivered_chars,
-            elapsed_ms: Math.max(0, performance.now() - startedAt),
-            state: core.status().state,
-          }),
-        );
+        logDiagnostic({
+          event: 'playback_completed',
+          operation_id: response.operation_id,
+          completed: response.completed,
+          delivered_chars: response.delivered_chars,
+          elapsed_ms: Math.max(0, performance.now() - startedAt),
+          state: core.status().state,
+        });
         break;
     }
   }

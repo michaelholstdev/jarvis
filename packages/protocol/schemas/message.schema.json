@@ -33,6 +33,9 @@
         },
         "mode": {
           "const": "mock"
+        },
+        "capabilities": {
+          "$ref": "#/definitions/capabilities"
         }
       }
     },
@@ -64,7 +67,10 @@
             "audio_diagnostic",
             "state_since_ms",
             "inhibitions",
-            "privacy_pending"
+            "privacy_pending",
+            "capabilities",
+            "retry_available",
+            "last_failure"
           ],
           "properties": {
             "ready": {
@@ -83,7 +89,8 @@
                 "speaking",
                 "follow-up",
                 "awaiting-extension",
-                "cancelling"
+                "cancelling",
+                "indicating-failure"
               ]
             },
             "manual_activation": {
@@ -119,6 +126,55 @@
             },
             "privacy_pending": {
               "type": "boolean"
+            },
+            "capabilities": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "wake": {
+                  "enum": ["mock", "unavailable"]
+                },
+                "stt": {
+                  "enum": ["mock", "unavailable"]
+                },
+                "tts": {
+                  "enum": ["mock", "unavailable"]
+                },
+                "inference": {
+                  "enum": ["mock", "unavailable"]
+                }
+              },
+              "required": ["wake", "stt", "tts", "inference"]
+            },
+            "retry_available": {
+              "type": "boolean"
+            },
+            "last_failure": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["code", "capability"],
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_message",
+                        "incompatible_version",
+                        "frame_too_large",
+                        "timeout",
+                        "unavailable",
+                        "busy"
+                      ]
+                    },
+                    "capability": {
+                      "enum": ["audio", "wake", "stt", "tts", "inference"]
+                    }
+                  }
+                }
+              ]
             }
           }
         }
@@ -201,7 +257,8 @@
                 "play",
                 "close-conversation",
                 "cancel",
-                "privacy"
+                "privacy",
+                "indicate-failure"
               ]
             },
             "operation_id": {
@@ -318,6 +375,24 @@
         },
         "hardware_muted": {
           "type": "boolean"
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "wake": {
+          "enum": ["mock", "unavailable"]
+        },
+        "stt": {
+          "enum": ["mock", "unavailable"]
+        },
+        "tts": {
+          "enum": ["mock", "unavailable"]
+        },
+        "inference": {
+          "enum": ["mock", "unavailable"]
         }
       }
     }

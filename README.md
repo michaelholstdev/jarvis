@@ -161,7 +161,7 @@ Set `interaction.activation_sound:false` in the shared YAML to skip the
 acknowledgment. `vad.max_utterance_seconds` bounds initial listening (30 s default);
 `transport.timeout_ms` bounds acknowledgment, inference, and synthesis (1000 ms
 default). Playback has a separate 120-second watchdog, so long answers do not
-consume the follow-up window. A stalled turn closes without replay. Only one turn and one operation are active; manual activation during thinking,
+consume the follow-up window. A stalled inference/synthesis/playback requests cancellation and one failure cue where possible; failed cancellation degrades health without replay. Only one turn and one operation are active; manual activation during thinking,
 synthesis or speaking cancels that operation for a replacement question (see #04 below).
 
 ## Contextual follow-ups and ending (#03)
@@ -205,7 +205,7 @@ Each transcript/answer is limited to the smaller of 4096 UTF-8 bytes and
 combined question/reply bytes fit that budget. This is a conservative mock
 byte budget, not a model tokenizer. Transport frame/connection bounds still
 apply. Replies stay available at the public core boundary during the session
-and clear on closure, activation from idle or service loss. Conversation content
+and clear on closure, activation from idle; service loss retains context only within the open conversation. Conversation content
 is kept only in memory, with no transcript, prompt or answer logs.
 
 ## Manual replacement and stop playback (#04)
@@ -236,7 +236,7 @@ inference context. Zero delivery excludes the unanswered question entirely.
 Generation and synthesis alone never count as delivery. Reports count UTF-16
 code units and must stop at a Unicode character boundary. Canceled operation
 results cannot deliver speech, change context, or advance the replacement turn.
-Cancellation has the transport watchdog; a missing final report resets the turn.
+Cancellation has the transport watchdog; a missing final report degrades audio and preserves context only within the bounded open conversation.
 
 The Python mock completes playback immediately and retains its latest delivery
 count for a matching cancellation. Delayed/partial/no-delivery scenarios are
@@ -325,3 +325,18 @@ no audible output. Tests verify cancellation and cleanup requests, independent
 precedence, audio gating and stale-result rejection. Real KDE lock notifications,
 PipeWire/device hardware-mute monitoring, physical buffer erasure and stop latency
 remain unvalidated and belong to desktop/audio integration (ticket #12).
+
+
+## Failure, retry and capability recovery (#07)
+
+Health now reports separate mock/unavailable capabilities, the last content-free
+failure and whether an unsuccessful question is available. Standalone
+`demo 'Noch einmal'` retries it while the conversation remains open. A new
+question replaces it; recovery alone never replays it. Audio reconnect is probed
+automatically with bounded requests, and stalled work requires cancellation
+before one simulated failure cue. Idle failures stay silent.
+
+See [health, troubleshooting, restart and log commands](docs/recovery.md),
+[watchdog settings](docs/configuration.md) and the [socket contract](docs/protocol.md).
+Speech, inference and cues remain mocked; real model/device recovery needs
+separate adapter and hardware validation.

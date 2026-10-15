@@ -58,5 +58,9 @@
     "timeout_ms": 1000,
     "max_frame_bytes": 8192,
     "max_connections": 8
+  },
+  "recovery": {
+    "probe_interval_ms": 2000,
+    "playback_timeout_ms": 120000
   }
 }

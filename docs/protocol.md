@@ -25,11 +25,11 @@ CLI → core:
 
 ```json
 {"version":1,"type":"hello","role":"cli"}
-{"version":1,"type":"ready","service":"core","status":{"ready":true,"mode":"mock","state":"idle","manual_activation":"mock","voice_conversation":"unavailable","audio":"ready","audio_diagnostic":null,"since_ms":0,"state_since_ms":0}}
+{"version":1,"type":"ready","service":"core","status":{"ready":true,"mode":"mock","state":"idle","manual_activation":"mock","voice_conversation":"unavailable","audio":"ready","audio_diagnostic":null,"since_ms":0,"state_since_ms":0,"inhibitions":{"locked":false,"muted":false,"hardware_muted":false},"privacy_pending":false,"capabilities":{"wake":"unavailable","stt":"mock","tts":"mock","inference":"mock"},"retry_available":false,"last_failure":null}}
 ```
 
 Core refreshes audio through a real handshake at startup and on each health
-request. It accepts only the audio readiness response, rather than trusting a
+request and through periodic bounded probes. It accepts only the audio readiness response, rather than trusting a
 running PID or arbitrary JSON. `since_ms` is elapsed monotonic time since the
 latest readiness transition. `state_since_ms` independently measures elapsed
 time since the latest conversation-state entry or reset, and supplies watchdog
@@ -109,7 +109,7 @@ The core enters `cancelling` until this response, then acknowledges replacement
 or opens follow-up for stop. No generation/synthesis text is inferred as heard.
 Counts splitting a UTF-16 surrogate pair are rejected. Zero delivery omits the
 question from history. A missing/invalid delivery report cannot start listening;
-the watchdog resets the turn. The Python mock retains only its latest playback
+an invalid report resets the turn, while a missing report degrades audio at the watchdog deadline. The Python mock retains only its latest playback
 ID/count to report already-completed delivery during cancellation; no audio is
 captured, buffered or played.
 
@@ -170,3 +170,53 @@ an inhibition, even if all flags clear before their audio handshake or cleanup
 wait completes. A privacy generation check prevents those requests from starting
 old work or stopping a fresh conversation. Readiness results from an earlier
 privacy generation cannot change current audio readiness or clear current work.
+
+## Failure and capability recovery (#07)
+
+Audio readiness may include `capabilities`, an object with any of `wake`, `stt`,
+`tts`, `inference`, each `mock` or `unavailable`. Omitted fields retain the last
+advertised value. The Python mock supports scripted STT/TTS and the core has
+scripted inference; wake defaults to unavailable. There is no `ready` real-model
+capability in this mock protocol. `voice_conversation` remains `unavailable`.
+Core health additionally requires `capabilities`, `retry_available`, and
+`last_failure` (null or `{code,capability}` with allowlisted values, including
+`audio`). `ready` describes the audio handshake; inspect capabilities separately.
+The most recent failure remains visible after recovery without storing content.
+
+Core probes audio at startup, on CLI health/control requests, and periodically
+according to `recovery.probe_interval_ms`. Same-generation probes coalesce;
+privacy changes invalidate obsolete probes without blocking fresh commands.
+Readiness restoration neither replays a question nor emits a failure cue.
+Audio loss during an open conversation invalidates the operation but retains
+completed context and an available unsuccessful question until the existing
+follow-up deadline. If loss interrupts work, a single follow-up window starts;
+subsequent loss/recovery cannot renew it. At idle, failures stay silent.
+
+At the public core boundary `operation-failed` carries the current operation ID,
+a diagnostic `code`, and affected `capability`. Stale failures are ignored just
+like stale successes. A current failure requests `cancel`; after confirmation
+it requests `indicate-failure` in state `indicating-failure`. This operation
+requests a brief nonverbal failure cue independent of STT/TTS, with no user text.
+Audio responds with the same zero-character completion shape as acknowledgment.
+The mock simulates it without sound. Cancellation must still confirm final
+playback delivery. Only confirmed delivery enters context. A failed/timed-out
+cancellation or cue degrades audio rather than looping. Transport loss can make
+a cue impossible; CLI health is then the indication.
+
+Standalone `Noch einmal` uses the retained unsuccessful question and existing
+completed context. Without one it never invokes inference. Quoted/embedded words
+remain questions. A new question discards the retry candidate; success, closure,
+lock and mute clear it. Recovery alone requests no inference or synthesis.
+Capability changes can also enter through public `capabilities-changed` events;
+a future Ollama adapter must report inference failure/recovery through this
+boundary. No real Ollama process is contacted by this ticket.
+
+One active operation and no control/audio application queue are retained. Core
+and audio cap concurrent connections, frame bytes and exchange time. Outbound
+requests are byte-checked before connecting and written as one bounded frame;
+Python awaits `drain()` with a deadline. Privacy updates share one worker and
+coalesce into the latest snapshot instead of accumulating promises. Core
+routine diagnostics discard messages beyond 100 per 30-second monotonic window
+without buffering; readiness logs report transitions rather than every failed
+probe. Deliberate CLI status/config output is separate. Jarvis writes no log
+files. Collector disk retention must be bounded independently (see recovery guide).

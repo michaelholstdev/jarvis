@@ -160,7 +160,8 @@ async def serve() -> None:
                     message = parse_message(frame)
                     response: dict[str, Any]
                     if message["type"] == "hello" and message["role"] == "core":
-                        response = {"version": 1, "type": "ready", "service": "audio", "mode": "mock"}
+                        response = {"version": 1, "type": "ready", "service": "audio", "mode": "mock",
+                                    "capabilities": {"wake": "unavailable", "stt": "mock", "tts": "mock"}}
                     elif message["type"] == "audio-operation":
                         operation = message["operation"]
                         kind = operation["type"]
@@ -182,7 +183,7 @@ async def serve() -> None:
                             if "text" not in operation:
                                 raise Diagnostic("invalid_message")
                             response["text"] = operation["text"]
-                        elif kind in {"acknowledge", "play", "close-conversation"}:
+                        elif kind in {"acknowledge", "play", "close-conversation", "indicate-failure"}:
                             if kind == "play" and "text" not in operation:
                                 raise Diagnostic("invalid_message")
                             response.update(completed=True, delivered_chars=len(operation.get("text", "").encode("utf-16-le")) // 2)

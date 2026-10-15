@@ -14,7 +14,12 @@ export type Inhibitions = {
   hardware_muted: boolean;
 };
 export type InhibitionSource = keyof Inhibitions;
+export type Capability = 'wake' | 'stt' | 'tts' | 'inference';
+export type Capabilities = Record<Capability, 'mock' | 'unavailable'>;
 export type HealthStatus = {
+  capabilities: Capabilities;
+  retry_available: boolean;
+  last_failure: { code: Diagnostic; capability: Capability | 'audio' } | null;
   inhibitions: Inhibitions;
   privacy_pending: boolean;
   ready: boolean;
@@ -28,7 +33,8 @@ export type HealthStatus = {
     | 'speaking'
     | 'follow-up'
     | 'awaiting-extension'
-    | 'cancelling';
+    | 'cancelling'
+    | 'indicating-failure';
   manual_activation: 'unavailable' | 'mock';
   voice_conversation: 'unavailable';
   audio: 'ready' | 'unavailable';
@@ -40,6 +46,7 @@ export type ConversationExchange = { question: string; reply: string };
 export type Operation = {
   type:
     | 'privacy'
+    | 'indicate-failure'
     | 'cancel'
     | 'acknowledge'
     | 'recognize'
@@ -80,7 +87,13 @@ export type Message =
       delivered_chars?: number;
     }
   | { version: 1; type: 'hello'; role: 'core' | 'cli' }
-  | { version: 1; type: 'ready'; service: 'audio'; mode: 'mock' }
+  | {
+      version: 1;
+      type: 'ready';
+      service: 'audio';
+      mode: 'mock';
+      capabilities?: Partial<Capabilities>;
+    }
   | {
       version: 1;
       type: 'ready';

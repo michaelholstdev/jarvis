@@ -347,12 +347,18 @@ test('stalled-operation watchdog can interrupt work; late results cannot restart
   assert.equal(c.core.status().state, 'thinking');
   c.at(30900);
   c.tick();
-  assert.equal(c.core.status().state, 'idle');
+  assert.equal(c.core.status().state, 'cancelling');
+  const cancellation = c.operation('cancel');
+  assert.equal(cancellation.target_operation_id, pending.operation_id);
   c.core.dispatch({
     type: 'inferred',
     operation_id: pending.operation_id,
     text: 'Späte Antwort',
   });
+  assert.deepEqual(c.core.operations(), [cancellation]);
+  c.at(31900);
+  c.tick();
+  assert.equal(c.core.status().audio, 'unavailable');
   assert.deepEqual(c.core.operations(), []);
 });
 

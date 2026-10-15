@@ -54,10 +54,13 @@ export async function request(
   limits: Config['transport'],
   message: Message = { version: 1, type: 'hello', role },
 ): Promise<Message> {
+  const frame = encodeMessage(message);
+  if (Buffer.byteLength(frame) > limits.max_frame_bytes)
+    throw new ProtocolError('frame_too_large');
   const socket = createConnection(path);
   const response = receive(socket, limits);
   socket.on('error', () => {});
-  socket.on('connect', () => socket.write(encodeMessage(message)));
+  socket.on('connect', () => socket.write(frame));
   try {
     return await response;
   } finally {

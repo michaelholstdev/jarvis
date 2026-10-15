@@ -303,6 +303,25 @@
           "default": 8
         }
       }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "probe_interval_ms": {
+          "type": "integer",
+          "minimum": 500,
+          "maximum": 30000,
+          "default": 2000
+        },
+        "playback_timeout_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 300000,
+          "default": 120000
+        }
+      }
     }
   },
   "$schema": "http://json-schema.org/draft-07/schema#"

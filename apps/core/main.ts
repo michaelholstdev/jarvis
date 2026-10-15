@@ -10,6 +10,7 @@ import {
 } from '../../packages/protocol/index.js';
 import { configPath, loadConfig } from './config.js';
 import { createCore } from './core.js';
+import { diagnostic as logDiagnostic } from './diagnostics.js';
 import { runMockTurn } from './mock-turn.js';
 import { runtimeDirectory } from './runtime.js';
 import { receive, request } from './transport.js';
@@ -79,7 +80,17 @@ async function main() {
   }
   const core = createCore({ now: () => performance.now() }, config);
   let privacyGeneration = 0;
-  const refresh = async () => {
+  let audioGeneration = 0;
+  const loseAudio = (diagnostic: Diagnostic = 'unavailable') => {
+    audioGeneration++;
+    core.dispatch({ type: 'audio-lost', diagnostic });
+  };
+  let refreshPending:
+    | { generation: string; promise: Promise<Diagnostic | undefined> }
+    | undefined;
+  const probe = async (): Promise<Diagnostic | undefined> => {
+    const wasReady = core.status().ready;
+    const audioEpoch = audioGeneration;
     const generation = privacyGeneration;
     try {
       const response = await request(
@@ -91,16 +102,39 @@ async function main() {
         throw new ProtocolError(
           response.type === 'error' ? response.code : 'invalid_message',
         );
-      if (generation !== privacyGeneration) return 'unavailable';
-      core.dispatch({ type: 'audio-ready' });
+      if (generation !== privacyGeneration || audioEpoch !== audioGeneration)
+        return 'unavailable';
+      core.dispatch({
+        type: 'audio-ready',
+        ...(response.capabilities
+          ? { capabilities: response.capabilities }
+          : {}),
+      });
+      if (!wasReady) logDiagnostic({ event: 'audio_recovered' });
       return undefined;
     } catch (error) {
       const diagnostic =
         error instanceof ProtocolError ? error.code : 'unavailable';
-      if (generation === privacyGeneration)
-        core.dispatch({ type: 'audio-lost', diagnostic });
+      if (generation === privacyGeneration && audioEpoch === audioGeneration) {
+        loseAudio(diagnostic);
+        if (wasReady)
+          logDiagnostic({ event: 'audio_unavailable', code: diagnostic });
+      }
       return diagnostic;
     }
+  };
+  const refresh = () => {
+    const generation = `${privacyGeneration}:${audioGeneration}`;
+    if (!refreshPending || refreshPending.generation !== generation) {
+      const pending = {
+        generation,
+        promise: probe().finally(() => {
+          if (refreshPending === pending) refreshPending = undefined;
+        }),
+      };
+      refreshPending = pending;
+    }
+    return refreshPending.promise;
   };
   await refresh();
   let runningTurn: symbol | undefined;
@@ -113,42 +147,53 @@ async function main() {
       if (runningTurn === run) runningTurn = undefined;
     }
   };
-  let privacyDrive: Promise<void> = Promise.resolve();
+  let privacyDrive: Promise<void> | undefined;
   const synchronizePrivacy = () => {
-    privacyDrive = privacyDrive
-      .catch(() => {})
-      .then(async () => {
-        if (core.operations()[0]?.type !== 'privacy') return;
+    privacyDrive ??= (async () => {
+      // Coalesce updates into the latest privacy barrier; never queue promises.
+      while (core.operations()[0]?.type === 'privacy') {
         await runMockTurn(core, join(directory, 'audio.sock'), config);
-      });
+      }
+    })().finally(() => {
+      privacyDrive = undefined;
+    });
     return privacyDrive;
   };
+  const recovery = setInterval(() => {
+    void refresh()
+      .then(async () => {
+        if (core.operations()[0]?.type === 'privacy')
+          await synchronizePrivacy();
+      })
+      .catch(() => loseAudio());
+  }, config.recovery.probe_interval_ms);
   const ticker = setInterval(() => {
     const before = core.status();
     core.dispatch({ type: 'tick' });
+    if (before.ready && !core.status().ready) audioGeneration++;
     const operation = core.operations()[0];
     if (
       !runningTurn &&
-      (operation?.type === 'close-conversation' ||
+      (operation?.type === 'cancel' ||
+        operation?.type === 'indicate-failure' ||
+        operation?.type === 'close-conversation' ||
         (core.status().state === 'awaiting-extension' &&
           (operation?.type === 'synthesize' || operation?.type === 'play')))
     ) {
-      void drive().catch(() => core.dispatch({ type: 'audio-lost' }));
+      void drive().catch(() => loseAudio());
     }
     if (before.state !== core.status().state)
-      console.error(
-        JSON.stringify({
-          event:
-            core.status().state === 'awaiting-extension'
-              ? 'conversation_expired'
-              : 'turn_expired',
-          ...(core.status().state === 'awaiting-extension'
-            ? {}
-            : { code: 'timeout' }),
-          state: core.status().state,
-          elapsed_ms: before.state_since_ms,
-        }),
-      );
+      logDiagnostic({
+        event:
+          core.status().state === 'awaiting-extension'
+            ? 'conversation_expired'
+            : 'turn_expired',
+        ...(core.status().state === 'awaiting-extension'
+          ? {}
+          : { code: 'timeout' }),
+        state: core.status().state,
+        elapsed_ms: before.state_since_ms,
+      });
   }, 100);
   const sockets = new Set<import('node:net').Socket>();
   const server = createServer((socket) => {
@@ -178,7 +223,7 @@ async function main() {
           try {
             await synchronizePrivacy();
           } catch (error) {
-            core.dispatch({ type: 'audio-lost' });
+            loseAudio();
             throw error;
           }
         }
@@ -222,11 +267,9 @@ async function main() {
             if (shouldRun)
               await drive(message.type === 'demo' ? message.text : undefined);
           } catch (error) {
-            core.dispatch({
-              type: 'audio-lost',
-              diagnostic:
-                error instanceof ProtocolError ? error.code : 'unavailable',
-            });
+            loseAudio(
+              error instanceof ProtocolError ? error.code : 'unavailable',
+            );
             throw error;
           }
           if (
@@ -238,8 +281,7 @@ async function main() {
           )
             throw new ProtocolError('invalid_message');
         }
-        const diagnostic =
-          message.type === 'hello' ? await refresh() : undefined;
+        if (message.type === 'hello') await refresh();
         if (core.operations()[0]?.type === 'privacy')
           await synchronizePrivacy();
         response = {
@@ -248,10 +290,6 @@ async function main() {
           service: 'core',
           status: core.status(),
         };
-        if (diagnostic)
-          console.error(
-            JSON.stringify({ event: 'audio_unavailable', code: diagnostic }),
-          );
       } catch (error) {
         response = {
           version: 1,
@@ -265,9 +303,8 @@ async function main() {
   server.maxConnections = config.transport.max_connections;
   server.on('error', () => {
     clearInterval(ticker);
-    console.error(
-      JSON.stringify({ event: 'error', code: 'socket_in_use_or_unavailable' }),
-    );
+    clearInterval(recovery);
+    logDiagnostic({ event: 'error', code: 'socket_in_use_or_unavailable' });
     process.exitCode = 1;
   });
   server.listen(corePath, () => {
@@ -282,6 +319,7 @@ async function main() {
   });
   const stop = () => {
     clearInterval(ticker);
+    clearInterval(recovery);
     for (const socket of sockets) socket.destroy();
     server.close();
   };
@@ -310,6 +348,6 @@ main().catch((error: unknown) => {
     ].includes(message)
       ? message
       : 'startup_failed';
-  console.error(JSON.stringify({ event: 'error', code }));
+  logDiagnostic({ event: 'error', code });
   process.exitCode = 1;
 });
