@@ -136,10 +136,8 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as error:
-        known = {
-            'missing_input_model', 'input_checksum_mismatch', 'unsupported_input_runtime',
-            'input_device_missing', 'input_device_muted', 'input_format_unsupported',
-            'input_disconnected', 'output_device_missing', 'output_device_muted',
-        }
-        emit('error', diagnostic=str(error) if str(error) in known else 'audio_runtime_failed')
+        safe_diagnostic = importlib.import_module(
+            'apps.audio.audio_errors' if __package__ else 'audio_errors'
+        ).safe_diagnostic
+        emit('error', diagnostic=safe_diagnostic(str(error)))
         raise SystemExit(1) from None

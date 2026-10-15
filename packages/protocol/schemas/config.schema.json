@@ -114,7 +114,7 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 256,
-          "default": "to-be-benchmarked"
+          "default": "whisper-tiny-int8"
         },
         "device": {
           "type": "string",

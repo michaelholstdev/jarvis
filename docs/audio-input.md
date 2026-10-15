@@ -72,6 +72,7 @@ audio:
   sample_rate_hz: 16000
   pre_roll_ms: 750
 stt:
+  model: whisper-tiny-int8
   model_dir: /absolute/path/to/models/input
 tts:
   model_path: /absolute/path/to/de_DE-thorsten-medium.onnx
@@ -137,6 +138,8 @@ in routine logs; current conversation content remains transient in core memory.
 
 - `missing_input_model` / `input_checksum_mismatch`: verify all four pinned files in
   `stt.model_dir`; verify archive hash before extracting, then rerun verification.
+- `unsupported_input_model`: select `stt.model: whisper-tiny-int8`; other backends
+  require a replacement adapter and their own manifest/verification.
 - `unsupported_input_runtime`: sync both pinned input runtime packages.
 - `input_device_missing` / `input_device_muted`: select the present stable source,
   inspect `pactl get-source-mute NAME`; never silently switch microphones.
@@ -153,3 +156,8 @@ Hardware mute/lock behavior, lost-device/suspend recovery, acoustic clipping,
 headset/speaker intelligibility, GPU allocation measurements, latency distributions
 and German corpus accuracy remain unvalidated. No model is marked validated in the
 manifest. Manual cancellation does not establish spoken-stop support.
+
+Final synthetic sample on the development machine: activation-to-reply-completion
+6851 ms; capture/endpoint 3854 ms; final STT after endpoint 196 ms. These single
+samples establish the integration path only. They do not establish p50/p95,
+physical microphone quality, or the end-of-speech-to-audible-answer target.

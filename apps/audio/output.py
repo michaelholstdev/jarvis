@@ -4,12 +4,18 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Coroutine
 import hashlib
+from importlib import import_module
 import json
 import os
 import signal
 from pathlib import Path
 import sys
 from typing import Any
+
+
+safe_diagnostic = import_module(
+    'apps.audio.audio_errors' if __package__ else 'audio_errors'
+).safe_diagnostic
 
 
 class OutputError(Exception):
@@ -35,14 +41,8 @@ def verify_voice(config: dict[str, Any]) -> None:
 
 
 def report_diagnostic(event: dict[str, Any]) -> None:
-    known = {
-        'missing_input_model', 'input_checksum_mismatch', 'unsupported_input_runtime',
-        'input_device_missing', 'input_device_muted', 'input_format_unsupported',
-        'input_disconnected', 'output_device_missing', 'output_device_muted',
-    }
-    code = event.get('diagnostic')
-    print(json.dumps({'event': 'audio_diagnostic',
-                      'code': code if code in known else 'audio_runtime_failed'}), flush=True)
+    code = safe_diagnostic(event.get('diagnostic'))
+    print(json.dumps({'event': 'audio_diagnostic', 'code': code}), flush=True)
 
 
 class Output:

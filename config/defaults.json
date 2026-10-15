@@ -20,7 +20,7 @@
   },
   "stt": {
     "engine": "sherpa-onnx",
-    "model": "to-be-benchmarked",
+    "model": "whisper-tiny-int8",
     "device": "cpu",
     "model_dir": "models/input"
   },

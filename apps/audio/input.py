@@ -68,6 +68,8 @@ class Input:
         from importlib.metadata import version
         if version('sherpa-onnx') != '1.13.8' or version('sherpa-onnx-core') != '1.13.8':
             raise RuntimeError('unsupported_input_runtime')
+        if config['stt']['model'] != 'whisper-tiny-int8':
+            raise RuntimeError('unsupported_input_model')
         verify_input(config)
         vad_config = sherpa.VadModelConfig()
         vad_config.silero_vad.model = str(Path(config['stt']['model_dir']) / 'silero_vad.onnx')
