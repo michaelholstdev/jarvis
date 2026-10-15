@@ -101,11 +101,8 @@ export function createCore(
     }
   };
   const resumeFollowUp = () => {
-    if (expired()) {
-      promptForExtension();
-      return;
-    }
     if (followUpDeadline === null || clock.now() >= followUpDeadline) close();
+    else if (expired()) promptForExtension();
     else {
       transition('follow-up', 'recognize');
       deadline = followUpDeadline;

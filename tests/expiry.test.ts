@@ -400,3 +400,25 @@ for (const text of [
     assert.deepEqual(c.operation('infer').context, []);
   });
 }
+
+for (const text of ['', '   ', 'x'.repeat(4097)]) {
+  test(`expired inactivity closes after ${text.length === 4097 ? 'oversized' : text.length ? 'whitespace' : 'empty'} recognition even when the conversation allowance also expires`, () => {
+    const c = conversation();
+    c.at(9000);
+    c.recognize('Frage');
+    c.answer();
+    c.at(28999);
+    c.core.dispatch({
+      type: 'speech-started',
+      operation_id: c.operation('recognize').operation_id,
+    });
+    c.at(31000);
+    c.recognize(text);
+    assert.equal(c.core.status().state, 'idle');
+    assert.equal(c.core.reply(), null);
+    c.operation('close-conversation');
+    c.core.activate();
+    c.recognize('Neue Frage');
+    assert.deepEqual(c.operation('infer').context, []);
+  });
+}

@@ -50,3 +50,16 @@ three end phrases and cleared context. Both independent review follow-ups report
 zero open findings.
 
 Final validation: `npm run check` and `npm test` pass (51 Node tests, 3 Python tests).
+
+
+### Inactivity priority review correction
+
+Fixed the follow-up review P2: empty/malformed recognition completed after the
+original inactivity deadline closes and clears the conversation even if the
+duration allowance has also expired. The extension prompt remains available
+when the original follow-up deadline is still open. Public fake-clock regression
+cases cover empty, whitespace and oversized results, reply cleanup and fresh
+context after activation. The independent spec follow-up confirms the fix with
+no further findings in this correction.
+
+Validation: `npm run check` and `npm test` pass (54 Node tests, 3 Python tests).
