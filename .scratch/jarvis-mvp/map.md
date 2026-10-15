@@ -5,5 +5,6 @@
 - [03: Contextual follow-ups and explicit ending](issues/03-contextual-follow-ups-and-ending.md#answer) — resolved; fake-clock and socket checks pass.
 - [04: Manual replacement and delivered context](issues/04-manual-replacement-delivered-context.md#answer) — resolved; cancellation, delivery-context and CLI checks pass.
 - [05: Conversation expiry and extension](issues/05-conversation-expiry-and-extension.md#answer) — resolved; fake-clock expiry/extension and daemon/Python socket checks pass.
-- Next: [06: Lock and mute privacy](issues/06-lock-and-mute-privacy.md).
+- [06: Lock and mute privacy](issues/06-lock-and-mute-privacy.md#answer) — resolved; independent inhibition, cleanup and socket checks pass.
+- Next: [07: Failure, retry and capability recovery](issues/07-failure-retry-capability-recovery.md).
 - Remaining tickets are in [issues/](issues/); M1–M4 remain unimplemented.

@@ -62,7 +62,9 @@
             "audio",
             "since_ms",
             "audio_diagnostic",
-            "state_since_ms"
+            "state_since_ms",
+            "inhibitions",
+            "privacy_pending"
           ],
           "properties": {
             "ready": {
@@ -111,6 +113,25 @@
             "state_since_ms": {
               "type": "number",
               "minimum": 0
+            },
+            "inhibitions": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["locked", "muted", "hardware_muted"],
+              "properties": {
+                "locked": {
+                  "type": "boolean"
+                },
+                "muted": {
+                  "type": "boolean"
+                },
+                "hardware_muted": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "privacy_pending": {
+              "type": "boolean"
             }
           }
         }
@@ -192,7 +213,8 @@
                 "synthesize",
                 "play",
                 "close-conversation",
-                "cancel"
+                "cancel",
+                "privacy"
               ]
             },
             "operation_id": {
@@ -211,6 +233,22 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64
+            },
+            "inhibitions": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["locked", "muted", "hardware_muted"],
+              "properties": {
+                "locked": {
+                  "type": "boolean"
+                },
+                "muted": {
+                  "type": "boolean"
+                },
+                "hardware_muted": {
+                  "type": "boolean"
+                }
+              }
             }
           },
           "allOf": [
@@ -224,6 +262,18 @@
               },
               "then": {
                 "required": ["target_operation_id"]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "privacy"
+                  }
+                }
+              },
+              "then": {
+                "required": ["inhibitions"]
               }
             }
           ]
@@ -257,6 +307,25 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 8192
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "source", "active"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "inhibition-changed"
+        },
+        "source": {
+          "enum": ["locked", "muted", "hardware_muted"]
+        },
+        "active": {
+          "type": "boolean"
         }
       }
     }

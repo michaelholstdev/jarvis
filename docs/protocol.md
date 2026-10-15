@@ -128,3 +128,38 @@ phrase; all other text is ignored and gets another recognition operation under
 the same deadline, without inference. `activate` returns `busy` during the prompt
 or extension response. Expiry itself never cancels healthy operations. Stop or
 replacement finishing at expiry prompts before another turn can start.
+
+
+## Privacy signals and audio barrier (#06)
+
+The desktop/audio-facing core socket accepts
+`{version:1,type:"inhibition-changed",source:"locked"|"muted"|"hardware_muted",active:boolean}`.
+The CLI `lock`, `unlock`, `mute`, `unmute`, `hardware-mute` and `hardware-unmute`
+commands send these simulated events. Repeated identical values are idempotent.
+Hardware mute is distinct from software mute; clearing either cannot clear the
+other or desktop lock. Health includes all three `inhibitions` booleans and
+`privacy_pending`; these are capture conditions separate from conversation state.
+
+The public orchestration boundary dispatches the same event (without `version`).
+It immediately drops conversation data and replaces the current operation with
+`privacy`, carrying a full `inhibitions` snapshot and a new operation ID.
+This operation must stop capture/wake/pre-roll, playback, recognition and synthesis,
+cancel outstanding audio operations, erase temporary audio and delivery tracking,
+and apply the snapshot before returning `audio-result` with the matching ID.
+It makes no sound. Core generation is invalidated immediately. The mock holds no
+audio buffers; it clears its last playback report and rejects ordinary audio
+operations with `unavailable` whenever any snapshot flag is true.
+
+The driver converts a matching result to `privacy-applied`. Core ignores other
+results while cleanup is pending, and ignores all conversation events while
+inhibited. Privacy updates are serialized to audio independently of any stalled
+turn; a superseded acknowledgment cannot release the latest barrier. Clearing
+all flags also requires a privacy round trip before activation is permitted.
+On failure/timeout, readiness remains blocked and a new handshake reissues the
+pending snapshot. Audio loss never removes an inhibition. No work or context
+resumes after a release; new operation IDs keep canceled results stale.
+
+Real adapters must enforce the barrier before acknowledgment, including rejecting
+late tasks from canceled work and preserving local hardware inhibition. The
+current sockets exercise simulated signals only; real KDE/PipeWire monitoring,
+startup state synchronization and acoustic stop/cleanup validation are ticket #12.

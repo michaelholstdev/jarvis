@@ -2,6 +2,7 @@ import type {
   ConversationExchange,
   Diagnostic,
   HealthStatus,
+  InhibitionSource,
   Operation,
   PlaybackReport,
 } from '../../packages/protocol/index.js';
@@ -9,6 +10,8 @@ import { ProtocolError } from '../../packages/protocol/index.js';
 import { type Config, loadConfig } from './config.js';
 
 export type ServiceEvent =
+  | { type: 'inhibition-changed'; source: InhibitionSource; active: boolean }
+  | { type: 'privacy-applied'; operation_id: string }
   | { type: 'audio-ready' }
   | { type: 'audio-lost'; diagnostic?: Diagnostic }
   | {
@@ -27,6 +30,9 @@ export function createCore(
   config: Config = loadConfig(),
 ) {
   let ready = false;
+  const inhibitions = { locked: false, muted: false, hardware_muted: false };
+  let privacyPending = false;
+  const inhibited = () => Object.values(inhibitions).some(Boolean);
   let readinessChangedAt = clock.now();
   let stateChangedAt = readinessChangedAt;
   let deadline = 0;
@@ -158,12 +164,19 @@ export function createCore(
     transition('cancelling', 'cancel');
     if (operation) operation.target_operation_id = previous.operation_id;
   };
+  const synchronizePrivacy = () => {
+    reset();
+    privacyPending = true;
+    transition('idle', 'privacy');
+    if (operation) operation.inhibitions = { ...inhibitions };
+  };
   return {
     stop(): void {
       if (state === 'speaking') cancel(false);
     },
     activate(): void {
-      if (!ready) throw new ProtocolError('unavailable');
+      if (!ready || inhibited() || privacyPending)
+        throw new ProtocolError('unavailable');
       if (['thinking', 'synthesizing', 'speaking'].includes(state)) {
         cancel(true);
         return;
@@ -181,19 +194,50 @@ export function createCore(
       listen();
     },
     dispatch(event: ServiceEvent): void {
+      if (event.type === 'inhibition-changed') {
+        if (inhibitions[event.source] !== event.active) {
+          inhibitions[event.source] = event.active;
+          synchronizePrivacy();
+        }
+        return;
+      }
       if (event.type === 'audio-ready') {
         if (!ready) readinessChangedAt = clock.now();
         ready = true;
         diagnostic = null;
+        if (privacyPending && operation?.type !== 'privacy')
+          synchronizePrivacy();
         return;
       }
       if (event.type === 'audio-lost') {
         if (ready) readinessChangedAt = clock.now();
         ready = false;
         diagnostic = event.diagnostic ?? 'unavailable';
+        privacyPending ||= inhibited();
         reset();
         return;
       }
+      if (privacyPending) {
+        if (
+          event.type === 'privacy-applied' &&
+          operation?.type === 'privacy' &&
+          event.operation_id === operation.operation_id
+        ) {
+          privacyPending = false;
+          transition('idle');
+        } else if (
+          event.type === 'tick' &&
+          operation &&
+          clock.now() >= deadline
+        ) {
+          if (ready) readinessChangedAt = clock.now();
+          ready = false;
+          diagnostic = 'timeout';
+          reset();
+        }
+        return;
+      }
+      if (inhibited()) return;
       if (
         event.type !== 'tick' &&
         event.operation_id !== operation?.operation_id
@@ -329,9 +373,12 @@ export function createCore(
     status(): HealthStatus {
       return {
         ready,
+        inhibitions: { ...inhibitions },
+        privacy_pending: privacyPending,
         mode: 'mock',
         state,
-        manual_activation: ready ? 'mock' : 'unavailable',
+        manual_activation:
+          ready && !inhibited() && !privacyPending ? 'mock' : 'unavailable',
         voice_conversation: 'unavailable',
         audio: ready ? 'ready' : 'unavailable',
         audio_diagnostic: diagnostic,
@@ -344,6 +391,9 @@ export function createCore(
         ? [
             {
               ...operation,
+              ...(operation.inhibitions
+                ? { inhibitions: { ...operation.inhibitions } }
+                : {}),
               ...(operation.context
                 ? {
                     context: operation.context.map((exchange) => ({

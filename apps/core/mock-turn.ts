@@ -70,6 +70,12 @@ export async function runMockTurn(
         response.type === 'error' ? response.code : 'invalid_message',
       );
     switch (operation.type) {
+      case 'privacy':
+        core.dispatch({
+          type: 'privacy-applied',
+          operation_id: response.operation_id,
+        });
+        break;
       case 'recognize':
         if (response.text === undefined)
           throw new ProtocolError('invalid_message');

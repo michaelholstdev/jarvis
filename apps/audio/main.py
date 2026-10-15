@@ -143,9 +143,10 @@ async def serve() -> None:
     path = runtime_directory() / "audio.sock"
     active: set[asyncio.StreamWriter] = set()
     last_playback: tuple[str, int] | None = None
+    inhibited = False
 
     async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        nonlocal last_playback
+        nonlocal last_playback, inhibited
         if len(active) >= limits["max_connections"]:
             writer.close()
             return
@@ -164,7 +165,14 @@ async def serve() -> None:
                         operation = message["operation"]
                         kind = operation["type"]
                         response = {"version": 1, "type": "audio-result", "operation_id": operation["operation_id"]}
-                        if kind == "cancel":
+                        if kind == "privacy":
+                            # Real adapters must stop all capture/playback/inference and erase
+                            # temporary audio/pre-roll before acknowledging this barrier.
+                            inhibited = any(operation["inhibitions"].values())
+                            last_playback = None
+                        elif inhibited:
+                            raise Diagnostic("unavailable")
+                        elif kind == "cancel":
                             # Operations complete synchronously in this mock. No buffered audio.
                             delivered = (last_playback[1] if last_playback and
                                          last_playback[0] == operation["target_operation_id"] else 0)

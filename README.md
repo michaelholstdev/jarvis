@@ -281,3 +281,47 @@ Prompt synthesis, playback and recognition remain simulated. Fake-clock tests
 verify lifecycle behavior; the socket integration verifies the daemon's own
 expiry prompt and explicit scripted renewal through Python. Audible speech and
 acoustic command recognition remain later hardware milestones.
+
+
+## Lock and mute privacy controls (#06)
+
+Use these commands with the mock services running:
+
+```sh
+node dist/apps/core/main.js mute
+node dist/apps/core/main.js unmute
+node dist/apps/core/main.js lock
+node dist/apps/core/main.js unlock
+node dist/apps/core/main.js hardware-mute
+node dist/apps/core/main.js hardware-unmute
+```
+
+Software mute, desktop lock, and hardware mute are independent inhibitions.
+Any one blocks activation and all capture (including wake processing/pre-roll),
+recognition, generation, synthesis and playback. Applying an inhibition closes
+the conversation immediately, invalidates in-flight operations, and clears
+question, answer, delivered reply, history and timers. Audio receives a silent
+privacy operation that cancels all work and clears temporary audio/pre-roll;
+no end sound plays while inhibited. Late replies and playback reports cannot
+restore content, even after unlocking/unmuting or starting a fresh conversation.
+
+Health retains the conversation `state:idle` and reports separate `inhibitions`
+(`locked`, `muted`, `hardware_muted`) plus `privacy_pending`. Inhibited idle
+has `manual_activation:unavailable`; ordinary idle permits activation and, with
+a future validated wake adapter, bounded wake processing/pre-roll. `ready`
+continues to describe service availability, so a healthy muted service can
+return exit code 0. Check `manual_activation` to determine activation readiness.
+
+Clearing a flag leaves the other flags in effect. Only after **all** are clear
+and audio confirms the latest privacy operation does manual readiness return.
+Jarvis awaits a new activation; it never resumes the old conversation. Failed
+or timed-out cleanup keeps activation blocked, including across audio loss and
+reconnection. Privacy flags live in the current daemon; real startup/restart
+integration must read current desktop/device state before enabling capture.
+
+These commands and socket events **simulate** desktop and device signals.
+The Python service holds no microphone, pre-roll or synthesis buffers and makes
+no audible output. Tests verify cancellation and cleanup requests, independent
+precedence, audio gating and stale-result rejection. Real KDE lock notifications,
+PipeWire/device hardware-mute monitoring, physical buffer erasure and stop latency
+remain unvalidated and belong to desktop/audio integration (ticket #12).

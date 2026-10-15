@@ -8,7 +8,15 @@ export type Diagnostic =
   | 'timeout'
   | 'unavailable'
   | 'busy';
+export type Inhibitions = {
+  locked: boolean;
+  muted: boolean;
+  hardware_muted: boolean;
+};
+export type InhibitionSource = keyof Inhibitions;
 export type HealthStatus = {
+  inhibitions: Inhibitions;
+  privacy_pending: boolean;
   ready: boolean;
   mode: 'mock';
   state:
@@ -31,6 +39,7 @@ export type HealthStatus = {
 export type ConversationExchange = { question: string; reply: string };
 export type Operation = {
   type:
+    | 'privacy'
     | 'cancel'
     | 'acknowledge'
     | 'recognize'
@@ -39,6 +48,7 @@ export type Operation = {
     | 'play'
     | 'close-conversation';
   operation_id: string;
+  inhibitions?: Inhibitions;
   target_operation_id?: string;
   text?: string;
   sound?: boolean;
@@ -46,6 +56,12 @@ export type Operation = {
 };
 export type PlaybackReport = { completed: boolean; delivered_chars: number };
 export type Message =
+  | {
+      version: 1;
+      type: 'inhibition-changed';
+      source: InhibitionSource;
+      active: boolean;
+    }
   | { version: 1; type: 'activate' | 'stop' }
   | { version: 1; type: 'demo'; text: string }
   | {

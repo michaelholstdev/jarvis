@@ -24,9 +24,22 @@ async function main() {
     console.log(JSON.stringify(config, null, 2));
     return;
   }
-  if (!['start', 'health', 'activate', 'stop', 'demo'].includes(command ?? ''))
+  const privacyControls = {
+    lock: ['locked', true],
+    unlock: ['locked', false],
+    mute: ['muted', true],
+    unmute: ['muted', false],
+    'hardware-mute': ['hardware_muted', true],
+    'hardware-unmute': ['hardware_muted', false],
+  } as const;
+  const privacyControl =
+    privacyControls[command as keyof typeof privacyControls];
+  if (
+    !privacyControl &&
+    !['start', 'health', 'activate', 'stop', 'demo'].includes(command ?? '')
+  )
     throw new Error(
-      'usage: start | health | config | activate | stop | demo [utterance]',
+      'usage: start | health | config | activate | stop | demo [utterance] | lock | unlock | mute | unmute | hardware-mute | hardware-unmute',
     );
   const directory = runtimeDirectory();
   const corePath = join(directory, 'core.sock');
@@ -39,15 +52,22 @@ async function main() {
         timeout_ms:
           config.transport.timeout_ms * (command === 'health' ? 2 : 6),
       },
-      command === 'activate' || command === 'stop'
-        ? { version: 1, type: command }
-        : command === 'demo'
-          ? {
-              version: 1,
-              type: 'demo',
-              text: process.argv[3] ?? 'Wie geht es dir?',
-            }
-          : undefined,
+      privacyControl
+        ? {
+            version: 1,
+            type: 'inhibition-changed',
+            source: privacyControl[0],
+            active: privacyControl[1],
+          }
+        : command === 'activate' || command === 'stop'
+          ? { version: 1, type: command }
+          : command === 'demo'
+            ? {
+                version: 1,
+                type: 'demo',
+                text: process.argv[3] ?? 'Wie geht es dir?',
+              }
+            : undefined,
     );
     if (response.type !== 'ready' || response.service !== 'core')
       throw new Error(
@@ -89,6 +109,16 @@ async function main() {
       if (runningTurn === run) runningTurn = undefined;
     }
   };
+  let privacyDrive: Promise<void> = Promise.resolve();
+  const synchronizePrivacy = () => {
+    privacyDrive = privacyDrive
+      .catch(() => {})
+      .then(async () => {
+        if (core.operations()[0]?.type !== 'privacy') return;
+        await runMockTurn(core, join(directory, 'audio.sock'), config);
+      });
+    return privacyDrive;
+  };
   const ticker = setInterval(() => {
     const before = core.status();
     core.dispatch({ type: 'tick' });
@@ -128,18 +158,37 @@ async function main() {
         if (
           !(
             (message.type === 'hello' && message.role === 'cli') ||
+            message.type === 'inhibition-changed' ||
             message.type === 'activate' ||
             message.type === 'stop' ||
             message.type === 'demo'
           )
         )
           throw new ProtocolError('invalid_message');
+        if (message.type === 'inhibition-changed') {
+          // Apply privacy before any asynchronous readiness/cleanup request.
+          core.dispatch(message);
+          if (core.status().privacy_pending) runningTurn = undefined;
+          try {
+            await synchronizePrivacy();
+          } catch (error) {
+            core.dispatch({ type: 'audio-lost' });
+            throw error;
+          }
+        }
         if (
           message.type === 'activate' ||
           message.type === 'stop' ||
           message.type === 'demo'
         ) {
           const diagnostic = await refresh();
+          if (core.operations()[0]?.type === 'privacy')
+            await synchronizePrivacy();
+          if (
+            core.status().privacy_pending ||
+            Object.values(core.status().inhibitions).some(Boolean)
+          )
+            throw new ProtocolError('unavailable');
           if (runningTurn && message.type === 'demo')
             throw new ProtocolError('busy');
           if (diagnostic) throw new ProtocolError(diagnostic);
@@ -183,6 +232,8 @@ async function main() {
         }
         const diagnostic =
           message.type === 'hello' ? await refresh() : undefined;
+        if (core.operations()[0]?.type === 'privacy')
+          await synchronizePrivacy();
         response = {
           version: 1,
           type: 'ready',
