@@ -1,0 +1,14 @@
+{
+  "positive": {
+    "reply": "Ich beschreibe einen ruhigen Spaziergang. Der Weg führt zuerst durch einen großen Park. Links stehen alte Bäume mit breiten Kronen. Auf der rechten Seite liegt ein kleiner See. Hinter dem See beginnt ein schmaler Waldweg. Dort hört man die Vögel und den Wind in den Blättern. Am Ende des Weges steht eine Bank mit Blick auf die Wiese. Danach geht es langsam zurück zum Ausgangspunkt.",
+    "instruction": "Say standalone Stopp at the console cue."
+  },
+  "assistant-stop": {
+    "reply": "Das Wort Stopp ist eine Aufforderung zum Anhalten. Man kann es auch in einem Satz zitieren. Was bedeutet Stopp auf Englisch? Diese Frage enthält das Wort, ist aber kein Steuerbefehl. Die Antwort soll vollständig zu hören sein.",
+    "instruction": "Remain silent. Assistant echo must not stop playback."
+  },
+  "background": {
+    "reply": "Ich beschreibe einen ruhigen Spaziergang. Der Weg führt zuerst durch einen großen Park. Links stehen alte Bäume mit breiten Kronen. Auf der rechten Seite liegt ein kleiner See. Hinter dem See beginnt ein schmaler Waldweg. Dort hört man die Vögel und den Wind in den Blättern. Am Ende des Weges steht eine Bank mit Blick auf die Wiese. Danach geht es langsam zurück zum Ausgangspunkt.",
+    "instruction": "Play representative TV/music/German speech from an independent device; include embedded/quoted Stopp. Remain silent and record exact fixture source/checksum, gain and duration."
+  }
+}

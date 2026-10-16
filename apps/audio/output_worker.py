@@ -5,12 +5,18 @@ import ctypes as C
 import importlib
 import json
 import math
+import re
 import sys
+import threading
 from typing import Any
 
 
+EMIT_LOCK = threading.Lock()
+
+
 def emit(event: str, **values: Any) -> None:
-    print(json.dumps({'event': event, **values}, separators=(',', ':')), flush=True)
+    with EMIT_LOCK:
+        print(json.dumps({'event': event, **values}, separators=(',', ':')), flush=True)
 
 
 class SampleSpec(C.Structure):
@@ -83,6 +89,7 @@ def main() -> None:
         microphone = importlib.import_module('apps.audio.input' if __package__ else 'input').Input(config)
     pcm = b''
     cached_text = ''
+    segments: list[tuple[bytes, int]] = []
     emit('ready')
     for line in sys.stdin:
         operation = json.loads(line)
@@ -102,28 +109,48 @@ def main() -> None:
             text = operation['text']
             if len(text) > 2048:
                 raise RuntimeError('text_too_large')
-            chunks = []
+            segments = []
             samples = 0
-            for chunk in voice.synthesize(text):
-                samples += len(chunk.audio_float_array)
-                if samples > voice.config.sample_rate * 60:
-                    raise RuntimeError('audio_too_large')
-                chunks.append(chunk.audio_float_array)
-            audio = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
-            if voice.config.sample_rate != rate:
-                audio = soxr.resample(audio, voice.config.sample_rate, rate)
-            pcm = (np.clip(audio, -1, 1) * 32767).astype('<i2').tobytes()
+            delivered_text = ''
+            # Only fully drained sentence prefixes are confirmed delivered. The
+            # current sentence may be heard partly, but is never guessed by time.
+            for sentence in re.findall(r'.+?(?:[.!?](?:\s+|$)|$)', text, re.DOTALL):
+                chunks = []
+                for chunk in voice.synthesize(sentence):
+                    samples += len(chunk.audio_float_array)
+                    if samples > voice.config.sample_rate * 60:
+                        raise RuntimeError('audio_too_large')
+                    chunks.append(chunk.audio_float_array)
+                audio = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
+                if voice.config.sample_rate != rate:
+                    audio = soxr.resample(audio, voice.config.sample_rate, rate)
+                block = (np.clip(audio, -1, 1) * 32767).astype('<i2').tobytes()
+                delivered_text += sentence
+                segments.append((block, len(delivered_text.encode('utf-16-le')) // 2))
+            pcm = b''.join(block for block, _ in segments)
             cached_text = text
             emit('result', result={})
         elif kind == 'play':
             if not pcm or operation.get('text') != cached_text:
                 raise RuntimeError('missing_synthesis')
-            Pulse(sink['name'], rate).play(pcm, rate)
+            control = importlib.import_module('apps.audio.stop_control' if __package__ else 'stop_control')
+            reference = np.frombuffer(pcm, dtype='<i2').astype('float32') / 32768
+            if rate != 16000:
+                reference = soxr.resample(reference, rate, 16000)
+            monitor = control.StopMonitor(config, microphone, reference, cached_text, emit)
+            try:
+                for block, delivered_chars in segments:
+                    Pulse(sink['name'], rate).play(block, rate)
+                    emit('playback_delivered', delivered_chars=delivered_chars)
+            finally:
+                monitor.close()
             delivered = len(cached_text.encode('utf-16-le')) // 2
             pcm, cached_text = b'', ''
+            segments.clear()
             emit('result', result={'completed': True, 'delivered_chars': delivered})
         else:
             pcm, cached_text = b'', ''
+            segments.clear()
             if operation.get('sound', True):
                 frequency = {'acknowledge': 880, 'close-conversation': 440, 'indicate-failure': 220}[kind]
                 t = np.arange(int(rate * .12)) / rate

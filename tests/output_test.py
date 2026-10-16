@@ -131,3 +131,30 @@ class VoiceRecognitionTest(unittest.IsolatedAsyncioTestCase):
                 self.assertIsNone(output.process, 'timed-out capture must be destroyed')
             finally:
                 await output.stop()
+
+class SpokenStopOutputTest(unittest.IsolatedAsyncioTestCase):
+    async def test_control_event_does_not_complete_playback_and_cancel_retains_drained_prefix(self):
+        import sys
+        config = load_config()
+        output = Output(config)
+        spawn = asyncio.create_subprocess_exec
+        worker = ('import sys,json,time; json.loads(sys.stdin.readline()); '
+                  'print(\'{"event":"ready"}\',flush=True); '
+                  'json.loads(sys.stdin.readline()); '
+                  'print(\'{"event":"playback_delivered","delivered_chars":6}\',flush=True); '
+                  'print(\'{"event":"control_stopped"}\',flush=True); time.sleep(30)')
+
+        async def fixture_process(*args, **kwargs):
+            return await spawn(sys.executable, '-c', worker, **kwargs)
+
+        detected = asyncio.Event()
+        with patch('asyncio.create_subprocess_exec', side_effect=fixture_process):
+            try:
+                playback = asyncio.create_task(output.run({'type': 'play', 'operation_id': 'reply', 'text': 'Hallo. Rest.'}, on_control=detected.set))
+                await asyncio.wait_for(detected.wait(), 2)
+                self.assertFalse(playback.done())
+                report = await output.run({'type': 'cancel', 'operation_id': 'cancel', 'target_operation_id': 'reply'})
+                self.assertEqual(report, {'completed': False, 'delivered_chars': 6})
+                await playback
+            finally:
+                await output.stop()

@@ -57,7 +57,8 @@
   "features": {
     "barge_in": false,
     "external_tools": false,
-    "tray": false
+    "tray": false,
+    "voice_stop": false
   },
   "logging": {
     "content_logging": false

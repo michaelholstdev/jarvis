@@ -280,3 +280,10 @@ stored service-side. This is the only control response carrying answer content;
 do not log it. Normal `ready` health/control messages stay content-free. Reading
 does not renew session timers or promote generated text into delivered context.
 See [text lifetime and CLI commands](text-answers.md).
+
+During an answer `play`, audio may send one `control-stopped` progress frame with
+that playback's `operation_id`. It contains no transcript and means the audio
+adapter validated standalone spoken stop. It does not complete playback. Core
+cancels the operation and awaits a cancellation result before follow-up. Like
+`speech-started`, it cannot renew the request deadline; duplicates, mismatched IDs
+and progress on the wrong operation are rejected.

@@ -131,6 +131,19 @@ export async function runTurn(
           {
             signal,
             onProgress: (progress) => {
+              if (progress.type === 'control-stopped') {
+                if (
+                  operation.type !== 'play' ||
+                  progress.operation_id !== operation.operation_id
+                )
+                  throw new ProtocolError('invalid_message');
+                core.dispatch({
+                  type: 'control-recognized',
+                  operation_id: progress.operation_id,
+                  text: 'Stopp',
+                });
+                return;
+              }
               if (
                 operation.type !== 'recognize' ||
                 progress.operation_id !== operation.operation_id

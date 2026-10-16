@@ -199,8 +199,11 @@ async def serve() -> None:
                                 def speech_started() -> None:
                                     writer.write((json.dumps({"version": 1, "type": "speech-started",
                                                               "operation_id": operation["operation_id"]}) + "\n").encode())
+                                def control_stopped() -> None:
+                                    writer.write((json.dumps({"version": 1, "type": "control-stopped",
+                                                              "operation_id": operation["operation_id"]}) + "\n").encode())
                                 work_generation = output.generation
-                                work = asyncio.create_task(output.run(operation, speech_started if kind == "recognize" else None))
+                                work = asyncio.create_task(output.run(operation, speech_started if kind == "recognize" else None, control_stopped if kind == "play" else None))
                                 disconnected = asyncio.create_task(reader.read(1))
                                 try:
                                     done, _ = await asyncio.wait({work, disconnected}, return_when=asyncio.FIRST_COMPLETED)

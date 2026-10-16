@@ -65,7 +65,11 @@ export type Operation = {
 };
 export type PlaybackReport = { completed: boolean; delivered_chars: number };
 export type Message =
-  | { version: 1; type: 'speech-started'; operation_id: string }
+  | {
+      version: 1;
+      type: 'speech-started' | 'control-stopped';
+      operation_id: string;
+    }
   | {
       version: 1;
       type: 'inhibition-changed';

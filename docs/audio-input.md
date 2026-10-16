@@ -8,7 +8,8 @@ answer → resident CPU Piper → selected output. Inference is scripted unless 
 
 This mode implements manual microphone turns. In mock inference mode, reactivate for each further question;
 wake detection, spoken stop, barge-in and calibrated
-German accuracy are **unvalidated**. Health reports STT/TTS ready, inference mock and
+German accuracy are **unvalidated**. Experimental playback-only spoken stop is now
+opt-in; see [spoken-stop.md](spoken-stop.md) for its separate hardware gate. Health reports STT/TTS ready, inference mock and
 voice_conversation unavailable in mock inference mode, so this ticket does not imply MVP release readiness.
 
 ## Installation and model verification

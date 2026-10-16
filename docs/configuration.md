@@ -73,3 +73,8 @@ repeated failed probes do not extend that deadline. Lock/mute and conversation
 closure still clear everything. Real model/device watchdogs are unvalidated.
 
 Ollama mode adds validated generation settings: `llm.timeout_ms` 120000 (100–300000), `num_predict` 512 (1–2048), `temperature` 0.3 (0–2), `seed` 0 (integer 0–2147483647). The inference watchdog uses this deadline in Ollama mode. See [local Ollama setup and limits](ollama.md) for model acquisition, revision recording, offline operation, context/byte limits and health semantics.
+
+`features.voice_stop` defaults to `false`. Set `true` only for opt-in physical-device
+trials in voice mode; see [spoken-stop.md](spoken-stop.md) for scope, echo limitations,
+model dependencies and separate headset/speaker acceptance. `features.barge_in`
+remains `false`.

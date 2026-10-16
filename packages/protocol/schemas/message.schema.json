@@ -431,6 +431,24 @@
           "maximum": 4096
         }
       }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "operation_id"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "control-stopped"
+        },
+        "operation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
     }
   ],
   "definitions": {

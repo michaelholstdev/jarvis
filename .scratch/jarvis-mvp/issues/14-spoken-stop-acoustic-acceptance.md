@@ -4,12 +4,60 @@
 
 **Blocked by:** 09: Manual microphone question and scripted spoken reply — M1.
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
-- [ ] Provide bounded microphone processing for the narrowly scoped stop control during playback without enabling general voice barge-in or indefinite ambient transcription.
-- [ ] Only a validated standalone spoken “Stopp” stops the reply; quoted/embedded words, playback echo, and VAD activity alone do not establish a control intent.
-- [ ] Voice stop cancels remaining reply work, retains delivered-reply semantics, and starts the default follow-up window when playback stops.
-- [ ] Manual cancellation remains usable independently of voice recognition; cancellation and late-result protections are exercised through the existing public interface.
+- [x] Provide bounded microphone processing for the narrowly scoped stop control during playback without enabling general voice barge-in or indefinite ambient transcription.
+- [x] Only a validated standalone spoken “Stopp” stops the reply; quoted/embedded words, playback echo, and VAD activity alone do not establish a control intent.
+- [x] Voice stop cancels remaining reply work, retains delivered-reply semantics, and starts the default follow-up window when playback stops.
+- [x] Manual cancellation remains usable independently of voice recognition; cancellation and late-result protections are exercised through the existing public interface.
 - [ ] Acoustic tests on the actual headset and speakers report stop-detection reliability, response delay, and false stops during representative assistant/background playback, with reproducible fixtures and settings.
-- [ ] Record spoken-stop FR-09 as passed, failed, or unvalidated separately for each setup; manual-only cancellation cannot pass the spoken criterion. If unreliable, document the gap and retain manual controls without claiming general barge-in.
-- [ ] Document any needed local control-recognition dependencies/models, licenses/checksums, installation/configuration, test commands, enable/disable behavior, calibration limits, and safe fallback.
+- [x] Record spoken-stop FR-09 as passed, failed, or unvalidated separately for each setup; manual-only cancellation cannot pass the spoken criterion. If unreliable, document the gap and retain manual controls without claiming general barge-in.
+- [x] Document any needed local control-recognition dependencies/models, licenses/checksums, installation/configuration, test commands, enable/disable behavior, calibration limits, and safe fallback.
+
+## Comments
+
+Claimed by Codex for implementation. Public runtime/conversation and control-recognition test seams approved; review baseline `2490ce7393a1dc4e5c81a3f5d68e07902c4a6c52`. Actual headset/speaker acceptance must remain explicit.
+
+## Answer
+
+Implementation complete; **physical acoustic acceptance remains open**. Experimental
+`features.voice_stop` defaults to false. The resident CPU recognizer processes only
+bounded playback control windows, requiring a silence boundary and a complete
+standalone command. Synthesized-reference correlation and a reply-word veto reject
+likely echo; real acoustic reliability is not inferred from these guards.
+
+An operation-scoped socket control event uses the existing cancellation path and
+starts follow-up after cancellation acknowledgment. Fully drained sentence prefixes
+are retained; the partially heard current sentence is omitted. Manual stop,
+replacement, late-result rejection and lock/mute cleanup remain independent.
+
+See [spoken-stop guide](../../../docs/spoken-stop.md) for exact settings, existing
+pinned dependency/model installation and licenses, calibration limits, fixed fixtures,
+the opt-in acoustic trial command and safe fallback. Headset FR-09: **unvalidated**;
+speaker FR-09: **unvalidated**. No physical acoustic trials were performed. The
+unchecked acoustic measurement criterion requires the maintainer's actual devices
+and consented speech/background fixtures; manual cancellation cannot pass it.
+
+### Standards review
+
+One initial architecture finding (per-answer model loading) resolved by reusing the
+resident recognizer. Re-review: zero remaining standards findings.
+
+### Spec review
+
+Two initial code findings resolved: speech crossing a capture boundary must first
+reach silence before rearming, and ordinary bounded question recognition retains
+its prior behavior. Re-review: zero remaining code findings. One acceptance item
+remains: actual headset/speaker reliability, audible response delay and false stops.
+
+Map pointer: [implementation map](../map.md).
+
+### Validation
+
+- `npm run check` passed (TypeScript, Biome, Ruff, strict Python typing).
+- Final `npm test` passed: **184 Node tests and 17 Python tests**.
+- Focused spoken-stop/runtime, output-cancellation and control-recognition tests
+  passed; synthetic delayed/scaled echo and cross-window continuation fixtures
+  are automated. Acoustic correlation requires the input extra; it ran here.
+- `scripts/verify-stop.py --help`, script Ruff checks and `git diff --check` passed.
+- Hardware trials were not run; this ticket stays `ready-for-human`, not resolved.

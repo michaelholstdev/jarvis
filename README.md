@@ -368,3 +368,9 @@ Install the two systemd user units and configure a single-press KDE shortcut usi
 [the deployment guide](systemd/README.md). It includes exact startup, health, log,
 device, recovery, update and uninstall commands. Manual activation is the supported
 mode; wake detection remains unavailable.
+
+## Experimental spoken stop (#14)
+
+Opt-in bounded playback control recognition, conservative echo rejection and manual
+fallback are documented in [spoken-stop.md](docs/spoken-stop.md). Disabled by default;
+FR-09 remains **unvalidated** separately on actual headset and speakers.

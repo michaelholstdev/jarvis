@@ -112,11 +112,11 @@ class Output:
         if process is not None:
             await self.destroy(process)
 
-    def run(self, operation: dict[str, Any], on_speech: Callable[[], None] | None = None) -> Coroutine[Any, Any, dict[str, Any]]:
+    def run(self, operation: dict[str, Any], on_speech: Callable[[], None] | None = None, on_control: Callable[[], None] | None = None) -> Coroutine[Any, Any, dict[str, Any]]:
         # Capture admission before create_task can queue work behind a privacy barrier.
-        return self._run(operation, self.generation, on_speech)
+        return self._run(operation, self.generation, on_speech, on_control)
 
-    async def _run(self, operation: dict[str, Any], generation: int, on_speech: Callable[[], None] | None) -> dict[str, Any]:
+    async def _run(self, operation: dict[str, Any], generation: int, on_speech: Callable[[], None] | None, on_control: Callable[[], None] | None) -> dict[str, Any]:
         kind = operation['type']
         if kind in {'cancel', 'privacy'}:
             delivered = self.completed[1] if self.completed and self.completed[0] == operation.get('target_operation_id') else 0
@@ -149,9 +149,9 @@ class Output:
                 if kind == 'recognize' else self.config['recovery']['playback_timeout_ms'] / 1000
             )
             loop = asyncio.get_running_loop()
-            deadline = loop.time() + timeout if kind == 'recognize' else None
+            deadline = loop.time() + timeout
             while True:
-                remaining = max(0, deadline - loop.time()) if deadline is not None else timeout
+                remaining = max(0, deadline - loop.time())
                 line = await asyncio.wait_for(process.stdout.readline(), remaining)
                 if not line:
                     if self.process is process:
@@ -162,6 +162,14 @@ class Output:
                 if event['event'] == 'speech_started' and on_speech is not None:
                     on_speech()
                     on_speech = None
+                if event['event'] == 'playback_delivered' and kind == 'play':
+                    delivered = event.get('delivered_chars')
+                    if not isinstance(delivered, int) or not 0 <= delivered <= len(operation.get('text', '').encode('utf-16-le')) // 2:
+                        raise OutputError('unavailable')
+                    self.completed = (operation['operation_id'], delivered)
+                if event['event'] == 'control_stopped' and kind == 'play' and on_control is not None:
+                    on_control()
+                    on_control = None
                 if event['event'] == 'result':
                     result = dict(event['result'])
                     if kind == 'play' and result.get('completed'):

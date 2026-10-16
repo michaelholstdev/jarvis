@@ -11,7 +11,9 @@ import type { Config } from './config.js';
 export function receive(
   socket: Socket,
   limits: Config['transport'],
-  onProgress?: (message: Extract<Message, { type: 'speech-started' }>) => void,
+  onProgress?: (
+    message: Extract<Message, { type: 'speech-started' | 'control-stopped' }>,
+  ) => void,
 ): Promise<Message> {
   return new Promise((resolve, reject) => {
     let data = Buffer.alloc(0);
@@ -40,7 +42,10 @@ export function receive(
           if (newline < 0) return;
           const message = parseMessage(data.subarray(0, data.length - 1));
           data = Buffer.alloc(0);
-          if (message.type !== 'speech-started')
+          if (
+            message.type !== 'speech-started' &&
+            message.type !== 'control-stopped'
+          )
             return finish(undefined, message);
           if (!onProgress || progressSeen)
             throw new ProtocolError('invalid_message');
@@ -71,7 +76,7 @@ export async function request(
   options: {
     signal?: AbortSignal;
     onProgress?: (
-      message: Extract<Message, { type: 'speech-started' }>,
+      message: Extract<Message, { type: 'speech-started' | 'control-stopped' }>,
     ) => void;
   } = {},
 ): Promise<Message> {

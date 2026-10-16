@@ -83,8 +83,10 @@ class Input:
         self.vad = sherpa.VoiceActivityDetector(vad_config, buffer_size_in_seconds=1)
         self.recognizer: StreamingRecognizer = WhisperRecognizer(config, sherpa)
 
-    def recognize(self, emit: Any) -> dict[str, Any]:
+    def recognize(self, emit: Any, cancelled: Any = None, echo_reference: Any = None) -> dict[str, Any]:
         source = selected_source(self.config)
+        if echo_reference is not None and (source['name'].endswith('.monitor') or source.get('monitor_of_sink_name')):
+            raise RuntimeError('input_device_missing')
         spec = source['sample_specification'].split()
         channels, rate = int(spec[-2].removesuffix('ch')), int(spec[-1].removesuffix('Hz'))
         if not 1 <= channels <= 8 or not 8000 <= rate <= 192000:
@@ -100,18 +102,24 @@ class Input:
         resampler = self.soxr.ResampleStream(rate, 16000, 1, dtype='float32')
         # Manual-only pre-roll starts after the cue: preserve audio preceding VAD onset,
         # without opening an idle microphone or retaining acknowledgment audio.
-        ring: deque[Any] = deque(maxlen=(self.config['audio']['pre_roll_ms'] * 16 + 511) // 512)
+        ring: deque[Any] = deque(maxlen=((128 if echo_reference is not None else self.config['audio']['pre_roll_ms']) * 16 + 511) // 512)
         utterance: list[Any] = []
         pending = self.np.zeros(0, dtype=self.np.float32)
         speaking = False
         started = time.monotonic()
-        cap = self.config['vad']['max_utterance_seconds']
+        cap = 2 if echo_reference is not None else self.config['vad']['max_utterance_seconds']
+        boundary = None
+        if echo_reference is not None:
+            stop_control = importlib.import_module('apps.audio.stop_control' if __package__ else 'stop_control')
+            # Require a silence boundary in every window, including after a
+            # truncated utterance. A continued phrase's tail cannot be a command.
+            boundary = stop_control.ControlBoundary(max(11, (self.config['vad']['end_silence_ms'] * 16 + 511) // 512))
         last_check = started
         frame_bytes = rate // 50 * channels * 2
         raw = bytearray()
         try:
             assert capture.stdout
-            while time.monotonic() - started < cap:
+            while time.monotonic() - started < cap and not (cancelled and cancelled.is_set()):
                 if time.monotonic() - last_check >= .25:
                     selected_source(self.config)
                     last_check = time.monotonic()
@@ -135,7 +143,7 @@ class Input:
                         utterance.append(frame.copy())
                     else:
                         ring.append(frame.copy())
-                        if active:
+                        if (boundary.accept(active) if boundary is not None else active):
                             speaking = True
                             emit('speech_started')
                             utterance.extend(ring)
@@ -155,7 +163,16 @@ class Input:
             ring.clear()
         endpoint = time.monotonic()
         emit('endpoint', elapsed_ms=round((endpoint - started) * 1000))
-        text = self.recognizer.recognize(self.np.concatenate(utterance)) if speaking else ''
+        endpoint_complete = speaking and not active
+        echo = False
+        samples = self.np.concatenate(utterance) if utterance else self.np.zeros(0, dtype=self.np.float32)
+        if echo_reference is not None:
+            stop_control = importlib.import_module('apps.audio.stop_control' if __package__ else 'stop_control')
+            echo = stop_control.is_echo(samples, echo_reference, self.np)
+        text = (self.recognizer.recognize(samples)
+                if speaking and (echo_reference is None or endpoint_complete) and not echo and not (cancelled and cancelled.is_set()) else '')
         utterance.clear()
         emit('recognition_final', elapsed_ms=round((time.monotonic() - endpoint) * 1000))
+        if echo_reference is not None:
+            return {'text': text, 'endpoint': endpoint_complete, 'echo': echo}
         return {'text': text}

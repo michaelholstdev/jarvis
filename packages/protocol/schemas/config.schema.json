@@ -308,6 +308,10 @@
           "type": "boolean",
           "default": false,
           "const": false
+        },
+        "voice_stop": {
+          "type": "boolean",
+          "default": false
         }
       }
     },
