@@ -49,43 +49,85 @@ output. It speaks the synthetic fixture:
 
 > Berlin ist die Hauptstadt. München liegt in Bayern. Hamburg hat einen Hafen.
 
+The probe seeds ONNX Runtime with 42 only inside its reference session and its
+worker launcher. It keeps the production synthesis settings and real playback
+implementation. A separate inference session synthesizes each of the three literal
+fixture sentences and resamples it to 48 kHz. Those reference sample counts and
+waveforms establish the sentence boundaries before any adapter report is observed.
+The seeded fixture is reproducible; ordinary production synthesis remains stochastic.
+
 First it completes playback, then repeats synthesis and interrupts before play,
 700 ms into the first sentence, 700 ms after the first drained prefix, and 350 ms
-before the measured baseline completion time. Piper is stochastic; these timing
-assertions can fail on another host. A failure requires inspection/remeasurement,
-not silently widening the expected prefix. Independent `parec` capture of only the
-null sink's monitor stays in memory and counts samples above amplitude 32/32768.
-Assertions require real partial audio, exclude complete playback, and compare
-retained prefixes with baseline monitor activity (15% synthesis variability
-allowance). This validates adapter tracking independently of the core's reports;
-it does not establish acoustic audibility or exact word alignment. PCM is discarded,
-and reports contain counts/times only. There is no recording of ambient speech.
+before measured baseline completion. Three more trials cancel immediately after
+reports 27, 52 and 76. Baseline elapsed time selects only the late-interruption time;
+it never supplies the expected PCM or validates a delivery claim.
+
+Independent `parec` capture of only the null sink's monitor stays in bounded memory.
+Every delivery callback freezes its current capture as an immutable snapshot.
+Afterward the probe locates each expected sentence waveform in that snapshot in
+order, requiring normalized correlation ≥0.9999. Stream startup/gaps and constant
+output gain are allowed. At most the final **20 ms of each reference sentence** is
+excluded to account for the 10 ms capture frames and reader scheduling. This is a
+fixed measurement tolerance, not permission to omit an arbitrary percentage of
+speech. Reports need the actual waveform, rather than enough amplitude activity;
+later captured PCM cannot rescue a premature report. Missing/wrong reference PCM
+fails closed. Any seed/runtime/device mismatch requires inspection, not widening
+the waveform threshold. PCM is discarded, and reports contain counts/times only.
+No physical microphone is opened and no ambient speech is recorded.
+
+A negative control leaves real synthesis/playback/drain unchanged but falsely emits
+offset 52 at 900 ms into the second sentence. This command must exit nonzero with
+`AssertionError: unobserved sentence PCM`:
+
+```sh
+.venv/bin/python scripts/verify-delivery.py /absolute/path/to/de_DE-thorsten-medium.onnx --inject-premature-report
+```
+
+The comparator regression checks use known source waveforms and a frozen capture
+missing the final 490 ms of the second sentence. They also check wrong/silent PCM,
+the fixed 20 ms tolerance, and that later audio does not validate an earlier report:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -p delivery_probe_test.py
+```
+
+This validates adapter tracking independently of its reports. It does not establish
+physical audibility or exact word alignment.
 
 ## Measured precision and limits
 
 2026-10-16, this development host's PipeWire/Pulse session, pinned Thorsten medium,
 CPU provider with two inference threads, 22050 → 48000 Hz soxr, mono signed 16-bit,
-20 ms writes and per-sentence drain. One full baseline and four interruption trials:
+20 ms writes and per-sentence drain. Reference seed 42 produced sentence sample
+counts **67988 / 63530 / 62973**, corresponding to approximately
+**1416 / 1324 / 1312 ms** at 48 kHz. One full baseline and seven cancellation trials
+passed the independent waveform comparisons:
 
-| Trial | Retained UTF-16 chars | Monitor active audio | Elapsed including cancellation/tail collection |
+| Trial | Retained UTF-16 chars | Monitor active audio | Elapsed including cancellation/validation |
 | --- | ---: | ---: | ---: |
-| Full | 76 | 3480 ms | 4351 ms |
+| Full | 76 | 3488 ms | 4190 ms |
 | Before output | 0 | 0 ms | 7 ms |
-| During first sentence | 0 | 401 ms | 858 ms |
-| During second sentence | 27 | 1657 ms | 2274 ms |
-| Near completion | 52 | 3211 ms | 4160 ms |
+| During first sentence | 0 | 587 ms | 859 ms |
+| During second sentence | 27 | 1766 ms | 2311 ms |
+| Near completion | 52 | 3271 ms | 4026 ms |
+| Immediately after report 27 | 27 | 1162 ms | 1610 ms |
+| Immediately after report 52 | 52 | 2313 ms | 2984 ms |
+| Immediately after report 76 | 76 | 3488 ms | 4343 ms |
 
-Baseline drained offsets 27/52/76 arrived at 1636/3028/4350 ms. The two
-later interruptions retained exactly the preceding sentence boundary; even near
-completion the last 24 characters stayed out. Partial speech omitted during the
-first trial included 401 ms of active monitor audio. Sentence drain intervals in
-this baseline were approximately 1.64/1.39/1.32 seconds, including startup/stream
-pauses. These are fixture measurements, not a general error bound or latency
-percentile. Monitor activity excludes silence and does not count intelligible words.
-The probe has no hardware/acoustic measurement, and server drain cannot prove that
-a person heard speech. Device mute, hardware buffers and already submitted tails
-still need actual headset/speaker validation. Repeated statistical measurements and
-word alignment remain unsupported.
+Baseline offsets 27/52/76 arrived at 1449/2798/4131 ms. Their frozen capture
+snapshots matched the separately synthesized sentence PCM within the fixed 20 ms
+capture-lag tolerance. The premature-offset-52 negative control was rejected with
+`unobserved sentence PCM`; no report-derived baseline was used for that decision.
+
+Active monitor audio counts samples above amplitude 32/32768 for diagnostics only;
+these totals are not the delivery oracle and do not count intelligible words.
+Elapsed times include control/analysis work and are not acoustic stop latency.
+These are fixture measurements, not a general error bound or latency percentile.
+A nearly completed current sentence can still be omitted entirely. The probe has
+no hardware/acoustic measurement, and server drain cannot prove that a person
+heard speech. Device mute, hardware buffers and already submitted tails still need
+actual headset/speaker validation. Repeated statistical measurements and word
+alignment remain unsupported.
 
 ## Manual interruption and follow-up demonstration
 

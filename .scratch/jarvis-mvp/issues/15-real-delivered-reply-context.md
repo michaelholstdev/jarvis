@@ -56,3 +56,35 @@ Zero findings; real adapter tracking, deterministic next-request proof and preci
 documentation satisfy #15. Physical headset/speaker validation is explicitly open.
 
 Map pointer: [implementation map](../map.md).
+
+## Review follow-up: independent playback evidence
+
+The fresh review found one P2: the original probe's baseline used the adapter's
+own delivery events, so it could accept a prematurely reported sentence prefix.
+That validation gap is fixed:
+
+- An independent seeded Piper inference session establishes the expected PCM for
+  each literal fixture sentence before any delivery report. The real worker uses
+  the same ONNX seed only in the probe launcher; production settings are unchanged.
+- Each delivery callback freezes the monitor capture. The verifier matches source
+  sentence waveforms in order against that immutable snapshot; later PCM and
+  report-derived amplitude totals cannot validate a premature claim. Its fixed
+  capture-lag tolerance is 20 ms per sentence, with correlation threshold 0.9999.
+- Added cancellation immediately after each report (27/52/76), alongside the
+  existing early/mid/late trials. All eight real silent-sink trials passed.
+- A real-playback negative control emits offset 52 at 900 ms into the second
+  sentence, leaving synthesis/playback/drain unchanged. The probe rejects it with
+  `AssertionError: unobserved sentence PCM` (expected nonzero exit).
+- Regression checks reject a source waveform missing its final 490 ms, reject
+  silent PCM and a 21 ms shortfall, permit the fixed 20 ms capture tolerance,
+  and prove later PCM cannot rescue an earlier frozen snapshot.
+
+Reference seed 42 produced 67988/63530/62973 samples per sentence at 48 kHz.
+Updated measurements, exact commands and limits are in the
+[delivery guide](../../../docs/delivered-context.md). Physical headset/speaker
+acceptance remains explicitly unvalidated.
+
+Final validation: `npm run check`, probe/regression Ruff checks, focused regression
+checks, and `git diff --check` passed. Full `npm test` passed **203 Node / 21 Python
+tests**. Follow-up Standards review: **0 findings**. Follow-up Spec review:
+**0 findings**; the original P2 is resolved.
