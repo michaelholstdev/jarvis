@@ -10,6 +10,7 @@ import {
 } from '../../packages/protocol/index.js';
 import { configPath, loadConfig } from './config.js';
 import { createCore } from './core.js';
+import { DesktopGuard, monitorDesktop } from './desktop.js';
 import { diagnostic as logDiagnostic } from './diagnostics.js';
 import { probeInference } from './ollama.js';
 import { runtimeDirectory } from './runtime.js';
@@ -39,12 +40,18 @@ async function main() {
     privacyControls[command as keyof typeof privacyControls];
   if (
     !privacyControl &&
-    !['start', 'health', 'activate', 'stop', 'demo', 'text'].includes(
-      command ?? '',
-    )
+    ![
+      'start',
+      'start-desktop',
+      'health',
+      'activate',
+      'stop',
+      'demo',
+      'text',
+    ].includes(command ?? '')
   )
     throw new Error(
-      'usage: start | health | config | activate | stop | text | demo [utterance] | lock | unlock | mute | unmute | hardware-mute | hardware-unmute',
+      'usage: start | start-desktop | health | config | activate | stop | text | demo [utterance] | lock | unlock | mute | unmute | hardware-mute | hardware-unmute',
     );
   const directory = runtimeDirectory();
   const corePath = join(directory, 'core.sock');
@@ -53,7 +60,7 @@ async function main() {
     console.log(text ?? 'Keine Textantwort in dieser Sitzung verfügbar.');
     return;
   }
-  if (command !== 'start') {
+  if (command !== 'start' && command !== 'start-desktop') {
     const response = await request(
       corePath,
       'cli',
@@ -186,6 +193,23 @@ async function main() {
     });
     return privacyDrive;
   };
+  const applyPrivacy = (
+    source: 'locked' | 'muted' | 'hardware_muted',
+    active: boolean,
+  ) => {
+    if (core.status().inhibitions[source] !== active) privacyGeneration++;
+    core.dispatch({ type: 'inhibition-changed', source, active });
+    if (core.status().privacy_pending) runningTurn = undefined;
+  };
+  let serving = false;
+  const desktopGuard =
+    command === 'start-desktop'
+      ? new DesktopGuard((source, active) => {
+          applyPrivacy(source, active);
+          if (serving) void synchronizePrivacy().catch(() => loseAudio());
+        })
+      : undefined;
+  let stopDesktop = () => {};
   const recovery = setInterval(() => {
     void Promise.all([refresh(), refreshInference()])
       .then(async () => {
@@ -243,10 +267,9 @@ async function main() {
           throw new ProtocolError('invalid_message');
         if (message.type === 'inhibition-changed') {
           // Apply privacy before any asynchronous readiness/cleanup request.
-          if (core.status().inhibitions[message.source] !== message.active)
-            privacyGeneration++;
-          core.dispatch(message);
-          if (core.status().privacy_pending) runningTurn = undefined;
+          if (desktopGuard)
+            desktopGuard.control(message.source, message.active);
+          else applyPrivacy(message.source, message.active);
           try {
             await synchronizePrivacy();
           } catch (error) {
@@ -346,23 +369,35 @@ async function main() {
   });
   server.maxConnections = config.transport.max_connections;
   server.on('error', () => {
+    stopDesktop();
     clearInterval(ticker);
     clearInterval(recovery);
     logDiagnostic({ event: 'error', code: 'socket_in_use_or_unavailable' });
     process.exitCode = 1;
   });
   server.listen(corePath, () => {
+    serving = true;
+    if (desktopGuard) {
+      stopDesktop = monitorDesktop(
+        config.audio.input_device,
+        config.audio.output_device,
+        desktopGuard,
+      );
+      void synchronizePrivacy().catch(() => loseAudio());
+    }
     chmodSync(corePath, 0o600);
     console.log(
       JSON.stringify({
         event: 'service_started',
         service: 'core',
-        mode: 'mock',
+        mode: core.status().mode,
+        desktop: !!desktopGuard,
       }),
     );
   });
   const stop = () => {
     core.dispatch({ type: 'audio-lost' });
+    stopDesktop();
     clearInterval(ticker);
     clearInterval(recovery);
     for (const socket of sockets) socket.destroy();

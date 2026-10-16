@@ -53,9 +53,9 @@ rm "$XDG_RUNTIME_DIR/jarvis/audio.sock"  # only after audio is confirmed stopped
 ```
 
 A live socket is never replaced automatically. The core does not own or restart
-Ollama. The real Ollama adapter, device hotplug/suspend recovery, and installed
-systemd user units remain later integration tickets; mock health cannot validate
-those capabilities. Do not enable root services or linger for these mocks.
+Ollama. For installed KDE services, desktop hotplug/suspend handling and exact lifecycle
+commands, use [the deployment guide](../systemd/README.md). Mock health cannot
+validate hardware behavior. Do not enable root services or linger.
 
 For bounded journal collection during foreground development, run the services
 under separate identifiers instead of redirecting into growing files:
@@ -78,10 +78,10 @@ long unattended runs. Jarvis creates no log files or transcript archives.
 
 `recovery.probe_interval_ms` and `recovery.playback_timeout_ms` are the runtime
 watchdog settings; see [configuration](configuration.md) for defaults/ranges.
-Process restart is deliberately manual in this foreground release. For the
-future user units, use `Restart=on-failure`, `RestartSec=2s`,
-`StartLimitIntervalSec=60s`, `StartLimitBurst=5`, and finite journal retention.
-Once those units are installed by ticket #12, exact inspection/recovery is:
+Process restart is manual for foreground development. Installed user units use
+`Restart=on-failure`, `RestartSec=15s`, `StartLimitIntervalSec=60s`,
+`StartLimitBurst=5`, and host-managed finite journal retention.
+After installing the user units, exact inspection/recovery is:
 
 ```sh
 systemctl --user status jarvis-core.service jarvis-audio.service
@@ -92,8 +92,9 @@ systemctl --user reset-failed jarvis-audio.service
 systemctl --user start jarvis-audio.service
 ```
 
-These systemctl commands do not apply until the units exist. No hardware,
-acoustic cue, real-model recovery, or restart timing is claimed as validated.
+These systemctl commands require [unit installation](../systemd/README.md).
+Hardware, acoustic cue, real-model recovery, and actual restart timing require
+[desktop acceptance](desktop-acceptance.md).
 
 
 If `audio_cleanup_pending:true`, the peer may still have old work running.

@@ -13,3 +13,7 @@
 - [ ] Local sockets/configuration/state use standard XDG locations with restrictive user permissions; no public listener is introduced.
 - [ ] Target-desktop acceptance verifies startup, shortcut acknowledgment timing, no idle transcription, no locked/muted capture, independent inhibition clearing, and no canceled-work resumption.
 - [ ] Document exact user-service installation/enable/start/stop/status/log commands, KDE shortcut setup, device configuration, suspend/reconnect troubleshooting, update and uninstall procedures, and manual-only readiness; describe any system package steps separately from user services.
+
+## Comments
+
+- Claimed for implementation; baseline `7db9f4b941d9c1fddcd76bf51eac58d86bf3849e` (recorded below before review). Confirmed test seams: desktop monitor → privacy/capability interface and CLI/service startup under temporary XDG directories. Target desktop acceptance remains an explicit hardware gate.

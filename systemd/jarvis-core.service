@@ -1,0 +1,27 @@
+[Unit]
+Description=Jarvis private desktop conversation core
+After=graphical-session.target jarvis-audio.service
+Wants=jarvis-audio.service
+PartOf=graphical-session.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=exec
+WorkingDirectory=%h/.local/share/jarvis
+ExecStartPre=%h/.local/share/jarvis/.venv/bin/python scripts/service-runtime.py prepare core
+ExecStart=/usr/bin/node dist/apps/core/main.js start-desktop
+ExecStartPost=%h/.local/share/jarvis/.venv/bin/python scripts/service-runtime.py wait core
+Restart=on-failure
+RestartSec=15s
+TimeoutStartSec=60s
+TimeoutStopSec=10s
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=yes
+LimitCORE=0
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target

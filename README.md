@@ -7,7 +7,7 @@ runnable foundation in default mock mode. Optional [CPU Piper output](docs/audio
 
 Layout: `apps/core` (CLI and orchestration), `apps/audio` (Python mock/optional Piper output),
 `packages/protocol` (shared schemas/types), `config` (defaults and model records),
-`tests` (hardware-free checks), `systemd` (future deployment notes).
+`tests` (hardware-free checks), `systemd` (KDE user service deployment).
 
 Prerequisites: Linux with Unix sockets, Node.js >=22 (tested with 24), npm,
 Python >=3.10 (project environment tested with 3.11), and uv (tested with
@@ -318,12 +318,14 @@ or timed-out cleanup keeps activation blocked, including across audio loss and
 reconnection. Privacy flags live in the current daemon; real startup/restart
 integration must read current desktop/device state before enabling capture.
 
-These commands and socket events **simulate** desktop and device signals.
-The Python service holds no microphone, pre-roll or synthesis buffers and makes
-no audible output. Tests verify cancellation and cleanup requests, independent
-precedence, audio gating and stale-result rejection. Real KDE lock notifications,
-PipeWire/device hardware-mute monitoring, physical buffer erasure and stop latency
-remain unvalidated and belong to desktop/audio integration (ticket #12).
+The `start` entrypoint keeps these explicit/simulated controls for development.
+The installed services run `start-desktop`, which merges real KDE lock/suspend
+and selected PipeWire source mute with independent CLI controls. Unknown desktop
+state inhibits capture until checked; reconnect does not resume a conversation.
+See [login installation and KDE shortcut setup](systemd/README.md) and
+[desktop acceptance](docs/desktop-acceptance.md). Physical mute/stop timing and
+actual login/suspend acceptance remain unvalidated.
+
 
 
 ## Failure, retry and capability recovery (#07)
@@ -354,3 +356,10 @@ Manual microphone turns: see [German capture and recognition setup](docs/audio-i
 See [Ollama installation, model provenance, configuration, health, voice operation and optional synthetic smoke check](docs/ollama.md). Set `audio.mode: voice` and `llm.mode: ollama` to enable the complete path; `llm.mode: mock` preserves the earlier scripted demonstrations.
 
 Concise German speech and deliberate temporary CLI text access: [text answers](docs/text-answers.md).
+
+## KDE login and device recovery (#12)
+
+Install the two systemd user units and configure a single-press KDE shortcut using
+[the deployment guide](systemd/README.md). It includes exact startup, health, log,
+device, recovery, update and uninstall commands. Manual activation is the supported
+mode; wake detection remains unavailable.
