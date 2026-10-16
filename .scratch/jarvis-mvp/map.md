@@ -9,4 +9,5 @@
 - [07: Failure, retry and capability recovery](issues/07-failure-retry-capability-recovery.md#answer) — resolved; explicit retry, capability health, bounded socket recovery and diagnostics implemented.
 - [08: Real German synthesis and playback](issues/08-german-synthesis-and-playback.md#answer) — resolved; pinned CPU Piper output, stable sink selection, resampling, drained completion and cancellation verified on a silent PipeWire sink.
 - [09: Manual microphone question and scripted spoken reply](issues/09-microphone-question-scripted-reply.md#answer) — resolved; optional PipeWire capture, CPU Silero/Whisper, privacy cancellation, and real synthetic German core/socket/playback checks pass; hardware accuracy remains unvalidated.
+- [10: Local Ollama voice conversations](issues/10-local-ollama-voice-conversations.md#answer) — resolved; streamed loopback generation, automatic bounded microphone follow-ups, cancellation, retry and capability health verified with fake services; real Ollama adapter check passed, full speech/hardware smoke remains unvalidated.
 - Remaining tickets are in [issues/](issues/); other M1–M4 gates remain open.
