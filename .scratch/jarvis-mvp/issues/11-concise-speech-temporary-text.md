@@ -18,14 +18,15 @@
 
 ## Answer
 
-Implemented on the current branch in `4f11b2d`, with review correction
-`465f0d6`.
+Implemented on the current branch in `4f11b2d`, with review corrections
+`465f0d6` and `c5e0a8b`.
 
 - Local generation defaults to concise German and follows explicit detail
-  requests. Speech omits fenced/indented code and Markdown pipe tables, keeping
-  prose and adding a German notice for deliberate CLI text access.
-- Formatted-only answers request one bounded, cancellable, content-bearing prose
-  summary from the same model. Unusable summaries fail through explicit retry;
+  requests. Markdown tokenization detects fenced/indented code, including nested
+  blocks, and pipe tables with short delimiter cells.
+- Every answer containing code blocks or tables requests one bounded, cancellable,
+  content-bearing prose summary from the same model and adds a German notice for
+  deliberate CLI text access. Unusable summaries fail through explicit retry;
   there is no repeated summary loop. Original text stays separate.
 - `node dist/apps/core/main.js text` deliberately prints the current answer,
   without persistence or routine logging. New accepted questions clear the old
@@ -41,7 +42,7 @@ Implemented on the current branch in `4f11b2d`, with review correction
 Validation: user confirmed the conversation-controller and daemon/CLI seams.
 Red/green checks covered speech separation, temporary text access, cleanup,
 stopped delivery/context, near-limit output and formatted-only summaries.
-The final `npm run check` passed. The full `npm test` passed **167 Node tests
+The final `npm run check` passed. The full `npm test` passed **176 Node tests
 and 9 Python tests**, including deterministic fake model and mock-audio checks
 through the running daemon and CLI. No real model quality, hardware speech or
 latency claim is made.
@@ -52,3 +53,31 @@ formatted-only summaries was fixed in `465f0d6`; re-reviews returned
 **Standards: 0 findings; Spec: 0 findings**.
 
 Map pointer: [implementation map](../map.md).
+
+
+## Comments
+
+### 2026-10-16 — Post-implementation review fixes
+
+Resolved all three findings from the fresh review against `2aacf60` in `c5e0a8b`:
+
+- **P2 — Markdown variants reached speech:** pinned Marked `18.1.1` tokenization
+  replaces the regex scan. Controller regressions cover blockquoted fences,
+  two-tab indentation, list-contained fences, and short table delimiters.
+- **P2 — Introductory prose bypassed meaningful summaries:** every answer
+  containing code blocks or tables now requests one separate content-bearing
+  prose summary. The introductory-prose regression failed before the fix and
+  passed afterward. Cancellation, retry and delivered-only context are preserved.
+- **P2 — Escaped text exceeded CLI frames:** text answers use UUID snapshot IDs
+  and Unicode code-point offsets. Pages fit the actual encoded frame limit,
+  including escaping and metadata. The CLI buffers the bounded full answer before
+  printing and rejects changed/missing snapshots and invalid progress. The
+  escaped-answer daemon/CLI regression failed with `frame_too_large` before the
+  fix and passes afterward at frame limits of 8192 and 1024 bytes. Unicode/control
+  characters survive paging; lock and replacement invalidate continuation IDs.
+  Separate CLI tests verify failed continuations print no partial content.
+
+Final validation: `npm run check` passed; `npm test` passed **176 Node tests and
+9 Python tests**. Independent Standards and Spec re-reviews through `c5e0a8b`
+returned **0 findings on each axis**, confirming all three issues resolved.
+No real-model summary quality, physical audio or latency validation is claimed.
