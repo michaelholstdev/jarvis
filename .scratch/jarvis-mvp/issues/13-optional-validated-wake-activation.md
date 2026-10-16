@@ -42,6 +42,15 @@ Ticket #12's hardware gate and M3 also remain open.
 
 Validation: focused TypeScript and Python loader/CLI tests observed the old
 diagnostics failing before the fixes and now pass. `npm run check` passes.
-Full-suite and two-axis review results are recorded after completion below.
+Full `npm test` passes **183 Node + 10 Python tests**. The initial sandboxed
+run could not run socket-based tests; the permitted local-socket rerun passed.
+
+Review of implementation commit `4422cdf` against the baseline above:
+
+- **Standards:** no findings; schema validation, glossary vocabulary and
+  content-free diagnostics retained; no actionable baseline smells.
+- **Spec:** no findings against the explicitly permitted manual-only fallback;
+  missing wake implementation and hardware measurements remain disclosed and
+  unchecked. This review does not establish hands-free acceptance.
 
 Map: [MVP implementation map](../map.md).
