@@ -97,11 +97,11 @@ drain; synthesis completion never implies playback completion. Core follow-up
 starts after that result. Cancel/privacy destroys the process and Pulse stream,
 erases its PCM and model memory, and emits `playback_cancelled`; next use reloads
 the model. The server/device may have a small already-submitted hardware tail.
-Completed replies report their UTF-16 text length. Interrupted replies report
-**zero** delivered characters conservatively because this runtime/voice has no
-validated word alignment. Audible partial speech is therefore omitted from
-context; no unheard text is retained. This precision limit needs later hardware
-and alignment work. Routine events contain IDs/status only, never answer content.
+Completed replies report their UTF-16 text length. Interrupted replies retain only fully drained sentence prefixes. The current
+sentence is omitted even if partly audible; this voice has no validated word
+alignment. Delivery diagnostics contain operation IDs and UTF-16 character counts,
+never answer content. See [delivered context](delivered-context.md) for real
+playback measurements, reproducible interruption/follow-up checks and limits.
 
 ## Checks and troubleshooting
 

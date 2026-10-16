@@ -158,3 +158,30 @@ class SpokenStopOutputTest(unittest.IsolatedAsyncioTestCase):
                 await playback
             finally:
                 await output.stop()
+
+class DeliveryEvidenceTest(unittest.IsolatedAsyncioTestCase):
+    async def test_delivery_observer_reports_only_validated_monotonic_playback_evidence(self):
+        import sys
+        config = load_config()
+        output = Output(config)
+        spawn = asyncio.create_subprocess_exec
+        worker = ('import sys,json,time; json.loads(sys.stdin.readline()); '
+                  'print(\'{"event":"ready"}\',flush=True); '
+                  'json.loads(sys.stdin.readline()); '
+                  'print(\'{"event":"playback_delivered","delivered_chars":7}\',flush=True); '
+                  'print(\'{"event":"playback_delivered","delivered_chars":3}\',flush=True); '
+                  'time.sleep(30)')
+
+        async def fixture_process(*args, **kwargs):
+            return await spawn(sys.executable, '-c', worker, **kwargs)
+
+        evidence = []
+        with patch('asyncio.create_subprocess_exec', side_effect=fixture_process):
+            try:
+                with self.assertRaisesRegex(OutputError, '^unavailable$'):
+                    await output.run({'type': 'play', 'operation_id': 'reply', 'text': 'Hallo. Rest.'}, on_delivery=evidence.append)
+                self.assertEqual(evidence, [7])
+                report = await output.run({'type': 'cancel', 'operation_id': 'cancel', 'target_operation_id': 'reply'})
+                self.assertEqual(report['delivered_chars'], 0, 'failed worker evidence is erased')
+            finally:
+                await output.stop()

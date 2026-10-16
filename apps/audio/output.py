@@ -116,11 +116,11 @@ class Output:
         if process is not None:
             await self.destroy(process)
 
-    def run(self, operation: dict[str, Any], on_speech: Callable[[], None] | None = None, on_control: Callable[[], None] | None = None) -> Coroutine[Any, Any, dict[str, Any]]:
+    def run(self, operation: dict[str, Any], on_speech: Callable[[], None] | None = None, on_control: Callable[[], None] | None = None, *, on_delivery: Callable[[int], None] | None = None) -> Coroutine[Any, Any, dict[str, Any]]:
         # Capture admission before create_task can queue work behind a privacy barrier.
-        return self._run(operation, self.generation, on_speech, on_control)
+        return self._run(operation, self.generation, on_speech, on_control, on_delivery)
 
-    async def _run(self, operation: dict[str, Any], generation: int, on_speech: Callable[[], None] | None, on_control: Callable[[], None] | None) -> dict[str, Any]:
+    async def _run(self, operation: dict[str, Any], generation: int, on_speech: Callable[[], None] | None, on_control: Callable[[], None] | None, on_delivery: Callable[[int], None] | None) -> dict[str, Any]:
         kind = operation['type']
         if kind in {'cancel', 'privacy'}:
             delivered = self.completed[1] if kind == 'cancel' and self.completed and self.completed[0] == operation.get('target_operation_id') else 0
@@ -171,9 +171,12 @@ class Output:
                     on_speech = None
                 if event['event'] == 'playback_delivered' and kind == 'play':
                     delivered = event.get('delivered_chars')
-                    if not isinstance(delivered, int) or not 0 <= delivered <= len(operation.get('text', '').encode('utf-16-le')) // 2:
+                    previous = self.completed[1] if self.completed else 0
+                    if type(delivered) is not int or not previous <= delivered <= len(operation.get('text', '').encode('utf-16-le')) // 2:
                         raise OutputError('unavailable')
                     self.completed = (operation['operation_id'], delivered)
+                    if on_delivery is not None:
+                        on_delivery(delivered)
                 if event['event'] == 'control_stopped' and kind == 'play' and on_control is not None:
                     on_control()
                     on_control = None
@@ -186,7 +189,8 @@ class Output:
                     report_diagnostic(event)
                     raise OutputError('unavailable')
                 print(json.dumps({'event': event['event'], 'operation_id': operation['operation_id'],
-                                  **({'elapsed_ms': event['elapsed_ms']} if 'elapsed_ms' in event else {})}), flush=True)
+                                  **({'elapsed_ms': event['elapsed_ms']} if 'elapsed_ms' in event else {}),
+                                  **({'delivered_chars': event['delivered_chars']} if event['event'] == 'playback_delivered' else {})}), flush=True)
         except (OSError, ValueError, asyncio.TimeoutError, OutputError):
             if generation == self.generation:
                 await self.stop()
