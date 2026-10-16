@@ -381,6 +381,36 @@
           "maxLength": 64
         }
       }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "text-answer-request"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "text"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "text-answer"
+        },
+        "text": {
+          "type": ["string", "null"],
+          "maxLength": 4096
+        }
+      }
     }
   ],
   "definitions": {

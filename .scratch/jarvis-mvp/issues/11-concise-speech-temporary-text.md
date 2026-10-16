@@ -6,6 +6,8 @@
 
 **Status:** ready-for-agent
 
+**Claimed by:** Codex (implementation in progress).
+
 - [ ] Answers default to concise German and respond to explicit requests for more detail; spoken output avoids reading code blocks and large tables verbatim.
 - [ ] Answers containing unsuitable spoken content receive a meaningful spoken summary indicating deliberate CLI text access.
 - [ ] The CLI explicitly displays the current session's text answer without automatically saving it or adding answer/transcript/prompt content to routine logs.

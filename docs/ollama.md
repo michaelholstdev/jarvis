@@ -97,6 +97,9 @@ empty or incomplete replies fail as a whole; no partial answer is spoken.
 Speech starts only after successful completed generation. Model thinking content
 is ignored; long reasoning may still consume the stream/deadline budget.
 
+For concise speech, detail requests and deliberate temporary CLI text access,
+see [text answers](text-answers.md).
+
 ## Start, health and conversations
 
 ```sh

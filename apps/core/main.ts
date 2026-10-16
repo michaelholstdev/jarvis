@@ -38,10 +38,12 @@ async function main() {
     privacyControls[command as keyof typeof privacyControls];
   if (
     !privacyControl &&
-    !['start', 'health', 'activate', 'stop', 'demo'].includes(command ?? '')
+    !['start', 'health', 'activate', 'stop', 'demo', 'text'].includes(
+      command ?? '',
+    )
   )
     throw new Error(
-      'usage: start | health | config | activate | stop | demo [utterance] | lock | unlock | mute | unmute | hardware-mute | hardware-unmute',
+      'usage: start | health | config | activate | stop | text | demo [utterance] | lock | unlock | mute | unmute | hardware-mute | hardware-unmute',
     );
   const directory = runtimeDirectory();
   const corePath = join(directory, 'core.sock');
@@ -64,16 +66,24 @@ async function main() {
             source: privacyControl[0],
             active: privacyControl[1],
           }
-        : command === 'activate' || command === 'stop'
-          ? { version: 1, type: command }
-          : command === 'demo'
-            ? {
-                version: 1,
-                type: 'demo',
-                text: process.argv[3] ?? 'Wie geht es dir?',
-              }
-            : undefined,
+        : command === 'text'
+          ? { version: 1, type: 'text-answer-request' }
+          : command === 'activate' || command === 'stop'
+            ? { version: 1, type: command }
+            : command === 'demo'
+              ? {
+                  version: 1,
+                  type: 'demo',
+                  text: process.argv[3] ?? 'Wie geht es dir?',
+                }
+              : undefined,
     );
+    if (command === 'text' && response.type === 'text-answer') {
+      console.log(
+        response.text ?? 'Keine Textantwort in dieser Sitzung verfügbar.',
+      );
+      return;
+    }
     if (response.type !== 'ready' || response.service !== 'core')
       throw new Error(
         response.type === 'error' ? response.code : 'invalid_message',
@@ -228,7 +238,8 @@ async function main() {
             message.type === 'inhibition-changed' ||
             message.type === 'activate' ||
             message.type === 'stop' ||
-            message.type === 'demo'
+            message.type === 'demo' ||
+            message.type === 'text-answer-request'
           )
         )
           throw new ProtocolError('invalid_message');
@@ -310,12 +321,21 @@ async function main() {
           await Promise.all([refresh(), refreshInference()]);
         if (core.operations()[0]?.type === 'privacy')
           await synchronizePrivacy();
-        response = {
-          version: 1,
-          type: 'ready',
-          service: 'core',
-          status: core.status(),
-        };
+        if (message.type === 'text-answer-request') {
+          core.dispatch({ type: 'tick' });
+          response = {
+            version: 1,
+            type: 'text-answer',
+            text: core.textAnswer(),
+          };
+        } else {
+          response = {
+            version: 1,
+            type: 'ready',
+            service: 'core',
+            status: core.status(),
+          };
+        }
       } catch (error) {
         response = {
           version: 1,

@@ -253,3 +253,15 @@ UTF-16 units. See [runtime limits and verification](audio-output.md).
 ### Recognition progress (ticket 10)
 
 A recognition request may return one `speech-started` frame (`version:1`, matching `operation_id`) before its final `audio-result`. Core uses this content-free onset to apply the original follow-up deadline and bounded completion allowance. Duplicate or mismatched progress is invalid; progress never resets the socket deadline. Progress and final frames may share a read. Other requests remain single-response. Operational health permits `manual_activation: ready` for real STT and `voice_conversation: ready` when all real conversation adapters are available; see [health semantics](ollama.md). The legacy `mode: mock` status field remains for protocol compatibility; use the individual capabilities.
+
+
+## Temporary text access
+
+A CLI peer may deliberately send `{"version":1,"type":"text-answer-request"}`.
+Core replies with `{"version":1,"type":"text-answer","text":"…"}` or a null
+`text` when no current answer exists. This is the only control response carrying
+answer content; do not log it. Normal `ready` health/control messages stay
+content-free. The answer has the existing core per-answer byte bound and is
+subject to transport framing limits. Reading does not renew session timers or
+promote generated text into delivered context. Closure, lock and mute clear it;
+see [text lifetime and CLI commands](text-answers.md).

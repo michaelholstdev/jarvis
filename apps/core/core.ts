@@ -12,6 +12,7 @@ import { ProtocolError } from '../../packages/protocol/index.js';
 import { audioDeadlineMs } from './audio-deadline.js';
 import { type Config, loadConfig } from './config.js';
 import { operationCapability } from './operation-capability.js';
+import { spokenAnswer } from './spoken-answer.js';
 
 export type ServiceEvent =
   | { type: 'inhibition-changed'; source: InhibitionSource; active: boolean }
@@ -67,6 +68,7 @@ export function createCore(
   let sequence = 0;
   let cancellation: { replacement: boolean; playback: boolean } | null = null;
   let answer = '';
+  let textAnswer: string | null = null;
   let question = '';
   let context: ConversationExchange[] = [];
   let reply: ({ text: string } & PlaybackReport) | null = null;
@@ -106,6 +108,7 @@ export function createCore(
     cancellation = null;
     failureCancellation = false;
     retryQuestion = '';
+    textAnswer = null;
     answer = '';
     question = '';
     context = [];
@@ -516,6 +519,7 @@ export function createCore(
             question = event.text.trim();
             retryQuestion = '';
           }
+          textAnswer = null;
           followUpDeadline = null;
           transition('thinking', 'infer', question);
           if (capabilities.inference === 'unavailable')
@@ -528,7 +532,8 @@ export function createCore(
           return;
         }
         retryQuestion = '';
-        answer = event.text;
+        textAnswer = event.text;
+        answer = spokenAnswer(event.text);
         transition('synthesizing', 'synthesize', answer);
       } else if (event.type === 'synthesized' && state === 'synthesizing') {
         transition('speaking', 'play', answer);
@@ -596,6 +601,9 @@ export function createCore(
             },
           ]
         : [];
+    },
+    textAnswer(): string | null {
+      return textAnswer;
     },
     reply() {
       return reply ? { ...reply } : null;

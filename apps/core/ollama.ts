@@ -104,7 +104,11 @@ export async function generateAnswer(
       model: config.llm.model,
       stream: true,
       messages: [
-        { role: 'system', content: 'Du bist Jarvis. Antworte auf Deutsch.' },
+        {
+          role: 'system',
+          content:
+            'Du bist Jarvis. Antworte auf Deutsch, standardmäßig knapp in wenigen Sätzen. Wenn der Nutzer ausdrücklich mehr Details oder eine ausführliche Erklärung wünscht, antworte ausführlicher. Erkläre Code und Tabellen mit einer verständlichen Zusammenfassung im umgebenden Fließtext. Codebeispiele gehören in Markdown-Codeblöcke, Tabellen in Markdown-Tabellen; sie werden separat als Text bereitgestellt.',
+        },
         ...(operation.context ?? []).flatMap((exchange) => [
           { role: 'user', content: exchange.question },
           { role: 'assistant', content: exchange.reply },

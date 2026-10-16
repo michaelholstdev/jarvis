@@ -71,7 +71,8 @@ export type Message =
       source: InhibitionSource;
       active: boolean;
     }
-  | { version: 1; type: 'activate' | 'stop' }
+  | { version: 1; type: 'activate' | 'stop' | 'text-answer-request' }
+  | { version: 1; type: 'text-answer'; text: string | null }
   | { version: 1; type: 'demo'; text: string }
   | {
       version: 1;

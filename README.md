@@ -352,3 +352,5 @@ Manual microphone turns: see [German capture and recognition setup](docs/audio-i
 ## Local Ollama voice conversations (ticket 10)
 
 See [Ollama installation, model provenance, configuration, health, voice operation and optional synthetic smoke check](docs/ollama.md). Set `audio.mode: voice` and `llm.mode: ollama` to enable the complete path; `llm.mode: mock` preserves the earlier scripted demonstrations.
+
+Concise German speech and deliberate temporary CLI text access: [text answers](docs/text-answers.md).
