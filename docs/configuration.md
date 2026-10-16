@@ -20,7 +20,7 @@ prints deliberately requested configuration, while routine logs never print it.
 | Locale | `de-DE` |
 | Devices | Input/output `default`; stable device identifiers can be configured but are unused by mocks |
 | Internal audio | 16000 Hz mono recognition format reserved; pre-roll 750 ms (500–1000); echo cancellation disabled |
-| Wake | `Hey Jarvis`, model path/threshold `null`; unverified wake models rejected in M0 |
+| Wake | `Hey Jarvis`, model path/threshold must be `null`; wake unavailable in every mode; see [decision and validation gaps](wake-activation.md) |
 | VAD | `silero`; end silence 350 ms (50–5000); max utterance 30 s (1–120) |
 | Recognition | `sherpa-onnx`, `to-be-benchmarked`, CPU; no recognizer loaded |
 | Synthesis | `piper`, `de_DE-thorsten-medium`, CPU; `model_path` defaults to `models/de_DE-thorsten-medium.onnx`; loaded only in `audio.mode: piper` |

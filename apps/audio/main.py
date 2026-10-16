@@ -99,6 +99,11 @@ def load_config() -> dict[str, Any]:
     error = next(jsonschema.Draft7Validator(CONFIG_SCHEMA).iter_errors(value), None)
     if error:
         location = "/" + "/".join(str(item) for item in error.absolute_path)
+        if location in {"/wake_word/model_path", "/wake_word/threshold"}:
+            raise Diagnostic(
+                "invalid_config: /wake_word wake unavailable; set model_path and threshold "
+                "to null for manual activation; see docs/wake-activation.md"
+            )
         raise Diagnostic(f"invalid_config: {location} {error.validator}")
     from urllib.parse import urlsplit
     try:

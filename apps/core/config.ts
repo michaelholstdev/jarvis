@@ -42,6 +42,13 @@ export function loadConfig(path?: string): Config {
   }
   if (!validate(input)) {
     const error = validate.errors?.[0];
+    if (
+      error?.instancePath === '/wake_word/model_path' ||
+      error?.instancePath === '/wake_word/threshold'
+    )
+      throw new Error(
+        'invalid_config: /wake_word wake unavailable; set model_path and threshold to null for manual activation; see docs/wake-activation.md',
+      );
     throw new Error(
       `invalid_config: ${error?.instancePath || '/'} ${error?.keyword ?? 'schema'}`,
     );

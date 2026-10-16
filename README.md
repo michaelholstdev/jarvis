@@ -128,6 +128,11 @@ headset/speaker behavior, spoken stop, desktop lock/mute, device recovery,
 recognition allowance, latency, resource use and offline model-backed operation.
 No performance or voice capability measurements are claimed by M0.
 
+Ticket #13 retains **manual-only activation**: no German-validated wake model is
+selected, and non-null wake model/threshold settings are rejected with fallback
+instructions. See [wake evidence, configuration and German acceptance protocol](docs/wake-activation.md)
+for separate unvalidated headset/speaker results and the remaining hands-free gate.
+
 ## Scripted manual turn (#02)
 
 With both services running, activate once, then submit an utterance within the
