@@ -17,6 +17,7 @@ test(
   { timeout: 15000 },
   async () => {
     const runtime = mkdtempSync(join(tmpdir(), 'jv-text-'));
+    let generatedAnswer = answer;
     const histories: { role: string; content: string }[][] = [];
     const ollama = createServer((req, res) => {
       if (req.url === '/api/tags') {
@@ -28,10 +29,14 @@ test(
         body += chunk;
       });
       req.on('end', () => {
-        histories.push(JSON.parse(body).messages);
-        res.end(
-          `${JSON.stringify({ message: { content: answer }, done: true })}\n`,
-        );
+        const messages = JSON.parse(body).messages;
+        histories.push(messages);
+        const content = messages
+          .at(-1)
+          .content.startsWith('Gib eine kurze, inhaltliche Zusammenfassung')
+          ? 'Das Beispiel gibt eine private Begrüßung aus.'
+          : generatedAnswer;
+        res.end(`${JSON.stringify({ message: { content }, done: true })}\n`);
       });
     });
     ollama.listen(0, '127.0.0.1');
@@ -124,6 +129,33 @@ test(
       );
       assert.match(messages[2]?.content ?? '', /CLI-Befehl „text“/);
       assert.doesNotMatch(messages[2]?.content ?? '', /SECRET|```|\|/);
+      generatedAnswer = '```sh\necho SECRET_ONLY_CODE\n```';
+      await send({
+        version: 1,
+        type: 'demo',
+        text: 'Private Frage nur mit Code',
+      });
+      assert.equal(await cli('text'), `${generatedAnswer}\n`);
+      assert.match(histories.at(-1)?.at(-1)?.content ?? '', /Zusammenfassung/);
+      await send({
+        version: 1,
+        type: 'demo',
+        text: 'Private Folgefrage zur Zusammenfassung',
+      });
+      const followUp = [...histories]
+        .reverse()
+        .find(
+          (messages) =>
+            messages.at(-1)?.content ===
+            'Private Folgefrage zur Zusammenfassung',
+        );
+      assert.ok(followUp);
+      assert.match(
+        followUp.at(-2)?.content ?? '',
+        /gibt eine private Begrüßung aus/,
+      );
+      assert.doesNotMatch(followUp.at(-2)?.content ?? '', /SECRET|```/);
+      generatedAnswer = answer;
       for (const source of ['locked', 'muted', 'hardware_muted'] as const) {
         await send({
           version: 1,
@@ -158,7 +190,7 @@ test(
       );
       assert.doesNotMatch(
         logs,
-        /Private Frage|Private Erklärung|SECRET|ausführlicher|Gespräch beenden/,
+        /Private Frage|Private Erklärung|private Begrüßung|SECRET|ausführlicher|Gespräch beenden/,
       );
     } finally {
       for (const child of children.reverse()) {

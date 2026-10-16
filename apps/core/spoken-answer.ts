@@ -1,5 +1,8 @@
 /** Keep formatted material for deliberate text access rather than reciting it. */
-export function spokenAnswer(text: string): string {
+export function spokenAnswer(
+  text: string,
+  spokenSummary?: string,
+): string | null {
   const prose: string[] = [];
   let fence: { marker: string; length: number } | undefined;
   let code = false;
@@ -32,11 +35,14 @@ export function spokenAnswer(text: string): string {
       prose.push(line);
     }
   }
-  const explanation = prose
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  const explanation =
+    spokenSummary ??
+    prose
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   if (!code && !table) return text;
+  if (!explanation) return null;
   const content =
     code && table ? 'Code und eine Tabelle' : code ? 'Code' : 'eine Tabelle';
   const notice = `Die Antwort enthält ${content}. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.`;

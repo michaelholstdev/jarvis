@@ -69,6 +69,7 @@ export function createCore(
   let cancellation: { replacement: boolean; playback: boolean } | null = null;
   let answer = '';
   let textAnswer: string | null = null;
+  let summarizing = false;
   let question = '';
   let context: ConversationExchange[] = [];
   let reply: ({ text: string } & PlaybackReport) | null = null;
@@ -109,6 +110,7 @@ export function createCore(
     failureCancellation = false;
     retryQuestion = '';
     textAnswer = null;
+    summarizing = false;
     answer = '';
     question = '';
     context = [];
@@ -520,6 +522,7 @@ export function createCore(
             retryQuestion = '';
           }
           textAnswer = null;
+          summarizing = false;
           followUpDeadline = null;
           transition('thinking', 'infer', question);
           if (capabilities.inference === 'unavailable')
@@ -532,8 +535,29 @@ export function createCore(
           return;
         }
         retryQuestion = '';
-        textAnswer = event.text;
-        answer = spokenAnswer(event.text);
+        if (!summarizing) textAnswer = event.text;
+        const speech =
+          summarizing && spokenAnswer(event.text) !== event.text
+            ? null
+            : spokenAnswer(
+                textAnswer ?? event.text,
+                summarizing ? event.text : undefined,
+              );
+        if (speech === null) {
+          if (summarizing) {
+            fail('invalid_message', 'inference');
+            return;
+          }
+          summarizing = true;
+          transition(
+            'thinking',
+            'infer',
+            `Gib eine kurze, inhaltliche Zusammenfassung der folgenden Antwort auf Deutsch. Erkläre, was der Code tut oder welche Ergebnisse die Tabelle zeigt. Nur verständlicher Fließtext, keine Codeblöcke oder Tabellen.\n\n${textAnswer}`,
+          );
+          return;
+        }
+        summarizing = false;
+        answer = speech;
         transition('synthesizing', 'synthesize', answer);
       } else if (event.type === 'synthesized' && state === 'synthesizing') {
         transition('speaking', 'play', answer);

@@ -11,10 +11,14 @@ tables. The core speaks that explanation and adds a German notice pointing to
 the CLI `text` command. Fenced code (backticks or tildes, including an unclosed
 fence), indented code and Markdown tables are omitted from speech. All recognized
 pipe tables are summarized, including small ones. If the model supplies only
-formatted material, the notice identifies the available content as code, a table,
-or both. This is a bounded Markdown filter, not a parser for arbitrary HTML or
-unmarked source code. Ordinary prose is spoken unchanged. No extra inference
-request is made to produce the summary. The spoken explanation is capped at
+formatted material, Jarvis requests one short, content-bearing German prose
+summary from the same local model before synthesis. The original formatted
+answer remains available as text. A formatted or unusable summary fails the turn
+through the existing explicit-retry path; it cannot loop into more summary
+requests. This additional request uses the same generation limits, watchdog and
+cancellation controls and can add latency. Summary quality still depends on the
+model. This is a bounded Markdown filter, not a parser for arbitrary HTML or
+unmarked source code. Ordinary prose is spoken unchanged. The spoken explanation is capped at
 4096 UTF-8 bytes including the notice; a near-limit explanation may be shortened
 to reserve space for it, while the full text stays intact.
 

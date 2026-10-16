@@ -142,3 +142,60 @@ test('a near-limit formatted answer still has bounded speech with its text-acces
   assert.match(speech, /CLI-Befehl „text“ ansehen\.$/);
   assert.equal(core.textAnswer(), text);
 });
+
+test('formatted-only answers request a content-bearing summary while retaining the original text', () => {
+  const original = '```python\nprint(1 + 2)\n```';
+  const { core, recognize } = fixture(original);
+  assert.equal(core.operations()[0]?.type, 'infer');
+  assert.match(core.operations()[0]?.text ?? '', /Zusammenfassung/);
+  assert.match(core.operations()[0]?.text ?? '', /print\(1 \+ 2\)/);
+  assert.equal(core.textAnswer(), original);
+  core.dispatch({
+    type: 'inferred',
+    operation_id: core.operations()[0]?.operation_id ?? '',
+    text: 'Das Python-Beispiel addiert eins und zwei und gibt drei aus.',
+  });
+  const speech = core.operations()[0]?.text ?? '';
+  assert.equal(core.operations()[0]?.type, 'synthesize');
+  assert.match(speech, /addiert eins und zwei und gibt drei aus/);
+  assert.match(speech, /CLI-Befehl „text“/);
+  assert.doesNotMatch(speech, /print|```/);
+  assert.equal(core.textAnswer(), original);
+  core.dispatch({
+    type: 'synthesized',
+    operation_id: core.operations()[0]?.operation_id ?? '',
+  });
+  core.dispatch({
+    type: 'playback-completed',
+    operation_id: core.operations()[0]?.operation_id ?? '',
+    completed: true,
+    delivered_chars: speech.length,
+  });
+  recognize('Bitte ausführlicher.');
+  assert.equal(core.operations()[0]?.context?.[0]?.reply, speech);
+});
+
+for (const action of ['unusable-summary', 'lock', 'replacement'] as const) {
+  test(`formatted-only summary is bounded and cancellable: ${action}`, () => {
+    const original = '| Name | Zahl |\n| --- | --- |\n| Summe | 3 |';
+    const { core } = fixture(original);
+    assert.equal(core.operations()[0]?.type, 'infer');
+    const summaryId = core.operations()[0]?.operation_id ?? '';
+    if (action === 'lock')
+      core.dispatch({
+        type: 'inhibition-changed',
+        source: 'locked',
+        active: true,
+      });
+    else if (action === 'replacement') core.activate();
+    core.dispatch({
+      type: 'inferred',
+      operation_id: summaryId,
+      text: '```\nSECRET_SUMMARY\n',
+    });
+    assert.notEqual(core.operations()[0]?.type, 'infer');
+    assert.notEqual(core.operations()[0]?.type, 'synthesize');
+    if (action === 'lock') assert.equal(core.textAnswer(), null);
+    else assert.equal(core.textAnswer(), original);
+  });
+}
