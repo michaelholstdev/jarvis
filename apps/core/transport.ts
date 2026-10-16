@@ -28,21 +28,25 @@ export function receive(
     const onError = () => finish(new ProtocolError('unavailable'));
     const onEnd = () => finish(new ProtocolError('unavailable'));
     const onData = (chunk: Buffer) => {
-      if (data.length + chunk.length > limits.max_frame_bytes)
-        return finish(new ProtocolError('frame_too_large'));
-      data = Buffer.concat([data, chunk]);
       try {
-        let newline = data.indexOf(10);
-        while (newline >= 0) {
-          const message = parseMessage(data.subarray(0, newline));
-          data = data.subarray(newline + 1);
+        let offset = 0;
+        while (offset < chunk.length) {
+          const newline = chunk.indexOf(10, offset);
+          const end = newline < 0 ? chunk.length : newline + 1;
+          const fragment = chunk.subarray(offset, end);
+          if (data.length + fragment.length > limits.max_frame_bytes)
+            throw new ProtocolError('frame_too_large');
+          data = Buffer.concat([data, fragment]);
+          if (newline < 0) return;
+          const message = parseMessage(data.subarray(0, data.length - 1));
+          data = Buffer.alloc(0);
           if (message.type !== 'speech-started')
             return finish(undefined, message);
           if (!onProgress || progressSeen)
             throw new ProtocolError('invalid_message');
           progressSeen = true;
           onProgress(message);
-          newline = data.indexOf(10);
+          offset = end;
         }
       } catch (error) {
         finish(error as Error);

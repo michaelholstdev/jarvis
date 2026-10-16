@@ -11,13 +11,17 @@ import { setTimeout } from 'node:timers/promises';
 import { request } from '../apps/core/transport.js';
 import { encodeMessage, type Message } from '../packages/protocol/index.js';
 
-for (const [reactivate, activationSound] of [
-  [false, true],
-  [true, true],
-  [true, false],
-]) {
+for (const [reactivate, activationSound, emptyResults] of [
+  [false, true, 0],
+  [true, true, 0],
+  [true, false, 0],
+  [false, true, 5],
+  [false, true, 6],
+  [false, true, 7],
+  [false, true, 8],
+] as const) {
   test(
-    `voice daemon contextual follow-ups and spoken end, manual reactivation=${reactivate}, cue=${activationSound}`,
+    `voice daemon contextual follow-ups and spoken end, manual reactivation=${reactivate}, cue=${activationSound}, noise=${emptyResults}`,
     { timeout: 10000 },
     async () => {
       const runtime = mkdtempSync(join(tmpdir(), 'jv-voice-'));
@@ -66,6 +70,13 @@ for (const [reactivate, activationSound] of [
       );
       const peers = new Set<Socket>();
       let recognitions = 0;
+      const transcripts = [
+        'Private Frage',
+        ...Array<string>(emptyResults).fill(''),
+        'Private Folgefrage',
+        'Gespräch beenden',
+      ];
+      let transcriptIndex = 0;
       let plays = 0;
       let capturing = false;
       let overlappingAudio = false;
@@ -101,6 +112,7 @@ for (const [reactivate, activationSound] of [
             return;
           }
           if (op.type === 'play') plays++;
+          let transcript = '';
           if (op.type === 'recognize') {
             recognitions++;
             if (reactivate && recognitions === 2) {
@@ -108,6 +120,7 @@ for (const [reactivate, activationSound] of [
               followUp();
               return;
             }
+            transcript = transcripts[transcriptIndex++] ?? '';
             // Progress and final may arrive together in a single socket read.
             socket.write(
               `${JSON.stringify({
@@ -124,16 +137,7 @@ for (const [reactivate, activationSound] of [
               operation_id: op.operation_id,
               ...(op.type === 'recognize'
                 ? {
-                    text:
-                      [
-                        'Private Frage',
-                        'Private Folgefrage',
-                        'Gespräch beenden',
-                      ][
-                        recognitions -
-                          1 -
-                          (reactivate && recognitions > 2 ? 1 : 0)
-                      ] ?? '',
+                    text: transcript,
                   }
                 : {}),
               ...([
@@ -201,7 +205,7 @@ for (const [reactivate, activationSound] of [
         for (
           let count = 0;
           count < 200 &&
-          (recognitions < (reactivate ? 4 : 3) ||
+          (recognitions < (reactivate ? 4 : 3) + emptyResults ||
             (await status()).state !== 'idle');
           count++
         )
@@ -211,7 +215,7 @@ for (const [reactivate, activationSound] of [
           false,
           'cancel must complete before new audio starts',
         );
-        assert.equal(recognitions, reactivate ? 4 : 3);
+        assert.equal(recognitions, (reactivate ? 4 : 3) + emptyResults);
         assert.equal(plays, 2);
         assert.equal(generations, 2);
         assert.equal((await status()).state, 'idle');

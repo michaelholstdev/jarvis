@@ -31,7 +31,7 @@ export async function runTurn(
       clearInterval(watcher);
     }
   };
-  // A reply may finish with synthesis/playback of the extension prompt.
+  // Bound each invocation; the daemon resumes any remaining executable operation.
   for (let step = 0; step < 8; step++) {
     const operation = core.operations()[0];
     if (

@@ -193,14 +193,10 @@ async function main() {
     const operation = core.operations()[0];
     if (
       !runningTurn &&
-      ((config.audio.mode === 'voice' &&
-        config.llm.mode === 'ollama' &&
-        operation?.type === 'recognize') ||
-        operation?.type === 'cancel' ||
-        operation?.type === 'indicate-failure' ||
-        operation?.type === 'close-conversation' ||
-        (core.status().state === 'awaiting-extension' &&
-          (operation?.type === 'synthesize' || operation?.type === 'play')))
+      operation &&
+      operation.type !== 'privacy' &&
+      (operation.type !== 'recognize' ||
+        (config.audio.mode === 'voice' && config.llm.mode === 'ollama'))
     ) {
       void drive().catch(() => loseAudio());
     }
@@ -255,10 +251,10 @@ async function main() {
           message.type === 'demo'
         ) {
           const generation = privacyGeneration;
-          const [diagnostic] = await Promise.all([
-            refresh(),
-            refreshInference(),
-          ]);
+          const inferenceRefresh = refreshInference();
+          const diagnostic = await refresh();
+          // Manual controls cannot wait for an unrelated inference probe.
+          if (message.type === 'demo') await inferenceRefresh;
           if (core.operations()[0]?.type === 'privacy')
             await synchronizePrivacy();
           if (
