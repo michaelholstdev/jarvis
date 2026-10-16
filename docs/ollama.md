@@ -125,6 +125,8 @@ privacy/cleanup inhibition. These are operational health states, not benchmark
 or acoustic quality claims. `ready`/CLI exit status still describes audio/control
 service availability; inspect individual capabilities too. Unavailable inference
 does not disable the manual control path. Probes coalesce and never replay work.
+Manual stop and activation do not wait for inference health probes; a stalled
+Ollama capability check cannot delay cancellation of the current turn.
 
 A failed active question requests cancellation and one short failure cue. Recover
 the service/model, then say `Noch einmal` or ask a new question while the session

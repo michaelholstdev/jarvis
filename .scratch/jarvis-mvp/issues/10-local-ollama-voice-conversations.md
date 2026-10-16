@@ -85,3 +85,32 @@ implementation `2781094`, corrections `0015df1`. Final findings: Standards **0**
 Spec **0**; no remaining issue within either axis.
 
 Map pointer: [implementation map](../map.md).
+
+### Post-implementation review corrections
+
+Fixed all three findings from the subsequent review against `78407f2`:
+
+- **Standards P2 — Per-frame bounds:** transport now separates newline-delimited
+  frames before enforcing the byte limit, including each newline. Coalesced
+  progress/final frames have independent budgets; fragmented and oversized frames
+  remain bounded. The deterministic read regression failed with `frame_too_large`
+  before the fix, then passed; exact-limit and incomplete-frame checks also pass.
+- **Spec P1 — Accepted follow-up stranded after a bounded batch:** the daemon now
+  resumes any remaining executable operation when the eight-operation driver
+  invocation yields. Privacy keeps its dedicated synchronization path, and
+  scripted recognition still requires explicit input. Daemon regressions verify
+  contextual answers and ending after five, six, seven and eight empty recognition
+  results, exercising yields before inference, synthesis, playback and recognition.
+  The seven-empty-results case failed before the fix and passed afterward.
+- **Spec P2 — Manual controls blocked by inference probing:** stop and activation
+  no longer await an unrelated Ollama capability probe. Explicit scripted demo
+  requests still await inference readiness. Daemon tests hold `/api/tags` unresolved
+  until after cancellation is observed, covering stop during playback and manual
+  replacement during playback and generation. The stop case timed out before the
+  fix and all three cases pass afterward.
+
+Code and regressions committed as `2e745fe`. Final validation: `npm run check`
+passed; the full `npm test` rebuilt sources and passed **148 Node tests and 9
+Python tests**. Independent Standards and Spec re-reviews against `ee7dc45`
+confirmed all original findings fixed, with **0 remaining findings in either
+axis**. No new speech hardware, model-quality or latency validation is claimed.
