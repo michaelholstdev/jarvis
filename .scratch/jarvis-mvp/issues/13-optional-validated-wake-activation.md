@@ -6,9 +6,25 @@
 
 **Status:** ready-for-agent
 
-**Claimed by:** Codex (manual-only fallback; hands-free gate remains open).
+**Claimed by:** Unclaimed for remaining wake implementation; Codex completed the manual-only fallback.
 
 ## Comments
+
+- 2026-10-16 follow-up decision: keep this ticket open for the actual wake
+  implementation; the completed manual-only fallback does not resolve that work.
+  Revisit after stable manual voice operation and before final release/hardware
+  acceptance in #19. No duplicate issue is needed.
+  - [ ] First run a feasibility investigation: select and pin a suitable model
+    candidate, verify provenance/license/runtime, and evaluate German
+    "Hey Jarvis, [immediate question]" recordings. Missing German validation is
+    work to investigate, not evidence that implementation is impossible.
+  - [ ] If the candidate is promising, implement the detector, bounded pre-roll,
+    uninterrupted command handoff and measurement runner, then run the German
+    acceptance protocol separately on headset and speakers.
+  - [ ] Record the outcome before #19's final acceptance: validated wake for each
+    supported setup, or concrete failed criteria/remaining work and a linked
+    follow-up. Keep manual activation available; this revisit does not make
+    successful wake validation a blocker for the manual-only release.
 
 - Implementation baseline: `5e232b0204953e63a7b4edc2994442ab5d84a12c`.
   User confirmed config-loader and CLI/health test seams. No German-validated
