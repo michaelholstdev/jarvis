@@ -392,13 +392,23 @@
         },
         "type": {
           "const": "text-answer-request"
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "answer_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
         }
       }
     },
     {
       "type": "object",
       "additionalProperties": false,
-      "required": ["version", "type", "text"],
+      "required": ["version", "type", "text", "answer_id", "next_offset"],
       "properties": {
         "version": {
           "const": 1
@@ -409,6 +419,16 @@
         "text": {
           "type": ["string", "null"],
           "maxLength": 4096
+        },
+        "answer_id": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "next_offset": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 4096
         }
       }
     }

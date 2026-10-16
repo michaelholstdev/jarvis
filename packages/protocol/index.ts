@@ -43,6 +43,7 @@ export type HealthStatus = {
   since_ms: number;
   state_since_ms: number;
 };
+export type TextAnswer = { answer_id: string; text: string };
 export type ConversationExchange = { question: string; reply: string };
 export type Operation = {
   type:
@@ -71,8 +72,20 @@ export type Message =
       source: InhibitionSource;
       active: boolean;
     }
-  | { version: 1; type: 'activate' | 'stop' | 'text-answer-request' }
-  | { version: 1; type: 'text-answer'; text: string | null }
+  | { version: 1; type: 'activate' | 'stop' }
+  | {
+      version: 1;
+      type: 'text-answer-request';
+      offset?: number;
+      answer_id?: string;
+    }
+  | {
+      version: 1;
+      type: 'text-answer';
+      text: string | null;
+      answer_id: string | null;
+      next_offset: number | null;
+    }
   | { version: 1; type: 'demo'; text: string }
   | {
       version: 1;

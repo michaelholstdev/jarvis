@@ -257,11 +257,26 @@ A recognition request may return one `speech-started` frame (`version:1`, matchi
 
 ## Temporary text access
 
-A CLI peer may deliberately send `{"version":1,"type":"text-answer-request"}`.
-Core replies with `{"version":1,"type":"text-answer","text":"…"}` or a null
-`text` when no current answer exists. This is the only control response carrying
-answer content; do not log it. Normal `ready` health/control messages stay
-content-free. The answer has the existing core per-answer byte bound and is
-subject to transport framing limits. Reading does not renew session timers or
-promote generated text into delivered context. Closure, lock and mute clear it;
-see [text lifetime and CLI commands](text-answers.md).
+A CLI peer deliberately sends `{"version":1,"type":"text-answer-request"}`
+(optionally `offset:0`). Core returns a page such as:
+
+```json
+{"version":1,"type":"text-answer","text":"…","answer_id":"opaque-id","next_offset":123}
+```
+
+`next_offset:null` marks the final page. If no answer exists, `text`, `answer_id`
+and `next_offset` are all null. Continuations send `offset` equal to the previous
+`next_offset` and the same `answer_id`. Offsets count Unicode code points, not
+UTF-16 units or bytes; they range from 0 to 4096. Nonzero offsets require an answer
+ID. Replacement answers get a new ID even when their text is identical; closure,
+lock and mute invalidate it. A stale ID returns `unavailable`, while invalid
+offsets return `invalid_message`. IDs are unique across daemon restarts.
+
+Each page, including JSON escaping, metadata and newline, fits
+`transport.max_frame_bytes`. The CLI bounds the assembled answer at 4096 UTF-8
+bytes, validates continuation progress/identity and prints only after complete
+retrieval. It discards partial output on failure. No page queue or archive is
+stored service-side. This is the only control response carrying answer content;
+do not log it. Normal `ready` health/control messages stay content-free. Reading
+does not renew session timers or promote generated text into delivered context.
+See [text lifetime and CLI commands](text-answers.md).

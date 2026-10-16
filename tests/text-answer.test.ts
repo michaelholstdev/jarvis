@@ -5,10 +5,12 @@ import { createCore } from '../apps/core/core.js';
 
 const generated =
   'So summierst du Werte.\n\n```python\nprint(1 + 2)\n```\n\nDie Ergebnisse stehen in der Tabelle.\n\n| Name | Wert |\n| --- | --- |\n| Summe | 3 |';
+const contentSummary =
+  'Das Beispiel addiert eins und zwei. Die Tabelle zeigt die Summe drei.';
 const spoken =
-  'So summierst du Werte.\n\nDie Ergebnisse stehen in der Tabelle.\n\nDie Antwort enthält Code und eine Tabelle. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.';
+  'Das Beispiel addiert eins und zwei. Die Tabelle zeigt die Summe drei.\n\nDie Antwort enthält Code und eine Tabelle. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.';
 
-function fixture(text = generated) {
+function fixture(text = generated, summary: string | null = contentSummary) {
   let now = 0;
   const config = loadConfig();
   config.interaction.activation_sound = false;
@@ -28,6 +30,13 @@ function fixture(text = generated) {
     operation_id: core.operations()[0]?.operation_id ?? '',
     text,
   });
+  if (core.operations()[0]?.type === 'infer' && summary !== null) {
+    core.dispatch({
+      type: 'inferred',
+      operation_id: core.operations()[0]?.operation_id ?? '',
+      text: summary,
+    });
+  }
   return {
     core,
     recognize,
@@ -41,7 +50,7 @@ function fixture(text = generated) {
 test('code and tables remain available as temporary text while speech gives prose and a CLI notice', () => {
   const { core } = fixture();
   assert.equal(core.operations()[0]?.text, spoken);
-  assert.equal(core.textAnswer(), generated);
+  assert.equal(core.textAnswer()?.text ?? null, generated);
 });
 
 test('viewing a stopped answer does not put its unheard remainder or formatting into follow-up context', () => {
@@ -58,18 +67,18 @@ test('viewing a stopped answer does not put its unheard remainder or formatting 
     completed: false,
     delivered_chars: 6,
   });
-  assert.equal(core.textAnswer(), generated);
+  assert.equal(core.textAnswer()?.text ?? null, generated);
   assert.deepEqual(core.reply(), {
-    text: 'So sum',
+    text: 'Das Be',
     completed: false,
     delivered_chars: 6,
   });
   recognize('Bitte ausführlicher.');
   assert.deepEqual(core.operations()[0]?.context, [
-    { question: 'Zeige mir ein Beispiel.', reply: 'So sum' },
+    { question: 'Zeige mir ein Beispiel.', reply: 'Das Be' },
   ]);
   assert.equal(core.operations()[0]?.text, 'Bitte ausführlicher.');
-  assert.equal(core.textAnswer(), null);
+  assert.equal(core.textAnswer()?.text ?? null, null);
 });
 
 for (const cleanup of [
@@ -89,7 +98,7 @@ for (const cleanup of [
       completed: true,
       delivered_chars: spoken.length,
     });
-    assert.equal(core.textAnswer(), generated);
+    assert.equal(core.textAnswer()?.text ?? null, generated);
     if (cleanup === 'end') recognize('Gespräch beenden');
     else if (cleanup === 'timeout') advance();
     else
@@ -98,9 +107,9 @@ for (const cleanup of [
         source: cleanup,
         active: true,
       });
-    assert.equal(core.textAnswer(), null);
+    assert.equal(core.textAnswer()?.text ?? null, null);
     core.dispatch({ type: 'inferred', operation_id: stale, text: generated });
-    assert.equal(core.textAnswer(), null);
+    assert.equal(core.textAnswer()?.text ?? null, null);
   });
 }
 
@@ -112,44 +121,44 @@ for (const [text, expected] of [
   ],
   [
     'Ein Beispiel.\n\n~~~python\nSECRET_CODE\n~~~',
-    'Ein Beispiel.\n\nDie Antwort enthält Code. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.',
+    'Das Beispiel addiert eins und zwei. Die Tabelle zeigt die Summe drei.\n\nDie Antwort enthält Code. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.',
   ],
   [
     'Ein Beispiel.\n\n```python\nSECRET_CODE',
-    'Ein Beispiel.\n\nDie Antwort enthält Code. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.',
+    'Das Beispiel addiert eins und zwei. Die Tabelle zeigt die Summe drei.\n\nDie Antwort enthält Code. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.',
   ],
   [
     'Ein Beispiel.\n\n      SECRET_CODE',
-    'Ein Beispiel.\n\nDie Antwort enthält Code. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.',
+    'Das Beispiel addiert eins und zwei. Die Tabelle zeigt die Summe drei.\n\nDie Antwort enthält Code. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.',
   ],
   [
     'Ergebnis.\n\nName | Zahl\n--- | ---\nSECRET_ROW | 42',
-    'Ergebnis.\n\nDie Antwort enthält eine Tabelle. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.',
+    'Das Beispiel addiert eins und zwei. Die Tabelle zeigt die Summe drei.\n\nDie Antwort enthält eine Tabelle. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.',
   ],
 ] as const) {
   test(`spoken formatting preserves prose and hides formatted material: ${JSON.stringify(text)}`, () => {
     const { core } = fixture(text);
     assert.equal(core.operations()[0]?.text, expected);
-    assert.equal(core.textAnswer(), text);
+    assert.equal(core.textAnswer()?.text ?? null, text);
   });
 }
 
 test('a near-limit formatted answer still has bounded speech with its text-access notice', () => {
   const text = `${'ü'.repeat(2020)}\n\n\`\`\`\nx\n\`\`\``;
-  const { core } = fixture(text);
+  const { core } = fixture(text, 'ü'.repeat(2020));
   const speech = core.operations()[0]?.text ?? '';
   assert.ok(Buffer.byteLength(speech) <= 4096);
   assert.match(speech, /CLI-Befehl „text“ ansehen\.$/);
-  assert.equal(core.textAnswer(), text);
+  assert.equal(core.textAnswer()?.text ?? null, text);
 });
 
 test('formatted-only answers request a content-bearing summary while retaining the original text', () => {
   const original = '```python\nprint(1 + 2)\n```';
-  const { core, recognize } = fixture(original);
+  const { core, recognize } = fixture(original, null);
   assert.equal(core.operations()[0]?.type, 'infer');
   assert.match(core.operations()[0]?.text ?? '', /Zusammenfassung/);
   assert.match(core.operations()[0]?.text ?? '', /print\(1 \+ 2\)/);
-  assert.equal(core.textAnswer(), original);
+  assert.equal(core.textAnswer()?.text ?? null, original);
   core.dispatch({
     type: 'inferred',
     operation_id: core.operations()[0]?.operation_id ?? '',
@@ -160,7 +169,7 @@ test('formatted-only answers request a content-bearing summary while retaining t
   assert.match(speech, /addiert eins und zwei und gibt drei aus/);
   assert.match(speech, /CLI-Befehl „text“/);
   assert.doesNotMatch(speech, /print|```/);
-  assert.equal(core.textAnswer(), original);
+  assert.equal(core.textAnswer()?.text ?? null, original);
   core.dispatch({
     type: 'synthesized',
     operation_id: core.operations()[0]?.operation_id ?? '',
@@ -178,7 +187,7 @@ test('formatted-only answers request a content-bearing summary while retaining t
 for (const action of ['unusable-summary', 'lock', 'replacement'] as const) {
   test(`formatted-only summary is bounded and cancellable: ${action}`, () => {
     const original = '| Name | Zahl |\n| --- | --- |\n| Summe | 3 |';
-    const { core } = fixture(original);
+    const { core } = fixture(original, null);
     assert.equal(core.operations()[0]?.type, 'infer');
     const summaryId = core.operations()[0]?.operation_id ?? '';
     if (action === 'lock')
@@ -195,7 +204,31 @@ for (const action of ['unusable-summary', 'lock', 'replacement'] as const) {
     });
     assert.notEqual(core.operations()[0]?.type, 'infer');
     assert.notEqual(core.operations()[0]?.type, 'synthesize');
-    if (action === 'lock') assert.equal(core.textAnswer(), null);
-    else assert.equal(core.textAnswer(), original);
+    if (action === 'lock') assert.equal(core.textAnswer()?.text ?? null, null);
+    else assert.equal(core.textAnswer()?.text ?? null, original);
   });
 }
+
+for (const formatted of [
+  '> ```python\n> SECRET_CODE\n> ```',
+  '\t\tSECRET_CODE',
+  'Name | Zahl\n- | -\nSECRET_ROW | 3\nAndere | 4',
+  '1. Beispiel\n\n   ```python\n   SECRET_CODE\n   ```',
+]) {
+  test('nested code and short-delimiter tables are kept out of speech', () => {
+    const original = `Das Beispiel addiert zwei Zahlen.\n\n${formatted}`;
+    const { core } = fixture(original);
+    assert.equal(core.operations()[0]?.type, 'synthesize');
+    assert.match(core.operations()[0]?.text ?? '', /addiert eins und zwei/);
+    assert.doesNotMatch(core.operations()[0]?.text ?? '', /SECRET|```|\|/);
+    assert.match(core.operations()[0]?.text ?? '', /CLI-Befehl „text“/);
+    assert.equal(core.textAnswer()?.text ?? null, original);
+  });
+}
+
+test('introductory prose still requires a content-bearing summary', () => {
+  const original = 'Hier ist der Code:\n\n```python\nprint(1 + 2)\n```';
+  const { core } = fixture(original, null);
+  assert.equal(core.operations()[0]?.type, 'infer');
+  assert.match(core.operations()[0]?.text ?? '', /Zusammenfassung/);
+});

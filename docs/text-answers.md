@@ -5,22 +5,24 @@ by default. Ask “Bitte ausführlicher” or “Erkläre das mit mehr Details�
 longer answer; the request reaches the model unchanged with delivered context.
 This is a model instruction, not a hard truncation or a quality guarantee.
 
-With `llm.mode: ollama`, the built-in system instruction also asks for a prose
-summary around code and tables, with Markdown fences for code and Markdown pipe
-tables. The core speaks that explanation and adds a German notice pointing to
-the CLI `text` command. Fenced code (backticks or tildes, including an unclosed
-fence), indented code and Markdown tables are omitted from speech. All recognized
-pipe tables are summarized, including small ones. If the model supplies only
-formatted material, Jarvis requests one short, content-bearing German prose
-summary from the same local model before synthesis. The original formatted
-answer remains available as text. A formatted or unusable summary fails the turn
-through the existing explicit-retry path; it cannot loop into more summary
-requests. This additional request uses the same generation limits, watchdog and
-cancellation controls and can add latency. Summary quality still depends on the
-model. This is a bounded Markdown filter, not a parser for arbitrary HTML or
-unmarked source code. Ordinary prose is spoken unchanged. The spoken explanation is capped at
-4096 UTF-8 bytes including the notice; a near-limit explanation may be shortened
-to reserve space for it, while the full text stays intact.
+With `llm.mode: ollama`, the built-in system instruction asks for Markdown fences
+for code and Markdown pipe tables. Jarvis tokenizes the answer as GitHub Flavored
+Markdown, including code inside blockquotes/lists, tab-indented code and tables
+with short delimiter cells. Every answer containing code blocks or tables gets
+one separate request to the same local model for a content-bearing German prose
+summary. This also covers answers whose surrounding prose is only introductory,
+such as “Hier ist der Code”. All recognized tables are summarized, including
+small ones. The summary adds a German notice pointing to the CLI `text` command;
+the full original answer remains available as text.
+
+A formatted or unusable summary fails the turn through the existing
+explicit-retry path; it cannot loop into more summary requests. The extra request
+uses the same generation limits, watchdog and cancellation controls and can add
+latency. Summary quality still depends on the model. Markdown is tokenized only;
+no HTML is rendered and no code is executed. Arbitrary HTML and unmarked source
+code remain outside this formatting policy. Ordinary prose is spoken unchanged.
+The spoken summary is capped at 4096 UTF-8 bytes including the notice; a near-limit
+summary may be shortened to reserve space for it, while the full text stays intact.
 
 ## Deliberate text access
 
@@ -50,7 +52,12 @@ Only `text` prints the full latest successfully generated answer, including its
 formatting. Health and routine control output contain no answer text. An empty
 session prints `Keine Textantwort in dieser Sitzung verfügbar.` and exits
 successfully. Text inspection does not start listening, renew a timer, generate
-an answer, replay audio, or change follow-up context.
+an answer, replay audio, or change follow-up context. The CLI assembles bounded
+pages before printing, so JSON escaping cannot make an accepted answer exceed
+the configured transport frame limit. Paging preserves Unicode code points.
+Pages belong to a unique answer ID; replacement, closure or privacy cleanup
+between pages aborts retrieval with a content-free error and no partial answer
+printed. Re-run `text` to inspect the currently available answer.
 
 The answer is held only in service memory, available once generation completes,
 including during synthesis/playback and after a stopped reply. It is replaced

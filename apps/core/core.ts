@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type {
   Capabilities,
   Capability,
@@ -7,6 +8,7 @@ import type {
   InhibitionSource,
   Operation,
   PlaybackReport,
+  TextAnswer,
 } from '../../packages/protocol/index.js';
 import { ProtocolError } from '../../packages/protocol/index.js';
 import { audioDeadlineMs } from './audio-deadline.js';
@@ -68,7 +70,7 @@ export function createCore(
   let sequence = 0;
   let cancellation: { replacement: boolean; playback: boolean } | null = null;
   let answer = '';
-  let textAnswer: string | null = null;
+  let textAnswer: TextAnswer | null = null;
   let summarizing = false;
   let question = '';
   let context: ConversationExchange[] = [];
@@ -535,12 +537,13 @@ export function createCore(
           return;
         }
         retryQuestion = '';
-        if (!summarizing) textAnswer = event.text;
+        if (!summarizing)
+          textAnswer = { answer_id: randomUUID(), text: event.text };
         const speech =
           summarizing && spokenAnswer(event.text) !== event.text
             ? null
             : spokenAnswer(
-                textAnswer ?? event.text,
+                textAnswer?.text ?? event.text,
                 summarizing ? event.text : undefined,
               );
         if (speech === null) {
@@ -552,7 +555,7 @@ export function createCore(
           transition(
             'thinking',
             'infer',
-            `Gib eine kurze, inhaltliche Zusammenfassung der folgenden Antwort auf Deutsch. Erkläre, was der Code tut oder welche Ergebnisse die Tabelle zeigt. Nur verständlicher Fließtext, keine Codeblöcke oder Tabellen.\n\n${textAnswer}`,
+            `Gib eine kurze, inhaltliche Zusammenfassung der folgenden Antwort auf Deutsch. Erkläre, was der Code tut oder welche Ergebnisse die Tabelle zeigt. Nur verständlicher Fließtext, keine Codeblöcke oder Tabellen.\n\n${textAnswer?.text}`,
           );
           return;
         }
@@ -626,8 +629,8 @@ export function createCore(
           ]
         : [];
     },
-    textAnswer(): string | null {
-      return textAnswer;
+    textAnswer() {
+      return textAnswer ? { ...textAnswer } : null;
     },
     reply() {
       return reply ? { ...reply } : null;

@@ -13,6 +13,7 @@ import { createCore } from './core.js';
 import { diagnostic as logDiagnostic } from './diagnostics.js';
 import { probeInference } from './ollama.js';
 import { runtimeDirectory } from './runtime.js';
+import { readTextAnswer, textAnswerPage } from './text-answer.js';
 import { receive, request } from './transport.js';
 import { runTurn } from './turn-driver.js';
 
@@ -47,6 +48,11 @@ async function main() {
     );
   const directory = runtimeDirectory();
   const corePath = join(directory, 'core.sock');
+  if (command === 'text') {
+    const text = await readTextAnswer(corePath, config.transport);
+    console.log(text ?? 'Keine Textantwort in dieser Sitzung verfügbar.');
+    return;
+  }
   if (command !== 'start') {
     const response = await request(
       corePath,
@@ -66,24 +72,16 @@ async function main() {
             source: privacyControl[0],
             active: privacyControl[1],
           }
-        : command === 'text'
-          ? { version: 1, type: 'text-answer-request' }
-          : command === 'activate' || command === 'stop'
-            ? { version: 1, type: command }
-            : command === 'demo'
-              ? {
-                  version: 1,
-                  type: 'demo',
-                  text: process.argv[3] ?? 'Wie geht es dir?',
-                }
-              : undefined,
+        : command === 'activate' || command === 'stop'
+          ? { version: 1, type: command }
+          : command === 'demo'
+            ? {
+                version: 1,
+                type: 'demo',
+                text: process.argv[3] ?? 'Wie geht es dir?',
+              }
+            : undefined,
     );
-    if (command === 'text' && response.type === 'text-answer') {
-      console.log(
-        response.text ?? 'Keine Textantwort in dieser Sitzung verfügbar.',
-      );
-      return;
-    }
     if (response.type !== 'ready' || response.service !== 'core')
       throw new Error(
         response.type === 'error' ? response.code : 'invalid_message',
@@ -323,11 +321,11 @@ async function main() {
           await synchronizePrivacy();
         if (message.type === 'text-answer-request') {
           core.dispatch({ type: 'tick' });
-          response = {
-            version: 1,
-            type: 'text-answer',
-            text: core.textAnswer(),
-          };
+          response = textAnswerPage(
+            core.textAnswer(),
+            message,
+            config.transport.max_frame_bytes,
+          );
         } else {
           response = {
             version: 1,
