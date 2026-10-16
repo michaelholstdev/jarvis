@@ -46,7 +46,10 @@ The core receives a content-free, operation-scoped control event, cancels the re
 ignores late events and opens the default 20-second follow-up window only after
 cancellation acknowledgment. Expiry still takes priority where applicable. Context
 retains fully drained sentence prefixes; a partly heard current sentence is omitted
-because its delivered position cannot be established accurately. Synthesis and
+because its delivered position cannot be established accurately. Disconnect cleanup keeps
+only an operation ID and delivered character count until the matching cancellation
+consumes it. Privacy and subsequent audio work erase that metadata. Temporary
+speech waveforms and echo references are released after playback/closure. Synthesis and
 playback are bounded; no undelivered remainder is added to context. This sentence
 precision also improves manual cancellation. Opening a new output stream per sentence
 may introduce pauses; measure intelligibility and stop latency on actual devices.

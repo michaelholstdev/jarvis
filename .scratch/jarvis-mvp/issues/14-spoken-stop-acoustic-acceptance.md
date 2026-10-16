@@ -61,3 +61,32 @@ Map pointer: [implementation map](../map.md).
   are automated. Acoustic correlation requires the input extra; it ran here.
 - `scripts/verify-stop.py --help`, script Ruff checks and `git diff --check` passed.
 - Hardware trials were not run; this ticket stays `ready-for-human`, not resolved.
+
+## Review follow-up
+
+The fresh review found a production disconnect sequence that lost the drained
+sentence prefix, retained audio buffers after closure, and duplicated reply-word
+veto logic. These code findings are fixed:
+
+- Audio socket disconnect kills the worker while retaining only the matching
+  operation ID and delivered character count for its pending cancel. Cancel
+  consumes that metadata; privacy, later work and default cleanup erase it.
+  Late worker events cannot restore metadata across a generation change.
+- Synthesis/playback helpers scope temporary arrays, echo reference, PCM blocks
+  and intermediate text to their operation; no speech waveform survives closure
+  in the resident worker's main loop.
+- Both command validation and monitor admission use one reply-word veto predicate.
+- New real-audio-service socket tests cover spoken/manual stop, replacement,
+  privacy erasure and consumed late cancellations. A worker-protocol lifecycle
+  test observes waveform release while the process is still waiting idle.
+
+The user explicitly requested code fixes now and hardware acceptance later.
+Actual headset and speaker FR-09 remain **unvalidated** and the ticket remains
+`ready-for-human`; no acoustic acceptance pass is claimed.
+
+Review-fix validation: `npm run check` passed; full `npm test` passed **188 Node
+and 18 Python tests**. The real-service socket test and resident worker waveform
+lifecycle test both failed on the reviewed code and passed after the fixes.
+After tightening fixture synchronization, all four real-service cases passed again.
+Follow-up Standards review: zero remaining findings. Follow-up Spec review: zero
+remaining actionable code findings; acoustic acceptance remains deferred.

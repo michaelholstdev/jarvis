@@ -5,10 +5,14 @@ import re
 from typing import Any
 
 
+def reply_mentions_stop(reply: str) -> bool:
+    return re.search(r'\bstopp\b', reply, re.IGNORECASE) is not None
+
+
 def accepts_stop(text: str, reply: str, *, endpoint: bool, echo: bool) -> bool:
     # A reference containing the command is ambiguous even when echo correlation fails.
     return (endpoint and not echo and
-            re.search(r'\bstopp\b', reply, re.IGNORECASE) is None and
+            not reply_mentions_stop(reply) and
             text.strip().lower().rstrip('.!?;:') == 'stopp')
 
 
@@ -62,7 +66,7 @@ class StopMonitor:
         self.reader: Any = None
         if (microphone is None or config['audio']['mode'] != 'voice' or
                 not config['features']['voice_stop'] or
-                re.search(r'\bstopp\b', reply, re.IGNORECASE)):
+                reply_mentions_stop(reply)):
             return
 
         def read() -> None:

@@ -209,7 +209,7 @@ async def serve() -> None:
                                     done, _ = await asyncio.wait({work, disconnected}, return_when=asyncio.FIRST_COMPLETED)
                                     if work not in done:
                                         if output.generation == work_generation:
-                                            await output.stop()
+                                            await output.stop(preserve_delivery_for=operation["operation_id"])
                                         await work
                                         raise Diagnostic("unavailable")
                                     response.update(await work)

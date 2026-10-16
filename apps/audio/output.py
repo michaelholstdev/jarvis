@@ -98,11 +98,15 @@ class Output:
             pass
         await process.wait()
 
-    async def stop(self) -> None:
+    async def stop(self, *, preserve_delivery_for: str | None = None) -> None:
         self.generation += 1
         process, self.process = self.process, None
         spawning = self.spawning
-        self.completed = None
+        # A disconnected play request precedes its cancel request. Keep only
+        # that operation's content-free delivery count until cancel consumes it.
+        # Privacy/default cleanup and later operations always erase the count.
+        if self.completed is None or self.completed[0] != preserve_delivery_for:
+            self.completed = None
         if spawning is not None:
             try:
                 pending = await spawning
@@ -119,21 +123,22 @@ class Output:
     async def _run(self, operation: dict[str, Any], generation: int, on_speech: Callable[[], None] | None, on_control: Callable[[], None] | None) -> dict[str, Any]:
         kind = operation['type']
         if kind in {'cancel', 'privacy'}:
-            delivered = self.completed[1] if self.completed and self.completed[0] == operation.get('target_operation_id') else 0
+            delivered = self.completed[1] if kind == 'cancel' and self.completed and self.completed[0] == operation.get('target_operation_id') else 0
             await self.stop()
             await self.idle.wait()
             print(json.dumps({'event': 'playback_cancelled', 'operation_id': operation['operation_id']}), flush=True)
             return {'completed': False, 'delivered_chars': delivered}
         if generation != self.generation:
             raise OutputError('unavailable')
+        if self.busy:
+            raise OutputError('busy')
+        self.completed = None
         if kind == 'recognize' and self.config.get('audio', {}).get('mode') != 'voice':
             if 'text' not in operation:
                 raise OutputError('invalid_message')
             return {'text': operation['text']}
         if kind == 'recognize' and 'text' in operation:
             raise OutputError('invalid_message')
-        if self.busy:
-            raise OutputError('busy')
         self.busy = True
         self.idle.clear()
         try:
@@ -153,6 +158,8 @@ class Output:
             while True:
                 remaining = max(0, deadline - loop.time())
                 line = await asyncio.wait_for(process.stdout.readline(), remaining)
+                if generation != self.generation:
+                    return {'completed': False, 'delivered_chars': 0}
                 if not line:
                     if self.process is process:
                         raise OutputError('unavailable')

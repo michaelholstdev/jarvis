@@ -5,6 +5,7 @@ import ctypes as C
 import importlib
 import json
 import math
+from pathlib import Path
 import re
 import sys
 import threading
@@ -69,7 +70,7 @@ def main() -> None:
     options.inter_op_num_threads = 1
     options.enable_cpu_mem_arena = False
     session = ort.InferenceSession(config['tts']['model_path'], sess_options=options, providers=['CPUExecutionProvider'])
-    voice = piper.PiperVoice(session=session, config=piper.PiperConfig.from_dict(json.loads(open(config['tts']['model_path'] + '.json').read())))
+    voice = piper.PiperVoice(session=session, config=piper.PiperConfig.from_dict(json.loads(Path(config['tts']['model_path'] + '.json').read_text())))
     if voice.session.get_providers() != ['CPUExecutionProvider']:
         raise RuntimeError('cpu_required')
     # Discover by stable sink name, never a transient numeric index or default.
@@ -87,7 +88,46 @@ def main() -> None:
     microphone = None
     if config['audio']['mode'] == 'voice':
         microphone = importlib.import_module('apps.audio.input' if __package__ else 'input').Input(config)
-    pcm = b''
+
+    def synthesize(text: str) -> list[tuple[bytes, int]]:
+        if len(text) > 2048:
+            raise RuntimeError('text_too_large')
+        segments = []
+        samples = 0
+        delivered_text = ''
+        # Only fully drained sentence prefixes are confirmed delivered. The
+        # current sentence may be heard partly, but is never guessed by time.
+        for sentence in re.findall(r'.+?(?:[.!?](?:\s+|$)|$)', text, re.DOTALL):
+            chunks = []
+            for chunk in voice.synthesize(sentence):
+                samples += len(chunk.audio_float_array)
+                if samples > voice.config.sample_rate * 60:
+                    raise RuntimeError('audio_too_large')
+                chunks.append(chunk.audio_float_array)
+            audio = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
+            if voice.config.sample_rate != rate:
+                audio = soxr.resample(audio, voice.config.sample_rate, rate)
+            block = (np.clip(audio, -1, 1) * 32767).astype('<i2').tobytes()
+            delivered_text += sentence
+            segments.append((block, len(delivered_text.encode('utf-16-le')) // 2))
+        return segments
+
+    def play(text: str, segments: list[tuple[bytes, int]]) -> None:
+        pcm = b''.join(block for block, _ in segments)
+        if not pcm:
+            raise RuntimeError('missing_synthesis')
+        control = importlib.import_module('apps.audio.stop_control' if __package__ else 'stop_control')
+        reference = np.frombuffer(pcm, dtype='<i2').astype('float32') / 32768
+        if rate != 16000:
+            reference = soxr.resample(reference, rate, 16000)
+        monitor = control.StopMonitor(config, microphone, reference, text, emit)
+        try:
+            for block, delivered_chars in segments:
+                Pulse(sink['name'], rate).play(block, rate)
+                emit('playback_delivered', delivered_chars=delivered_chars)
+        finally:
+            monitor.close()
+
     cached_text = ''
     segments: list[tuple[bytes, int]] = []
     emit('ready')
@@ -106,50 +146,19 @@ def main() -> None:
                 raise RuntimeError('invalid_recognition')
             emit('result', result=microphone.recognize(emit))
         elif kind == 'synthesize':
-            text = operation['text']
-            if len(text) > 2048:
-                raise RuntimeError('text_too_large')
-            segments = []
-            samples = 0
-            delivered_text = ''
-            # Only fully drained sentence prefixes are confirmed delivered. The
-            # current sentence may be heard partly, but is never guessed by time.
-            for sentence in re.findall(r'.+?(?:[.!?](?:\s+|$)|$)', text, re.DOTALL):
-                chunks = []
-                for chunk in voice.synthesize(sentence):
-                    samples += len(chunk.audio_float_array)
-                    if samples > voice.config.sample_rate * 60:
-                        raise RuntimeError('audio_too_large')
-                    chunks.append(chunk.audio_float_array)
-                audio = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
-                if voice.config.sample_rate != rate:
-                    audio = soxr.resample(audio, voice.config.sample_rate, rate)
-                block = (np.clip(audio, -1, 1) * 32767).astype('<i2').tobytes()
-                delivered_text += sentence
-                segments.append((block, len(delivered_text.encode('utf-16-le')) // 2))
-            pcm = b''.join(block for block, _ in segments)
-            cached_text = text
+            cached_text = operation['text']
+            segments = synthesize(cached_text)
             emit('result', result={})
         elif kind == 'play':
-            if not pcm or operation.get('text') != cached_text:
+            if not segments or operation.get('text') != cached_text:
                 raise RuntimeError('missing_synthesis')
-            control = importlib.import_module('apps.audio.stop_control' if __package__ else 'stop_control')
-            reference = np.frombuffer(pcm, dtype='<i2').astype('float32') / 32768
-            if rate != 16000:
-                reference = soxr.resample(reference, rate, 16000)
-            monitor = control.StopMonitor(config, microphone, reference, cached_text, emit)
-            try:
-                for block, delivered_chars in segments:
-                    Pulse(sink['name'], rate).play(block, rate)
-                    emit('playback_delivered', delivered_chars=delivered_chars)
-            finally:
-                monitor.close()
+            play(cached_text, segments)
             delivered = len(cached_text.encode('utf-16-le')) // 2
-            pcm, cached_text = b'', ''
+            cached_text = ''
             segments.clear()
             emit('result', result={'completed': True, 'delivered_chars': delivered})
         else:
-            pcm, cached_text = b'', ''
+            cached_text = ''
             segments.clear()
             if operation.get('sound', True):
                 frequency = {'acknowledge': 880, 'close-conversation': 440, 'indicate-failure': 220}[kind]
