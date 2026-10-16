@@ -50,6 +50,8 @@ class Output:
         self.config = config
         self.process: asyncio.subprocess.Process | None = None
         self.busy = False
+        self.idle = asyncio.Event()
+        self.idle.set()
         self.generation = 0
         self.spawning: asyncio.Task[asyncio.subprocess.Process] | None = None
         self.completed: tuple[str, int] | None = None
@@ -119,6 +121,7 @@ class Output:
         if kind in {'cancel', 'privacy'}:
             delivered = self.completed[1] if self.completed and self.completed[0] == operation.get('target_operation_id') else 0
             await self.stop()
+            await self.idle.wait()
             print(json.dumps({'event': 'playback_cancelled', 'operation_id': operation['operation_id']}), flush=True)
             return {'completed': False, 'delivered_chars': delivered}
         if generation != self.generation:
@@ -132,6 +135,7 @@ class Output:
         if self.busy:
             raise OutputError('busy')
         self.busy = True
+        self.idle.clear()
         try:
             if self.process is None:
                 await self.start()
@@ -174,3 +178,4 @@ class Output:
             raise OutputError('unavailable') from None
         finally:
             self.busy = False
+            self.idle.set()

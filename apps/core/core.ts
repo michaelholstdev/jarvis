@@ -217,7 +217,13 @@ export function createCore(
     activate(): void {
       if (!ready || inhibited() || privacyPending || cleanupPending)
         throw new ProtocolError('unavailable');
-      if (['thinking', 'synthesizing', 'speaking'].includes(state)) {
+      if (
+        ['thinking', 'synthesizing', 'speaking'].includes(state) ||
+        (state === 'follow-up' &&
+          config.audio.mode === 'voice' &&
+          config.llm.mode === 'ollama' &&
+          operation?.type === 'recognize')
+      ) {
         cancel(true);
         return;
       }

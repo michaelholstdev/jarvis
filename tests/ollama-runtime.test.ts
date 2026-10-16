@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { loadConfig } from '../apps/core/config.js';
 import { createCore } from '../apps/core/core.js';
-import { runMockTurn } from '../apps/core/mock-turn.js';
+import { runTurn } from '../apps/core/turn-driver.js';
 import { encodeMessage, parseMessage } from '../packages/protocol/index.js';
 
 test(
@@ -95,7 +95,7 @@ test(
     await once(audio, 'listening');
     try {
       core.activate();
-      const turn = runMockTurn(core, path, config, 'Welche Hauptstadt?');
+      const turn = runTurn(core, path, config, 'Welche Hauptstadt?');
       await pending;
       assert.deepEqual(spoken, [], 'speech must wait for done');
       release();
@@ -103,7 +103,7 @@ test(
       assert.deepEqual(spoken, ['Berlin ist die Hauptstadt.']);
       assert.equal(core.status().state, 'follow-up');
       fail = true;
-      await runMockTurn(core, path, config, 'Und wo liegt sie?');
+      await runTurn(core, path, config, 'Und wo liegt sie?');
       assert.equal(core.status().retry_available, true);
       assert.equal(core.status().last_failure?.capability, 'inference');
       assert.deepEqual(histories[1]?.slice(1), [
@@ -120,7 +120,7 @@ test(
       pending = new Promise<void>((resolve) => {
         started = resolve;
       });
-      const retry = runMockTurn(core, path, config, 'Noch einmal');
+      const retry = runTurn(core, path, config, 'Noch einmal');
       await pending;
       release();
       await retry;
@@ -133,10 +133,10 @@ test(
       pending = new Promise<void>((resolve) => {
         started = resolve;
       });
-      const canceled = runMockTurn(core, path, config, 'Verworfene Frage');
+      const canceled = runTurn(core, path, config, 'Verworfene Frage');
       await pending;
       core.activate();
-      await runMockTurn(core, path, config);
+      await runTurn(core, path, config);
       release();
       await canceled;
       assert.equal(

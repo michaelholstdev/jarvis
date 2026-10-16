@@ -149,8 +149,12 @@ It passes only after final recognition, real Ollama generation, Piper synthesis
 and drained playback, then mutes capture and cleans up its processes/sinks.
 It retains no fixture audio or conversation content. A silent sink proves the
 integration path, not physical microphone/headset quality. This optional check
-has not been run for ticket 10 in this environment: speech artifacts and a local
-Ollama model/service are absent. Real headset/speaker acceptance, offline hardware
+has not been run for ticket 10 in this environment because the speech artifacts
+are absent. A separate real loopback adapter smoke check passed with the already
+installed `gemma3:270m`, `num_predict: 64`, context 8192, temperature 0.3, seed 0;
+it returned a completed 43-byte answer without logging its content. Model digest:
+`e7d36fb2c3b3293cfe56d55889867a064b3a2b22e98335f2e6e8a387e081d6be`.
+This tiny model is an integration fixture, not a model-quality selection. Real headset/speaker acceptance, offline hardware
 operation, delivered-speech precision, GPU usage and latency remain unvalidated.
 
 - Inference unavailable: inspect `/api/tags`, exact configured model name, port,

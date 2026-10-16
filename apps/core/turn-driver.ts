@@ -10,7 +10,7 @@ import { operationCapability } from './operation-capability.js';
 import { request } from './transport.js';
 
 /** Drives one bounded turn through selected inference and audio adapters. */
-export async function runMockTurn(
+export async function runTurn(
   core: ReturnType<typeof createCore>,
   audioPath: string,
   config: Config,

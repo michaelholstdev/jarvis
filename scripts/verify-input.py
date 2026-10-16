@@ -104,7 +104,6 @@ async def check(voice: str, models: str, ollama_model: str | None = None) -> Non
             assert b'Wie' not in logs and b'simulierte Antwort' not in logs
             print(json.dumps({'event': 'synthetic_ollama_voice_loop_passed' if ollama_model else 'synthetic_core_voice_loop_passed',
                               'elapsed_ms': round((time.monotonic() - started) * 1000)}))
-            await cli('mute')
             assert (await cli('unmute'))['state'] == 'idle'
         finally:
             for child in reversed(children):

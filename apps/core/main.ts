@@ -11,10 +11,10 @@ import {
 import { configPath, loadConfig } from './config.js';
 import { createCore } from './core.js';
 import { diagnostic as logDiagnostic } from './diagnostics.js';
-import { runMockTurn } from './mock-turn.js';
 import { probeInference } from './ollama.js';
 import { runtimeDirectory } from './runtime.js';
 import { receive, request } from './transport.js';
+import { runTurn } from './turn-driver.js';
 
 async function main() {
   const path = configPath();
@@ -161,7 +161,7 @@ async function main() {
     const run = Symbol();
     runningTurn = run;
     try {
-      await runMockTurn(core, join(directory, 'audio.sock'), config, utterance);
+      await runTurn(core, join(directory, 'audio.sock'), config, utterance);
     } finally {
       if (runningTurn === run) runningTurn = undefined;
     }
@@ -171,7 +171,7 @@ async function main() {
     privacyDrive ??= (async () => {
       // Coalesce updates into the latest privacy barrier; never queue promises.
       while (core.operations()[0]?.type === 'privacy') {
-        await runMockTurn(core, join(directory, 'audio.sock'), config);
+        await runTurn(core, join(directory, 'audio.sock'), config);
       }
     })().finally(() => {
       privacyDrive = undefined;

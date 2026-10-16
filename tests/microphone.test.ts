@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { loadConfig } from '../apps/core/config.js';
 import { createCore } from '../apps/core/core.js';
-import { runMockTurn } from '../apps/core/mock-turn.js';
+import { runTurn } from '../apps/core/turn-driver.js';
 import { encodeMessage, parseMessage } from '../packages/protocol/index.js';
 
 test('manual voice turn waits for the cue, recognizes without injected text, and stops capture after its reply', async () => {
@@ -60,10 +60,10 @@ test('manual voice turn waits for the cue, recognizes without injected text, and
   audio.listen(path);
   await once(audio, 'listening');
   try {
-    await runMockTurn(core, path, config);
+    await runTurn(core, path, config);
     assert.deepEqual(operations, [], 'idle never invokes recognition');
     core.activate();
-    const turn = runMockTurn(core, path, config);
+    const turn = runTurn(core, path, config);
     await cue;
     assert.deepEqual(operations, ['acknowledge']);
     releaseCue();
@@ -75,7 +75,7 @@ test('manual voice turn waits for the cue, recognizes without injected text, and
       'play',
     ]);
     assert.equal(core.status().state, 'follow-up');
-    await runMockTurn(core, path, config);
+    await runTurn(core, path, config);
     assert.equal(
       operations.length,
       4,
@@ -86,9 +86,9 @@ test('manual voice turn waits for the cue, recognizes without injected text, and
       source: 'muted',
       active: true,
     });
-    await runMockTurn(core, path, config);
+    await runTurn(core, path, config);
     assert.throws(() => core.activate(), /unavailable/);
-    await runMockTurn(core, path, config);
+    await runTurn(core, path, config);
     assert.equal(operations.filter((op) => op === 'recognize').length, 1);
   } finally {
     for (const peer of peers) peer.destroy();
