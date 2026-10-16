@@ -24,6 +24,7 @@ args=sys.argv[1:]
 def read(): return json.loads(state.read_text())
 if name=='busctl':
  s=read()
+ if s.get('lock_error') and 'GetActive' in args: sys.exit(1)
  if s.get('slow'):
   Path(str(state)+'.reading').write_text('reading')
   time.sleep(1.2)
@@ -63,6 +64,7 @@ test(
       device: 1,
       offline: false,
       slow: false,
+      lock_error: false,
     };
     const update = (change: Partial<typeof state>) => {
       Object.assign(state, change);
@@ -181,6 +183,11 @@ test(
       update({ muted: true });
       await until((status) => status.inhibitions.hardware_muted, 900);
       update({ slow: false, muted: false });
+      await until((status) => status.manual_activation === 'mock');
+      // A known desktop query failure must inhibit before slow siblings drain.
+      update({ slow: true, lock_error: true });
+      await until((status) => status.inhibitions.locked, 900);
+      update({ slow: false, lock_error: false });
       await until((status) => status.manual_activation === 'mock');
       update({ sleeping: true });
       await until((status) => status.inhibitions.locked);

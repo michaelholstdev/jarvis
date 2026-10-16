@@ -46,3 +46,13 @@ Review: Standards found no actionable issues. Spec found two issues (graphical
 target ordering and mute changes during an in-flight snapshot); both were fixed
 and the reviewer confirmed no remaining actionable findings. The new regression
 failed before the mute fix and passed afterward.
+
+Follow-up review findings resolved: failed snapshot commands now inhibit capture
+immediately while holding the sampling gate until all sibling commands settle,
+preventing overlapping command batches. Default/custom XDG installation and update
+commands now use the same directory as creation and uninstall. Both regressions
+were observed failing before their fixes and passing afterward. The reviewer
+confirmed both original findings and the privacy-response regression resolved.
+Documented install/update commands were also exercised in temporary default and
+custom XDG homes. Final checks pass with **182 Node + 9 Python tests**; target KDE
+and physical hardware acceptance remains open.

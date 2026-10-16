@@ -39,7 +39,7 @@ install -d -m 700 "${XDG_STATE_HOME:-$HOME/.local/state}/jarvis"
 (umask 077; test -e "${XDG_CONFIG_HOME:-$HOME/.config}/jarvis/config.yaml" || cp config/defaults.json "${XDG_CONFIG_HOME:-$HOME/.config}/jarvis/config.yaml")
 chmod 600 "${XDG_CONFIG_HOME:-$HOME/.config}/jarvis/config.yaml"
 install -d -m 700 "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
-install -m 600 systemd/jarvis-audio.service systemd/jarvis-core.service "$HOME/.config/systemd/user/"
+install -m 600 systemd/jarvis-audio.service systemd/jarvis-core.service "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/"
 ```
 
 JSON defaults are valid YAML. Edit the configuration before starting:
@@ -160,7 +160,7 @@ uv sync --frozen --extra input --extra output
 npm run build
 npm run check
 npm test
-install -m 600 systemd/jarvis-audio.service systemd/jarvis-core.service "$HOME/.config/systemd/user/"
+install -m 600 systemd/jarvis-audio.service systemd/jarvis-core.service "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/"
 systemctl --user daemon-reload
 systemctl --user start jarvis-audio.service jarvis-core.service
 ```

@@ -121,3 +121,43 @@ test('desktop snapshot reads KDE lock, logind sleep and the selected stable devi
     ),
   );
 });
+
+test('a failed desktop snapshot waits for outstanding commands before admitting another sample', async () => {
+  const { readDesktopState } = await import('../apps/core/desktop.js');
+  let release: () => void = () => {};
+  const outstanding = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let finished = false;
+  const sample = readDesktopState(
+    'headset-mic',
+    'headset-out',
+    async (_command, args) => {
+      if (args.includes('GetActive')) throw new Error('lock_query_failed');
+      await outstanding;
+      if (args.includes('sinks')) throw new Error('sink_query_failed');
+      return '';
+    },
+  );
+  const outcome = sample.then(
+    () => {
+      finished = true;
+      return 'ready';
+    },
+    () => {
+      finished = true;
+      return 'unavailable';
+    },
+  );
+  try {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.equal(
+      finished,
+      false,
+      'failure must not leave commands running after the snapshot finishes',
+    );
+  } finally {
+    release();
+    assert.equal(await outcome, 'unavailable');
+  }
+});

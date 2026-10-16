@@ -77,7 +77,9 @@ export async function readDesktopState(
   output: string,
   read: ReadCommand = readCommand,
 ): Promise<DesktopState> {
-  const [lock, sleep, sources, sinks] = await Promise.all([
+  // Keep the sampling gate held until every bounded command has finished,
+  // including when one command fails before its siblings.
+  const [lock, sleep, sources, sinks] = await Promise.allSettled([
     read('busctl', [
       '--user',
       'call',
@@ -97,6 +99,10 @@ export async function readDesktopState(
     read('pactl', ['--format=json', 'list', 'sources']),
     read('pactl', ['--format=json', 'list', 'sinks']),
   ]);
+  const value = (result: PromiseSettledResult<string>): string => {
+    if (result.status === 'rejected') throw new Error('desktop_unavailable');
+    return result.value;
+  };
   const boolean = (text: string) => {
     if (!/^b (true|false)\s*$/.test(text))
       throw new Error('desktop_unavailable');
@@ -116,12 +122,12 @@ export async function readDesktopState(
       throw new Error('device_unavailable');
     return selected as { name: string; index: number; mute: boolean };
   };
-  const source = device(sources, input);
-  const sink = device(sinks, output);
+  const source = device(value(sources), input);
+  const sink = device(value(sinks), output);
   if (sink.mute) throw new Error('device_unavailable');
   return {
-    locked: boolean(lock),
-    sleeping: boolean(sleep),
+    locked: boolean(value(lock)),
+    sleeping: boolean(value(sleep)),
     muted: source.mute,
     device: `${source.name}:${source.index}/${sink.name}:${sink.index}`,
   };
@@ -156,7 +162,20 @@ export function monitorDesktop(
     sampling = true;
     const generation = epoch;
     try {
-      const state = await readDesktopState(input, output);
+      const state = await readDesktopState(
+        input,
+        output,
+        async (command, args) => {
+          try {
+            return await readCommand(command, args);
+          } catch (error) {
+            // Inhibit on the first known failure, while readDesktopState keeps
+            // this sample in flight until all sibling commands have drained.
+            if (!stopped) invalidate();
+            throw error;
+          }
+        },
+      );
       if (!stopped && generation === epoch && watchers.size === 3)
         guard.update({
           ...state,
