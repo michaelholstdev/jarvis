@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -17,7 +23,13 @@ name=Path(sys.argv[0]).name
 args=sys.argv[1:]
 def read(): return json.loads(state.read_text())
 if name=='busctl':
- s=read(); print('b '+str(s['locked'] if 'GetActive' in args else s['sleeping']).lower())
+ s=read()
+ if s.get('slow'):
+  Path(str(state)+'.reading').write_text('reading')
+  time.sleep(1.2)
+ print('b '+str(s['locked'] if 'GetActive' in args else s['sleeping']).lower())
+elif name=='pactl' and 'get-source-mute' in args:
+ print('Mute: '+('yes' if read()['muted'] else 'no'))
 elif name=='pactl' and 'list' in args:
  s=read(); source='sources' in args
  print(json.dumps([{'name':'mic' if source else 'speaker','index':s['device'],'mute':s['muted'] if source else False}]))
@@ -29,8 +41,8 @@ else:
   current=json.dumps(s)
   if last is not None and current!=last:
    if name=='pactl': print("Event 'change' on source #1",flush=True)
-   elif '--session' in args: print('/ScreenSaver: org.freedesktop.ScreenSaver.ActiveChanged ('+str(s['locked']).lower()+',)',flush=True)
-   else: print('/org/freedesktop/login1: org.freedesktop.login1.Manager.PrepareForSleep ('+str(s['sleeping']).lower()+',)',flush=True)
+   elif '--session' in args and s['locked']!=json.loads(last)['locked']: print('/ScreenSaver: org.freedesktop.ScreenSaver.ActiveChanged ('+str(s['locked']).lower()+',)',flush=True)
+   elif '--system' in args and s['sleeping']!=json.loads(last)['sleeping']: print('/org/freedesktop/login1: org.freedesktop.login1.Manager.PrepareForSleep ('+str(s['sleeping']).lower()+',)',flush=True)
   last=current; time.sleep(.03)
 `;
 
@@ -50,6 +62,7 @@ test(
       muted: false,
       device: 1,
       offline: false,
+      slow: false,
     };
     const update = (change: Partial<typeof state>) => {
       Object.assign(state, change);
@@ -100,8 +113,11 @@ test(
       assert.ok(result.type === 'ready' && result.service === 'core');
       return result.status;
     };
-    const until = async (predicate: (status: HealthStatus) => boolean) => {
-      const deadline = Date.now() + 5000;
+    const until = async (
+      predicate: (status: HealthStatus) => boolean,
+      timeout = 5000,
+    ) => {
+      const deadline = Date.now() + timeout;
       while (Date.now() < deadline) {
         const status = await health();
         if (predicate(status)) return status;
@@ -155,6 +171,16 @@ test(
         source: 'muted',
         active: false,
       });
+      await until((status) => status.manual_activation === 'mock');
+      // A slow unrelated desktop snapshot cannot delay a received source mute.
+      update({ slow: true });
+      const readingDeadline = Date.now() + 4000;
+      while (!existsSync(`${file}.reading`) && Date.now() < readingDeadline)
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      assert.ok(existsSync(`${file}.reading`));
+      update({ muted: true });
+      await until((status) => status.inhibitions.hardware_muted, 900);
+      update({ slow: false, muted: false });
       await until((status) => status.manual_activation === 'mock');
       update({ sleeping: true });
       await until((status) => status.inhibitions.locked);

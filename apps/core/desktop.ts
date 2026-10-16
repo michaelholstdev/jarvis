@@ -136,6 +136,9 @@ export function monitorDesktop(
 ): () => void {
   let stopped = false;
   let sampling = false;
+  let sampleAgain = false;
+  let checkingMute = false;
+  let muteAgain = false;
   let epoch = 0;
   let locking = false;
   let sleeping = false;
@@ -145,7 +148,11 @@ export function monitorDesktop(
     guard.unavailable();
   };
   const sample = async () => {
-    if (stopped || sampling) return;
+    if (stopped) return;
+    if (sampling) {
+      sampleAgain = true;
+      return;
+    }
     sampling = true;
     const generation = epoch;
     try {
@@ -160,6 +167,40 @@ export function monitorDesktop(
       if (!stopped) invalidate();
     } finally {
       sampling = false;
+      if (sampleAgain && !stopped) {
+        sampleAgain = false;
+        void sample();
+      }
+    }
+  };
+  // Source change events include volume and RUNNING/SUSPENDED transitions.
+  // Query mute separately so they cannot cancel our own healthy capture, and
+  // so a slow KDE/logind snapshot cannot delay an actual mute cancellation.
+  const checkMute = async () => {
+    if (stopped) return;
+    if (checkingMute) {
+      muteAgain = true;
+      return;
+    }
+    checkingMute = true;
+    try {
+      const result = (
+        await readCommand('pactl', ['get-source-mute', input])
+      ).trim();
+      if (result !== 'Mute: no' && result !== 'Mute: yes')
+        throw new Error('device_unavailable');
+      if (!stopped && result === 'Mute: yes') {
+        invalidate();
+        void sample();
+      }
+    } catch {
+      if (!stopped) invalidate();
+    } finally {
+      checkingMute = false;
+      if (muteAgain && !stopped) {
+        muteAgain = false;
+        void checkMute();
+      }
     }
   };
   const watch = (key: string, command: string, args: string[]) => {
@@ -177,9 +218,10 @@ export function monitorDesktop(
         invalidate();
         return;
       }
-      if (key === 'pulse' && / on (source|sink|server)\b/.test(line)) {
+      if (key === 'pulse' && / on (source|sink|server)(?: #|$)/.test(line)) {
         epoch++;
-        if (/ on server\b/.test(line)) guard.unavailable();
+        if (/ on server\b|'remove'/.test(line)) guard.unavailable();
+        if (/ on source(?: #|$)/.test(line)) void checkMute();
         void sample();
       } else if (
         key !== 'pulse' &&

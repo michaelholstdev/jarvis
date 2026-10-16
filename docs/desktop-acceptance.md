@@ -10,6 +10,7 @@ is **unvalidated**; M3 is not claimed passed by these fixtures.
 | Private XDG setup, stale socket recovery, live peer protection | `service-startup.test.ts` | unvalidated | unvalidated |
 | Initial unknown state inhibits activation | `desktop.test.ts`, `desktop-runtime.test.ts` | unvalidated | unvalidated |
 | Lock/source mute/CLI mute remain independent | same | unvalidated | unvalidated |
+| Mute during an outstanding desktop snapshot | `desktop-runtime.test.ts` regression | unvalidated | unvalidated |
 | Suspend, device replacement and monitor loss close work; recovery does not replay | same | unvalidated | unvalidated |
 | No idle recognition / late canceled results | existing privacy, microphone and recovery suites | unvalidated | unvalidated |
 | Login services start after audio without a window | unit definitions and bounded startup handshake | unvalidated | unvalidated |

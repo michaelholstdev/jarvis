@@ -1,6 +1,6 @@
 [Unit]
 Description=Jarvis local audio service
-After=graphical-session.target pipewire.service pipewire-pulse.service
+After=pipewire.service pipewire-pulse.service
 Wants=pipewire.service pipewire-pulse.service
 PartOf=graphical-session.target
 StartLimitIntervalSec=60

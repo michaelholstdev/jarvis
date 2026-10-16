@@ -1,6 +1,6 @@
 [Unit]
 Description=Jarvis private desktop conversation core
-After=graphical-session.target jarvis-audio.service
+After=jarvis-audio.service
 Wants=jarvis-audio.service
 PartOf=graphical-session.target
 StartLimitIntervalSec=60

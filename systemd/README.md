@@ -38,7 +38,7 @@ install -d -m 700 "${XDG_STATE_HOME:-$HOME/.local/state}/jarvis"
 # First installation only: do not overwrite an existing config.
 (umask 077; test -e "${XDG_CONFIG_HOME:-$HOME/.config}/jarvis/config.yaml" || cp config/defaults.json "${XDG_CONFIG_HOME:-$HOME/.config}/jarvis/config.yaml")
 chmod 600 "${XDG_CONFIG_HOME:-$HOME/.config}/jarvis/config.yaml"
-install -d -m 700 "$HOME/.config/systemd/user"
+install -d -m 700 "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 install -m 600 systemd/jarvis-audio.service systemd/jarvis-core.service "$HOME/.config/systemd/user/"
 ```
 
@@ -121,7 +121,10 @@ transcripts, answer content, prompts and raw audio.
 The desktop core (`start-desktop`) monitors KDE `ActiveChanged`/`AboutToLock`,
 logind `PrepareForSleep`, and PulseAudio subscriptions. It reconciles snapshots
 every two seconds with bounded 1.5-second command deadlines, one sample in flight,
-and epoch checks against stale snapshots. Lock/suspend notifications inhibit
+and epoch checks against stale snapshots. Events during a sample request one
+immediate replacement sample. A separate bounded source-mute query cancels work
+without waiting for KDE/logind queries; volume and capture-state events alone do
+not cancel healthy capture. Lock/suspend notifications inhibit
 immediately on receipt; mute/device changes are reconciled from source/sink
 snapshots. Signal loss or unreadable state inhibits capture; monitor restart is
 bounded to the two-second tick. No physical stop-latency claim follows from these
@@ -166,7 +169,7 @@ For uninstall, remove the KDE shortcut, then:
 
 ```sh
 systemctl --user disable --now jarvis-core.service jarvis-audio.service
-rm "$HOME/.config/systemd/user/jarvis-core.service" "$HOME/.config/systemd/user/jarvis-audio.service"
+rm "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/jarvis-core.service" "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/jarvis-audio.service"
 systemctl --user daemon-reload
 systemctl --user reset-failed
 # Remove only the installation symlink, after checking its target:
