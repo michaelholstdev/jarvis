@@ -45,7 +45,7 @@ export function createCore(
     wake: 'unavailable',
     stt: 'mock',
     tts: 'mock',
-    inference: 'mock',
+    inference: config.llm.mode === 'ollama' ? 'unavailable' : 'mock',
   };
   let lastFailure: HealthStatus['last_failure'] = null;
   let retryQuestion = '';
@@ -552,9 +552,20 @@ export function createCore(
         state,
         manual_activation:
           ready && !inhibited() && !privacyPending && !cleanupPending
-            ? 'mock'
+            ? config.audio.mode === 'voice' && capabilities.stt === 'ready'
+              ? 'ready'
+              : 'mock'
             : 'unavailable',
-        voice_conversation: 'unavailable',
+        voice_conversation:
+          ready &&
+          !inhibited() &&
+          !privacyPending &&
+          !cleanupPending &&
+          ['stt', 'tts', 'inference'].every(
+            (capability) => capabilities[capability as Capability] === 'ready',
+          )
+            ? 'ready'
+            : 'unavailable',
         audio: ready ? 'ready' : 'unavailable',
         audio_diagnostic: diagnostic,
         since_ms: Math.max(0, clock.now() - readinessChangedAt),

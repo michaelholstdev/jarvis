@@ -191,12 +191,17 @@ async def serve() -> None:
                             if kind == "cancel" or (kind == "recognize" and config["audio"]["mode"] != "voice"):
                                 response.update(await output.run(operation))
                             else:
-                                work = asyncio.create_task(output.run(operation))
+                                def speech_started() -> None:
+                                    writer.write((json.dumps({"version": 1, "type": "speech-started",
+                                                              "operation_id": operation["operation_id"]}) + "\n").encode())
+                                work_generation = output.generation
+                                work = asyncio.create_task(output.run(operation, speech_started if kind == "recognize" else None))
                                 disconnected = asyncio.create_task(reader.read(1))
                                 try:
                                     done, _ = await asyncio.wait({work, disconnected}, return_when=asyncio.FIRST_COMPLETED)
                                     if work not in done:
-                                        await output.stop()
+                                        if output.generation == work_generation:
+                                            await output.stop()
                                         await work
                                         raise Diagnostic("unavailable")
                                     response.update(await work)

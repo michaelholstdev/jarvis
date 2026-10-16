@@ -194,6 +194,34 @@
           "minimum": 512,
           "maximum": 32768,
           "default": 8192
+        },
+        "mode": {
+          "enum": ["mock", "ollama"],
+          "default": "mock"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 300000,
+          "default": 120000
+        },
+        "num_predict": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2048,
+          "default": 512
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "default": 0.3
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "default": 0
         }
       }
     },

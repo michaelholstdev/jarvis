@@ -3,13 +3,13 @@
 Ticket 09 adds opt-in `audio.mode: voice`: manual activation → completed activation
 sound → selected microphone → resident CPU Silero VAD → endpointed CPU sherpa-onnx
 Whisper tiny INT8 (multilingual, `language=de`, `task=transcribe`) → existing scripted
-answer → resident CPU Piper → selected output. Inference is still scripted.
+answer → resident CPU Piper → selected output. Inference is scripted unless [Ollama mode](ollama.md) is enabled.
 `mock` remains the default; `piper` retains scripted recognition.
 
-This mode implements manual microphone turns. Reactivate for each further question;
-automatic microphone follow-ups, wake detection, spoken stop, barge-in and calibrated
+This mode implements manual microphone turns. In mock inference mode, reactivate for each further question;
+wake detection, spoken stop, barge-in and calibrated
 German accuracy are **unvalidated**. Health reports STT/TTS ready, inference mock and
-voice_conversation unavailable, so this ticket does not imply MVP release readiness.
+voice_conversation unavailable in mock inference mode, so this ticket does not imply MVP release readiness.
 
 ## Installation and model verification
 

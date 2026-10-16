@@ -6,6 +6,8 @@ export function audioDeadlineMs(
   config: Config,
   type?: Operation['type'],
 ): number {
+  if (type === 'infer' && config.llm.mode === 'ollama')
+    return config.llm.timeout_ms;
   if (type === 'recognize' && config.audio.mode === 'voice')
     return (
       (config.vad.max_utterance_seconds +

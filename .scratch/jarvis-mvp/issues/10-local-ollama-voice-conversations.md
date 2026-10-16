@@ -13,3 +13,7 @@
 - [ ] A loopback Ollama fake server covers normal streaming, errors, timeout, and cancellation deterministically; an optional real-service smoke test demonstrates a complete local voice exchange.
 - [ ] Preinstalled models and local services support offline inference; no external data tool, shell execution, or cloud fallback is introduced.
 - [ ] Document local Ollama installation/startup and loopback configuration, model acquisition/revision recording, generation/context settings, health verification, start/stop, and troubleshooting; keep model selection provisional pending benchmarks.
+
+## Comments
+
+Implemented on the current branch against baseline `78407f2400cd2ca40ad2a9970c018e9a27877826`. Review uses the public core/runtime and local fake Ollama seams specified in the MVP spec. Final validation and review findings will be recorded below.

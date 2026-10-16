@@ -11,9 +11,11 @@ import type { Config } from './config.js';
 export function receive(
   socket: Socket,
   limits: Config['transport'],
+  onProgress?: (message: Extract<Message, { type: 'speech-started' }>) => void,
 ): Promise<Message> {
   return new Promise((resolve, reject) => {
     let data = Buffer.alloc(0);
+    let progressSeen = false;
     const finish = (error?: Error, message?: Message) => {
       socket.removeListener('data', onData);
       socket.removeListener('error', onError);
@@ -29,10 +31,19 @@ export function receive(
       if (data.length + chunk.length > limits.max_frame_bytes)
         return finish(new ProtocolError('frame_too_large'));
       data = Buffer.concat([data, chunk]);
-      const newline = data.indexOf(10);
-      if (newline < 0) return;
       try {
-        finish(undefined, parseMessage(data.subarray(0, newline)));
+        let newline = data.indexOf(10);
+        while (newline >= 0) {
+          const message = parseMessage(data.subarray(0, newline));
+          data = data.subarray(newline + 1);
+          if (message.type !== 'speech-started')
+            return finish(undefined, message);
+          if (!onProgress || progressSeen)
+            throw new ProtocolError('invalid_message');
+          progressSeen = true;
+          onProgress(message);
+          newline = data.indexOf(10);
+        }
       } catch (error) {
         finish(error as Error);
       }
@@ -53,17 +64,27 @@ export async function request(
   role: 'cli' | 'core',
   limits: Config['transport'],
   message: Message = { version: 1, type: 'hello', role },
+  options: {
+    signal?: AbortSignal;
+    onProgress?: (
+      message: Extract<Message, { type: 'speech-started' }>,
+    ) => void;
+  } = {},
 ): Promise<Message> {
   const frame = encodeMessage(message);
   if (Buffer.byteLength(frame) > limits.max_frame_bytes)
     throw new ProtocolError('frame_too_large');
+  if (options.signal?.aborted) throw new ProtocolError('unavailable');
   const socket = createConnection(path);
-  const response = receive(socket, limits);
+  const abort = () => socket.destroy();
+  options.signal?.addEventListener('abort', abort, { once: true });
+  const response = receive(socket, limits, options.onProgress);
   socket.on('error', () => {});
   socket.on('connect', () => socket.write(frame));
   try {
     return await response;
   } finally {
+    options.signal?.removeEventListener('abort', abort);
     socket.destroy();
   }
 }

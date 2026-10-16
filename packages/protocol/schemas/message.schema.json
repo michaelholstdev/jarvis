@@ -95,10 +95,10 @@
               ]
             },
             "manual_activation": {
-              "enum": ["mock", "unavailable"]
+              "enum": ["mock", "unavailable", "ready"]
             },
             "voice_conversation": {
-              "const": "unavailable"
+              "enum": ["unavailable", "ready"]
             },
             "audio": {
               "enum": ["ready", "unavailable"]
@@ -361,6 +361,24 @@
         },
         "active": {
           "type": "boolean"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "operation_id"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "type": {
+          "const": "speech-started"
+        },
+        "operation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
         }
       }
     }

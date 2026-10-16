@@ -12,6 +12,7 @@ import { configPath, loadConfig } from './config.js';
 import { createCore } from './core.js';
 import { diagnostic as logDiagnostic } from './diagnostics.js';
 import { runMockTurn } from './mock-turn.js';
+import { probeInference } from './ollama.js';
 import { runtimeDirectory } from './runtime.js';
 import { receive, request } from './transport.js';
 
@@ -51,7 +52,8 @@ async function main() {
       {
         ...config.transport,
         timeout_ms:
-          command === 'demo' && config.audio.mode === 'piper'
+          command === 'demo' &&
+          (config.audio.mode === 'piper' || config.llm.mode === 'ollama')
             ? config.recovery.playback_timeout_ms * 3
             : config.transport.timeout_ms * (command === 'health' ? 2 : 6),
       },
@@ -90,6 +92,21 @@ async function main() {
   let refreshPending:
     | { generation: string; promise: Promise<Diagnostic | undefined> }
     | undefined;
+  let inferenceProbe: Promise<void> | undefined;
+  const refreshInference = () => {
+    if (config.llm.mode !== 'ollama') return Promise.resolve();
+    inferenceProbe ??= probeInference(config)
+      .then((ready) => {
+        core.dispatch({
+          type: 'capabilities-changed',
+          capabilities: { inference: ready ? 'ready' : 'unavailable' },
+        });
+      })
+      .finally(() => {
+        inferenceProbe = undefined;
+      });
+    return inferenceProbe;
+  };
   const probe = async (): Promise<Diagnostic | undefined> => {
     const wasReady = core.status().ready;
     const audioEpoch = audioGeneration;
@@ -138,7 +155,7 @@ async function main() {
     }
     return refreshPending.promise;
   };
-  await refresh();
+  await Promise.all([refresh(), refreshInference()]);
   let runningTurn: symbol | undefined;
   const drive = async (utterance?: string) => {
     const run = Symbol();
@@ -162,7 +179,7 @@ async function main() {
     return privacyDrive;
   };
   const recovery = setInterval(() => {
-    void refresh()
+    void Promise.all([refresh(), refreshInference()])
       .then(async () => {
         if (core.operations()[0]?.type === 'privacy')
           await synchronizePrivacy();
@@ -176,7 +193,10 @@ async function main() {
     const operation = core.operations()[0];
     if (
       !runningTurn &&
-      (operation?.type === 'cancel' ||
+      ((config.audio.mode === 'voice' &&
+        config.llm.mode === 'ollama' &&
+        operation?.type === 'recognize') ||
+        operation?.type === 'cancel' ||
         operation?.type === 'indicate-failure' ||
         operation?.type === 'close-conversation' ||
         (core.status().state === 'awaiting-extension' &&
@@ -235,7 +255,10 @@ async function main() {
           message.type === 'demo'
         ) {
           const generation = privacyGeneration;
-          const diagnostic = await refresh();
+          const [diagnostic] = await Promise.all([
+            refresh(),
+            refreshInference(),
+          ]);
           if (core.operations()[0]?.type === 'privacy')
             await synchronizePrivacy();
           if (
@@ -287,7 +310,8 @@ async function main() {
           )
             throw new ProtocolError('invalid_message');
         }
-        if (message.type === 'hello') await refresh();
+        if (message.type === 'hello')
+          await Promise.all([refresh(), refreshInference()]);
         if (core.operations()[0]?.type === 'privacy')
           await synchronizePrivacy();
         response = {
@@ -324,6 +348,7 @@ async function main() {
     );
   });
   const stop = () => {
+    core.dispatch({ type: 'audio-lost' });
     clearInterval(ticker);
     clearInterval(recovery);
     for (const socket of sockets) socket.destroy();

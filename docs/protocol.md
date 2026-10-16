@@ -249,3 +249,7 @@ and privacy destroy the bounded resident worker. Content-free audio events mark
 first successful PCM write, drained completion, or cancellation. Partial canceled
 speech reports zero delivered characters conservatively; completed text counts
 UTF-16 units. See [runtime limits and verification](audio-output.md).
+
+### Recognition progress (ticket 10)
+
+A recognition request may return one `speech-started` frame (`version:1`, matching `operation_id`) before its final `audio-result`. Core uses this content-free onset to apply the original follow-up deadline and bounded completion allowance. Duplicate or mismatched progress is invalid; progress never resets the socket deadline. Progress and final frames may share a read. Other requests remain single-response. Operational health permits `manual_activation: ready` for real STT and `voice_conversation: ready` when all real conversation adapters are available; see [health semantics](ollama.md). The legacy `mode: mock` status field remains for protocol compatibility; use the individual capabilities.

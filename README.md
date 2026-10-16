@@ -1,9 +1,9 @@
-# Jarvis — scripted conversations with optional German output
+# Jarvis — local German voice conversations
 
 A Node.js/TypeScript core and a separate Python audio service exchange validated
 messages over private Unix sockets. No microphone, speaker, speech model,
 Ollama, cloud fallback or external tool is needed. This milestone verifies the
-runnable foundation in default mock mode. Optional [CPU Piper output](docs/audio-output.md) speaks scripted answers through PipeWire. Real German voice conversation is **unavailable**; recognition and inference remain scripted.
+runnable foundation in default mock mode. Optional [CPU Piper output](docs/audio-output.md) speaks scripted answers through PipeWire. Opt-in [local Ollama conversations](docs/ollama.md) combine real German recognition, local generation, Piper output and automatic contextual follow-ups. Default mock mode remains hardware-free; real hardware quality remains unvalidated.
 
 Layout: `apps/core` (CLI and orchestration), `apps/audio` (Python mock/optional Piper output),
 `packages/protocol` (shared schemas/types), `config` (defaults and model records),
@@ -348,3 +348,7 @@ scripted answers. Follow [installation, device selection, replay and validation]
 The default remains hardware-free mock mode; microphone, STT and inference are still scripted.
 
 Manual microphone turns: see [German capture and recognition setup](docs/audio-input.md).
+
+## Local Ollama voice conversations (ticket 10)
+
+See [Ollama installation, model provenance, configuration, health, voice operation and optional synthetic smoke check](docs/ollama.md). Set `audio.mode: voice` and `llm.mode: ollama` to enable the complete path; `llm.mode: mock` preserves the earlier scripted demonstrations.

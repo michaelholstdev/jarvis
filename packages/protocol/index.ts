@@ -36,8 +36,8 @@ export type HealthStatus = {
     | 'awaiting-extension'
     | 'cancelling'
     | 'indicating-failure';
-  manual_activation: 'unavailable' | 'mock';
-  voice_conversation: 'unavailable';
+  manual_activation: 'unavailable' | 'mock' | 'ready';
+  voice_conversation: 'unavailable' | 'ready';
   audio: 'ready' | 'unavailable';
   audio_diagnostic: Diagnostic | null;
   since_ms: number;
@@ -64,6 +64,7 @@ export type Operation = {
 };
 export type PlaybackReport = { completed: boolean; delivered_chars: number };
 export type Message =
+  | { version: 1; type: 'speech-started'; operation_id: string }
   | {
       version: 1;
       type: 'inhibition-changed';

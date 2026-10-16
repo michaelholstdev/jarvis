@@ -1,6 +1,6 @@
 """Opt-in synthetic German capture → STT → scripted synthesis/playback check.
 Uses two temporary silent PipeWire sinks, never a physical microphone. No fixture on disk.
-Run: .venv/bin/python scripts/verify-input.py VOICE.onnx INPUT_MODEL_DIRECTORY
+Run: .venv/bin/python scripts/verify-input.py VOICE.onnx INPUT_MODEL_DIRECTORY [OLLAMA_MODEL]
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from apps.audio.output import Output, verify_voice  # noqa: E402
 from apps.audio.input import verify_input  # noqa: E402
 
 
-async def check(voice: str, models: str) -> None:
+async def check(voice: str, models: str, ollama_model: str | None = None) -> None:
     import numpy as np
     import soxr
     from piper import PiperVoice
@@ -29,6 +29,8 @@ async def check(voice: str, models: str) -> None:
     config['tts']['model_path'] = str(Path(voice).resolve())
     config['stt']['model_dir'] = str(Path(models).resolve())
     config['vad']['max_utterance_seconds'] = 10
+    if ollama_model is not None:
+        config['llm'].update(mode='ollama', model=ollama_model)
     verify_voice(config)
     verify_input(config)
     # Fixed synthetic German question with independent expected recognition.
@@ -76,13 +78,19 @@ async def check(voice: str, models: str) -> None:
                     if not line:
                         raise AssertionError(await child.stderr.read())
                 readers.extend([asyncio.create_task(consume(child.stdout)), asyncio.create_task(consume(child.stderr))])
-            assert (await cli('health'))['capabilities']['stt'] == 'ready'
+            health = await cli('health')
+            assert health['capabilities']['stt'] == 'ready'
+            if ollama_model is not None:
+                assert health['capabilities']['inference'] == 'ready'
             started = time.monotonic()
             await cli('activate')
             feeding = asyncio.create_task(feed())
-            for _ in range(300):
+            for _ in range(5000 if ollama_model is not None else 300):
                 status = await cli('health')
-                if status['state'] == 'follow-up':
+                reply_played = any(json.loads(line).get('event') == 'playback_completed' and
+                                   json.loads(line).get('delivered_chars', 0) > 0
+                                   for line in logs.splitlines())
+                if reply_played and (status['state'] == 'follow-up' or ollama_model is not None):
                     break
                 if status['last_failure']:
                     raise AssertionError(status['last_failure'])
@@ -90,10 +98,11 @@ async def check(voice: str, models: str) -> None:
             else:
                 raise AssertionError('voice turn did not finish')
             await feeding
+            await cli('mute')
             assert b'speech_started' in logs and b'recognition_final' in logs
             assert b'playback_completed' in logs
             assert b'Wie' not in logs and b'simulierte Antwort' not in logs
-            print(json.dumps({'event': 'synthetic_core_voice_loop_passed',
+            print(json.dumps({'event': 'synthetic_ollama_voice_loop_passed' if ollama_model else 'synthetic_core_voice_loop_passed',
                               'elapsed_ms': round((time.monotonic() - started) * 1000)}))
             await cli('mute')
             assert (await cli('unmute'))['state'] == 'idle'
@@ -122,7 +131,7 @@ if __name__ == '__main__':
         for name in ('jarvis_fixture_input', 'jarvis_fixture_output'):
             modules.append(subprocess.check_output([
                 'pactl', 'load-module', 'module-null-sink', f'sink_name={name}', 'rate=48000'], text=True).strip())
-        asyncio.run(check(sys.argv[1], sys.argv[2]))
+        asyncio.run(check(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None))
     finally:
         for module in reversed(modules):
             subprocess.run(['pactl', 'unload-module', module], check=True)

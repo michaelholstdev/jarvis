@@ -24,7 +24,7 @@ prints deliberately requested configuration, while routine logs never print it.
 | VAD | `silero`; end silence 350 ms (50–5000); max utterance 30 s (1–120) |
 | Recognition | `sherpa-onnx`, `to-be-benchmarked`, CPU; no recognizer loaded |
 | Synthesis | `piper`, `de_DE-thorsten-medium`, CPU; `model_path` defaults to `models/de_DE-thorsten-medium.onnx`; loaded only in `audio.mode: piper` |
-| LLM | `ollama`, `http://127.0.0.1:11434`, `user-configured`; context 8192 tokens (512–32768); no real inference requested |
+| LLM | `ollama`, `http://127.0.0.1:11434`, `user-configured`; context 8192 tokens (512–32768); `mode: mock` by default; opt-in `ollama` enables local inference |
 | Local endpoint | Only HTTP with literal `127.0.0.1`, `localhost`, or `[::1]` plus a port 1–65535; credentials and remote endpoints rejected |
 | Session | Follow-up 20 s (5–60), duration 300 s (30–3600), extension response 20 s (5–60), extension duration 300 s (30–3600) |
 | Recognition allowance | 5 s (1–30) beyond the original follow-up deadline for speech begun before it; also bounded by max utterance from onset; acoustic validation pending |
@@ -71,3 +71,5 @@ health instead of retrying cleanup forever. Audio loss preserves completed
 context and the unsuccessful question in memory only until follow-up expiry;
 repeated failed probes do not extend that deadline. Lock/mute and conversation
 closure still clear everything. Real model/device watchdogs are unvalidated.
+
+Ollama mode adds validated generation settings: `llm.timeout_ms` 120000 (100–300000), `num_predict` 512 (1–2048), `temperature` 0.3 (0–2), `seed` 0 (integer 0–2147483647). The inference watchdog uses this deadline in Ollama mode. See [local Ollama setup and limits](ollama.md) for model acquisition, revision recording, offline operation, context/byte limits and health semantics.

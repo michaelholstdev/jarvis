@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 import hashlib
 from importlib import import_module
 import json
@@ -110,11 +110,11 @@ class Output:
         if process is not None:
             await self.destroy(process)
 
-    def run(self, operation: dict[str, Any]) -> Coroutine[Any, Any, dict[str, Any]]:
+    def run(self, operation: dict[str, Any], on_speech: Callable[[], None] | None = None) -> Coroutine[Any, Any, dict[str, Any]]:
         # Capture admission before create_task can queue work behind a privacy barrier.
-        return self._run(operation, self.generation)
+        return self._run(operation, self.generation, on_speech)
 
-    async def _run(self, operation: dict[str, Any], generation: int) -> dict[str, Any]:
+    async def _run(self, operation: dict[str, Any], generation: int, on_speech: Callable[[], None] | None) -> dict[str, Any]:
         kind = operation['type']
         if kind in {'cancel', 'privacy'}:
             delivered = self.completed[1] if self.completed and self.completed[0] == operation.get('target_operation_id') else 0
@@ -155,6 +155,9 @@ class Output:
                     # A concurrent stop already destroyed this worker.
                     return {'completed': False, 'delivered_chars': 0}
                 event = json.loads(line)
+                if event['event'] == 'speech_started' and on_speech is not None:
+                    on_speech()
+                    on_speech = None
                 if event['event'] == 'result':
                     result = dict(event['result'])
                     if kind == 'play' and result.get('completed'):
