@@ -107,15 +107,27 @@ def run(name: str, directory: Path, output: Path, repeats: int) -> None:
     corpus = json.loads((directory / 'corpus/manifest.json').read_text())
     if corpus['source_sha256'] != digest(HERE / 'corpus.json'):
         raise ValueError('Corpus references changed; regenerate audio')
+    canonical = json.loads((HERE / 'corpus.json').read_text())
+    generated_rows = corpus['utterances']
+    if (len(generated_rows) != len(canonical['utterances']) or
+            any(not isinstance(actual, dict) or
+                any(actual.get(key) != value for key, value in expected.items())
+                for actual, expected in zip(generated_rows, canonical['utterances']))):
+        raise ValueError('Corpus metadata mismatch; regenerate audio')
     audio = []
-    for row in corpus['utterances']:
+    for row in generated_rows:
         path = directory / 'corpus' / f"{row['id']}.wav"
         if digest(path) != row['sha256']:
             raise ValueError(f"Corrupt corpus: {row['id']}")
         with wave.open(str(path)) as wav:
             if (wav.getframerate(), wav.getnchannels(), wav.getsampwidth()) != (16000, 1, 2):
                 raise ValueError('Expected 16 kHz mono PCM16')
-            pcm = wav.readframes(wav.getnframes())
+            frames = wav.getnframes()
+            pcm = wav.readframes(frames)
+            duration = frames / wav.getframerate()
+            if not frames or len(pcm) != frames * 2 or row.get('audio_seconds') != duration:
+                raise ValueError(f"Corpus duration mismatch: {row['id']}; regenerate audio")
+        row = {**row, 'audio_seconds': duration}
         audio.append((row, pcm))
     before = hardware()
     started = time.perf_counter()

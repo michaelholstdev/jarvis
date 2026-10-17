@@ -45,3 +45,15 @@ The Spec reviewer independently recomputed all committed summaries and reran
 Parakeet: 6.7% core WER, 16.7% technical WER, passing gate, 256 ms p95 compute.
 That reproduction is corroboration, not a replacement for the published three-pass
 measurement (246 ms p95).
+
+### Review correction: canonical corpus validation
+
+Fixed the P2 finding from the fresh review: the generated manifest's copied source
+hash did not bind its references/groups/utterance set to the canonical corpus, and
+its durations were trusted for real-time-factor scoring. The benchmark now requires
+the exact canonical IDs/order/groups/references before loading audio or models.
+It derives durations from WAV frames and rejects mismatched manifest durations,
+empty WAVs and truncated PCM. Three CLI regressions cover rewritten references,
+inflated durations, and altered groups/IDs or missing/duplicate/extra utterances.
+The existing published corpus references match the canonical source; the original
+measurements have not been replaced.

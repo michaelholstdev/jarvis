@@ -28,7 +28,10 @@ traversal in the Vosk archive. Without `--download`, missing artifacts fail. A b
 checksum always fails; remove the bad local artifact and repeat the explicit download.
 The resulting `verified-models.json` records extracted-file hashes. Each run verifies
 the selected files and all WAVs before inference and embeds the inventory in its
-report. Archive checksums are the authoritative identity of the export; filenames
+report. Generated utterance IDs, order, groups and reference transcripts must match
+the canonical corpus exactly; a copied source hash alone is insufficient. Durations
+are derived from WAV frame counts, and inconsistent manifest durations, empty audio
+or truncated PCM fail before model loading. Regenerate the corpus after a mismatch. Archive checksums are the authoritative identity of the export; filenames
 alone are insufficient. Wheel versions and hashes are pinned in `uv.lock`; the
 report records that lockfile's hash and installed runtime versions. In these initial
 reports, `revision` identifies the task-start parent commit: the benchmark tooling
