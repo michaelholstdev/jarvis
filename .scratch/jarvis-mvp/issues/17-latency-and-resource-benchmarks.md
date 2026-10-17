@@ -9,7 +9,7 @@
 - [x] Capture content-free timestamps for wake where enabled, speech endpoint, STT final, LLM first token, first TTS audio, playback start/end, and interruption.
 - [ ] For at least 30 warm short local no-tool queries, compute speech-end-to-audible-answer p50/p95 against initial targets of at most 1.5 and 3 seconds.
 - [x] Record exact speech/LLM model revisions, quantization, generation/context settings, voice, device, CPU/GPU state, and whether Ollama is loaded.
-- [x] Compare local LLM configurations for German conversational usefulness as well as latency, and include cold/warm, short/long, quiet/noisy, headset/speaker, and loaded/unloaded conditions as documented scenarios.
+- [ ] Compare local LLM configurations for German conversational usefulness as well as latency, and include cold/warm, short/long, quiet/noisy, headset/speaker, and loaded/unloaded conditions as documented scenarios.
 - [x] Measure idle and active/concurrent speech CPU/RAM and dedicated speech-service VRAM separately from Ollama/compositor usage; confirm zero dedicated speech-inference VRAM in the default setup or report a failure.
 - [x] Publish commands, prerequisites/model setup, sample counts, environment details, results, and a reproducible regression baseline without conversation content.
 - [x] Missed targets remain disclosed; any revised target includes evidence and review rather than retroactively marking a failed measurement passed.
@@ -48,3 +48,32 @@ scenarios. Wake remains unavailable under #13. Synthetic baseline implementation
 is complete; the issue is not represented as fully acoustically validated.
 
 Map pointer: [implementation map](../map.md).
+
+Validation: `npm run check` passed. The final post-review full `npm test` passed
+**203 Node and 31 Python tests**; `git diff --check` passed. Reporting and
+first-token instrumentation were implemented red → green at the user-approved
+benchmark/report and daemon/audio seams. The metadata redirect regression also
+failed before the explicit rejecting handler and passed afterward. A final real
+synthetic daemon/audio smoke passed with the shared CPU loader (one sample,
+819 ms signal proxy; insufficient for any target verdict and not substituted
+for the published baseline).
+
+## Standards review
+
+Initial review found one documented breach (urllib's default redirect following
+contradicted loopback-only metadata requests) and one possible duplication smell
+(CPU voice construction duplicated between production and stress measurement).
+Both were corrected: explicit redirect rejection with a public request-behavior
+regression, and shared pinned `load_cpu_voice`. Follow-up reviewer: both original
+findings resolved; **0 remaining defects or documented-standard breaches**.
+
+## Spec review
+
+Independent reviewer recomputed both 30-trial percentile results, verified all
+six required measured stages in all 60 traces, and confirmed published resource
+summaries. **Two partial acceptance findings remain:** physical audible latency;
+and German conversational usefulness plus remaining scenario measurements. Both
+requirements remain unchecked and the status remains `ready-for-human`.
+Follow-up reviewer confirmed accurate tracker status, preserved CPU settings and
+no new software defect. These human acceptance gaps are not represented as
+resolved by the synthetic proxy or keyword screen.

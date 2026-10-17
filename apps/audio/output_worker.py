@@ -5,7 +5,6 @@ import ctypes as C
 import importlib
 import json
 import math
-from pathlib import Path
 import re
 import sys
 import threading
@@ -58,22 +57,10 @@ class Pulse:
 
 def main() -> None:
     config = json.loads(sys.stdin.readline())
-    piper = importlib.import_module('piper')
     np = importlib.import_module('numpy')
     soxr = importlib.import_module('soxr')
-    from importlib.metadata import version
-    if version('piper-tts') != '1.3.0':
-        raise RuntimeError('unsupported_runtime')
-    ort = importlib.import_module('onnxruntime')
-    ort.disable_telemetry_events()
-    options = ort.SessionOptions()
-    options.intra_op_num_threads = 2
-    options.inter_op_num_threads = 1
-    options.enable_cpu_mem_arena = False
-    session = ort.InferenceSession(config['tts']['model_path'], sess_options=options, providers=['CPUExecutionProvider'])
-    voice = piper.PiperVoice(session=session, config=piper.PiperConfig.from_dict(json.loads(Path(config['tts']['model_path'] + '.json').read_text())))
-    if voice.session.get_providers() != ['CPUExecutionProvider']:
-        raise RuntimeError('cpu_required')
+    voice_loader = importlib.import_module('apps.audio.voice' if __package__ else 'voice')
+    voice = voice_loader.load_cpu_voice(config['tts']['model_path'])
     # Discover by stable sink name, never a transient numeric index or default.
     import subprocess
     sinks = json.loads(subprocess.check_output(['pactl', '--format=json', 'list', 'sinks'], timeout=5))

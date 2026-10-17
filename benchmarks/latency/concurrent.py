@@ -14,6 +14,7 @@ from typing import Any
 from apps.audio.input import Input, verify_input
 from apps.audio.main import load_config
 from apps.audio.output import verify_voice
+from apps.audio.voice import load_cpu_voice
 from benchmarks.latency.resources import snapshot, summarize_resources
 from benchmarks.latency.run import ollama
 from benchmarks.recognition.prepare import write_json
@@ -42,15 +43,7 @@ def worker(kind: str, voice: Path, directory: Path) -> None:
         samples = soxr.resample(audio, speaker.config.sample_rate, 16000)
         del speaker
     else:
-        from piper import PiperVoice
-        from piper import PiperConfig
-        options = ort.SessionOptions()
-        options.intra_op_num_threads = 2
-        options.inter_op_num_threads = 1
-        options.enable_cpu_mem_arena = False
-        session = ort.InferenceSession(str(voice), sess_options=options, providers=['CPUExecutionProvider'])
-        engine = PiperVoice(session=session, config=PiperConfig.from_dict(
-            json.loads(Path(str(voice) + '.json').read_text())))
+        engine = load_cpu_voice(str(voice))
     print('ready', flush=True)
     sys.stdin.readline()
     end = time.monotonic() + 10

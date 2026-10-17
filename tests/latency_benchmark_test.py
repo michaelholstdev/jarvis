@@ -49,3 +49,25 @@ class LatencyReportTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             compare(baseline, {**current, 'summary': baseline['summary']})
+
+    def test_benchmark_metadata_cannot_follow_a_redirect_outside_loopback(self):
+        from email.message import Message
+        import io
+        from unittest.mock import patch
+        from urllib.response import addinfourl
+        from benchmarks.latency.run import ollama
+        requests = []
+
+        def http_open(handler, request):
+            requests.append(request.full_url)
+            headers = Message()
+            headers['Location'] = 'http://example.invalid/metadata'
+            response = addinfourl(io.BytesIO(b'{}'), headers, request.full_url,
+                                  302 if len(requests) == 1 else 200)
+            response.msg = 'Found'
+            return response
+
+        with patch('urllib.request.HTTPHandler.http_open', http_open):
+            with self.assertRaises(ValueError):
+                ollama('tags')
+        self.assertEqual(requests, ['http://127.0.0.1:11434/api/tags'])

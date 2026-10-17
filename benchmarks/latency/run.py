@@ -17,7 +17,7 @@ import sys
 import tempfile
 import time
 from typing import Any
-from urllib.request import ProxyHandler, build_opener
+from urllib.request import HTTPRedirectHandler, ProxyHandler, build_opener
 
 from apps.audio.input import verify_input
 from apps.audio.main import load_config
@@ -31,9 +31,14 @@ HERE = Path(__file__).parent
 RATE = 48000
 
 
+class NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
+        raise ValueError('ollama_redirect_disabled')
+
+
 def ollama(path: str) -> dict[str, Any]:
     # Fixed loopback, no proxy, redirects or content-bearing requests.
-    with build_opener(ProxyHandler({})).open('http://127.0.0.1:11434/api/' + path, timeout=5) as response:
+    with build_opener(ProxyHandler({}), NoRedirect()).open('http://127.0.0.1:11434/api/' + path, timeout=5) as response:
         return dict(json.load(response))
 
 
