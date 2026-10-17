@@ -57,3 +57,10 @@ empty WAVs and truncated PCM. Three CLI regressions cover rewritten references,
 inflated durations, and altered groups/IDs or missing/duplicate/extra utterances.
 The existing published corpus references match the canonical source; the original
 measurements have not been replaced.
+
+Correction validation: `npm run check` and the full `npm test` pass (**203 Node,
+27 Python tests**). A real Parakeet run still passes at 6.7% core WER (248 ms p95
+compute for this one-pass smoke), and all 33 reported durations match independently
+read WAV frame counts. Follow-up Standards review: 0 findings. Follow-up Spec review:
+original P2 resolved, 0 remaining findings; independently reran all six benchmark
+scoring/CLI tests. `git diff --check` passes.
