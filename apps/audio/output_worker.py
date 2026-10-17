@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import sys
 import threading
+import time
 from typing import Any
 
 
@@ -17,7 +18,7 @@ EMIT_LOCK = threading.Lock()
 
 def emit(event: str, **values: Any) -> None:
     with EMIT_LOCK:
-        print(json.dumps({'event': event, **values}, separators=(',', ':')), flush=True)
+        print(json.dumps({'event': event, **values, 'monotonic_ms': time.monotonic_ns() / 1e6}, separators=(',', ':')), flush=True)
 
 
 class SampleSpec(C.Structure):
@@ -94,12 +95,16 @@ def main() -> None:
             raise RuntimeError('text_too_large')
         segments = []
         samples = 0
+        first_audio = True
         delivered_text = ''
         # Only fully drained sentence prefixes are confirmed delivered. The
         # current sentence may be heard partly, but is never guessed by time.
         for sentence in re.findall(r'.+?(?:[.!?](?:\s+|$)|$)', text, re.DOTALL):
             chunks = []
             for chunk in voice.synthesize(sentence):
+                if first_audio and len(chunk.audio_float_array):
+                    emit('tts_first_audio')
+                    first_audio = False
                 samples += len(chunk.audio_float_array)
                 if samples > voice.config.sample_rate * 60:
                     raise RuntimeError('audio_too_large')

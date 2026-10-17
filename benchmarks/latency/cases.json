@@ -1,0 +1,7 @@
+[
+  {"id":"capital", "question":"Was ist die Hauptstadt von Deutschland?", "required":["berlin"]},
+  {"id":"arithmetic", "question":"Wie viel ist zwei plus drei?", "required":["fünf|5"]},
+  {"id":"technical", "question":"Was ist ein Browser?", "required":["programm|software|anwendung", "web|internet"]},
+  {"id":"advice", "question":"Wie kann ich Wasser sparen?", "required":["wasser", "duschen|hahn|regen|spar"]},
+  {"id":"explanation", "question":"Warum ist Eis kalt?", "required":["temperatur|wärme|grad|gefrier"]}
+]

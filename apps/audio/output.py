@@ -10,6 +10,7 @@ import os
 import signal
 from pathlib import Path
 import sys
+import time
 from typing import Any
 
 
@@ -74,11 +75,13 @@ class Output:
             process.stdin.write((json.dumps(self.config) + '\n').encode())
             await process.stdin.drain()
             line = await asyncio.wait_for(process.stdout.readline(), 30)
-            if generation != self.generation or line != b'{"event":"ready"}\n':
-                try:
-                    report_diagnostic(json.loads(line))
-                except (ValueError, TypeError):
-                    pass
+            try:
+                ready = json.loads(line)
+            except ValueError:
+                ready = None
+            if generation != self.generation or not isinstance(ready, dict) or ready.get('event') != 'ready':
+                if isinstance(ready, dict):
+                    report_diagnostic(ready)
                 raise OutputError('output_runtime_unavailable')
         except (OSError, asyncio.TimeoutError, OutputError):
             if process is not None:
@@ -126,7 +129,9 @@ class Output:
             delivered = self.completed[1] if kind == 'cancel' and self.completed and self.completed[0] == operation.get('target_operation_id') else 0
             await self.stop()
             await self.idle.wait()
-            print(json.dumps({'event': 'playback_cancelled', 'operation_id': operation['operation_id']}), flush=True)
+            print(json.dumps({'event': 'interruption', 'operation_id': operation['operation_id'],
+                              'target_operation_id': operation.get('target_operation_id'),
+                              'monotonic_ms': time.monotonic_ns() / 1e6}), flush=True)
             return {'completed': False, 'delivered_chars': delivered}
         if generation != self.generation:
             raise OutputError('unavailable')
@@ -189,6 +194,7 @@ class Output:
                     report_diagnostic(event)
                     raise OutputError('unavailable')
                 print(json.dumps({'event': event['event'], 'operation_id': operation['operation_id'],
+                                  **({'monotonic_ms': event['monotonic_ms']} if 'monotonic_ms' in event else {}),
                                   **({'elapsed_ms': event['elapsed_ms']} if 'elapsed_ms' in event else {}),
                                   **({'delivered_chars': event['delivered_chars']} if event['event'] == 'playback_delivered' else {})}), flush=True)
         except (OSError, ValueError, asyncio.TimeoutError, OutputError):

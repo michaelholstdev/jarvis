@@ -25,6 +25,9 @@ test(
       type: 'capabilities-changed',
       capabilities: { inference: 'ready' },
     });
+    const diagnostics: Record<string, unknown>[] = [];
+    const originalError = console.error;
+    console.error = (line: string) => diagnostics.push(JSON.parse(line));
     const spoken: string[] = [];
     const histories: { role: string; content: string }[][] = [];
     let fail = false;
@@ -101,6 +104,17 @@ test(
       release();
       await turn;
       assert.deepEqual(spoken, ['Berlin ist die Hauptstadt.']);
+      const token = diagnostics.filter(
+        (event) => event.event === 'llm_first_token',
+      );
+      assert.equal(token.length, 1);
+      assert.equal(typeof token[0]?.monotonic_ms, 'number');
+      const inference = diagnostics.find(
+        (event) => event.operation === 'infer',
+      );
+      assert.equal(token[0]?.operation_id, inference?.operation_id);
+      assert.ok(inference?.turn_id);
+      assert.equal(JSON.stringify(diagnostics).includes('Berlin'), false);
       assert.equal(core.status().state, 'follow-up');
       fail = true;
       await runTurn(core, path, config, 'Und wo liegt sie?');
@@ -146,6 +160,7 @@ test(
       );
       assert.equal(core.status().state, 'listening');
     } finally {
+      console.error = originalError;
       for (const peer of peers) peer.destroy();
       ollama.closeAllConnections();
       await Promise.all([

@@ -377,3 +377,7 @@ FR-09 remains **unvalidated** separately on actual headset and speakers.
 
 German CPU recognizer measurements, corpus provenance and reproduction commands:
 [recognition comparison](docs/recognition-comparison.md).
+
+Content-free real voice-path timing, local LLM comparison and speech resource
+baselines: [latency benchmarks](docs/latency-benchmarks.md). Silent-sink signal
+measurements are separate from unvalidated headset/speaker audibility.

@@ -2,6 +2,7 @@ import { request as httpRequest } from 'node:http';
 import type { Operation } from '../../packages/protocol/index.js';
 import { ProtocolError } from '../../packages/protocol/index.js';
 import type { Config } from './config.js';
+import { diagnostic } from './diagnostics.js';
 
 /** Loopback-only HTTP, no redirects, proxies, tools, downloads or fallback. */
 async function call(
@@ -136,6 +137,12 @@ export async function generateAnswer(
         message.tool_calls
       )
         throw new ProtocolError('invalid_message');
+      if (!answer && message.content) {
+        diagnostic({
+          event: 'llm_first_token',
+          operation_id: operation.operation_id,
+        });
+      }
       answer += message.content;
       if (
         Buffer.byteLength(answer) >

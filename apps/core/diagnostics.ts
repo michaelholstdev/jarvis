@@ -13,5 +13,10 @@ export function diagnostic(
     emitted = 0;
   }
   if (emitted++ >= 100) return;
-  console.error(JSON.stringify(fields));
+  console.error(
+    JSON.stringify({
+      ...fields,
+      monotonic_ms: Number(process.hrtime.bigint()) / 1e6,
+    }),
+  );
 }

@@ -9,6 +9,8 @@ import { generateAnswer } from './ollama.js';
 import { operationCapability } from './operation-capability.js';
 import { request } from './transport.js';
 
+const turns = new WeakMap<ReturnType<typeof createCore>, string>();
+
 /** Drives one bounded turn through selected inference and audio adapters. */
 export async function runTurn(
   core: ReturnType<typeof createCore>,
@@ -43,8 +45,10 @@ export async function runTurn(
             config.llm.mode !== 'ollama')))
     )
       return;
+    if (operation.type === 'recognize') turns.set(core, operation.operation_id);
     logDiagnostic({
       event: 'operation_started',
+      turn_id: turns.get(core) ?? '',
       operation: operation.type,
       operation_id: operation.operation_id,
       state: core.status().state,
