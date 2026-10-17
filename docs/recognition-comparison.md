@@ -30,7 +30,11 @@ The resulting `verified-models.json` records extracted-file hashes. Each run ver
 the selected files and all WAVs before inference and embeds the inventory in its
 report. Archive checksums are the authoritative identity of the export; filenames
 alone are insufficient. Wheel versions and hashes are pinned in `uv.lock`; the
-report records that lockfile's hash and installed runtime versions.
+report records that lockfile's hash and installed runtime versions. In these initial
+reports, `revision` identifies the task-start parent commit: the benchmark tooling
+and evidence were still uncommitted during measurement. Use the commit containing
+this report to locate the implemented harness, rather than checking out that parent
+and expecting the benchmark to exist.
 
 The [corpus source](../benchmarks/recognition/corpus.json) contains 20 standard German
 questions/follow-ups and 10 German questions with English technical terms, plus one

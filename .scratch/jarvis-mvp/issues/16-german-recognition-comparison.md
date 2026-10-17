@@ -36,3 +36,12 @@ accuracy, authentic dialects, prolonged dictation, concurrent Ollama and acousti
 release acceptance are unvalidated. No service model is marked validated.
 
 Map pointer: [implementation map](../map.md).
+
+Validation: `npm run check` passed (including benchmark lint/typechecking); the full
+`npm test` passed **203 Node and 24 Python tests**. The three scoring/report tests
+were implemented red → green at the user-confirmed seam. `git diff --check` passed.
+Code review against `f6f4930`: **Standards 0 findings**, **Spec 0 findings**.
+The Spec reviewer independently recomputed all committed summaries and reran
+Parakeet: 6.7% core WER, 16.7% technical WER, passing gate, 256 ms p95 compute.
+That reproduction is corroboration, not a replacement for the published three-pass
+measurement (246 ms p95).
