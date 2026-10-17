@@ -45,8 +45,9 @@ Archive asset **179373699**, updated **2024-07-13**; VAD asset **271935959**, up
 [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx/blob/master/LICENSE) use MIT,
 MIT and Apache-2.0 respectively. Preserve those notices when distributing artifacts;
 Piper/voice licensing remains as described in the output guide. This small endpointed
-backend is a provisional CPU alternative; the architecture's Parakeet comparison is
-still open. `StreamingRecognizer` is a replaceable boundary; its current implementation
+backend is a provisional CPU alternative. The [German CPU comparison](recognition-comparison.md)
+now measures Whisper, Parakeet and a small streaming alternative; its recommendation
+is separate from production adapter and acoustic acceptance. `StreamingRecognizer` is a replaceable boundary; its current implementation
 returns one final transcript, **not true partial streaming**.
 
 ## Device selection and operation

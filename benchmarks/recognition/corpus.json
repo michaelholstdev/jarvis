@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "provenance": "Original synthetic evaluation prompts authored for Jarvis ticket #16; no human recordings or personal data. Dialect is text rendered by standard German TTS, not authentic dialect audio.",
+  "utterances": [
+    {
+      "id": "standard-01",
+      "group": "standard",
+      "reference": "Was ist die Hauptstadt von Deutschland?"
+    },
+    {
+      "id": "standard-02",
+      "group": "standard",
+      "reference": "Wie funktioniert die Photosynthese bei Pflanzen?"
+    },
+    {
+      "id": "standard-03",
+      "group": "standard",
+      "reference": "Erkläre mir den Unterschied zwischen Wetter und Klima."
+    },
+    {
+      "id": "standard-04",
+      "group": "standard",
+      "reference": "Wie viele Minuten hat eine Stunde?"
+    },
+    {
+      "id": "standard-05",
+      "group": "standard",
+      "reference": "Warum ist der Himmel am Tag blau?"
+    },
+    {
+      "id": "standard-06",
+      "group": "standard",
+      "reference": "Fasse deine letzte Antwort bitte kurz zusammen."
+    },
+    {
+      "id": "standard-07",
+      "group": "standard",
+      "reference": "Kannst du das bitte genauer erklären?"
+    },
+    {
+      "id": "standard-08",
+      "group": "standard",
+      "reference": "Welche Zutaten brauche ich für einen einfachen Pfannkuchen?"
+    },
+    {
+      "id": "standard-09",
+      "group": "standard",
+      "reference": "Wie berechne ich die Fläche eines Kreises?"
+    },
+    {
+      "id": "standard-10",
+      "group": "standard",
+      "reference": "Was bedeutet der Begriff Nachhaltigkeit?"
+    },
+    {
+      "id": "standard-11",
+      "group": "standard",
+      "reference": "Nenne mir drei Beispiele für erneuerbare Energie."
+    },
+    {
+      "id": "standard-12",
+      "group": "standard",
+      "reference": "Warum schwimmt ein Schiff aus Stahl?"
+    },
+    {
+      "id": "standard-13",
+      "group": "standard",
+      "reference": "Wie kann ich mich besser auf meine Arbeit konzentrieren?"
+    },
+    {
+      "id": "standard-14",
+      "group": "standard",
+      "reference": "Welcher Planet ist der Sonne am nächsten?"
+    },
+    {
+      "id": "standard-15",
+      "group": "standard",
+      "reference": "Bitte erkläre die Antwort in einfachen Worten."
+    },
+    {
+      "id": "standard-16",
+      "group": "standard",
+      "reference": "Was ist der Unterschied zwischen Masse und Gewicht?"
+    },
+    {
+      "id": "standard-17",
+      "group": "standard",
+      "reference": "Wie entsteht ein Regenbogen nach einem Gewitter?"
+    },
+    {
+      "id": "standard-18",
+      "group": "standard",
+      "reference": "Welche Aufgabe hat das Herz im menschlichen Körper?"
+    },
+    {
+      "id": "standard-19",
+      "group": "standard",
+      "reference": "Was bedeutet dieses Wort in deinem letzten Satz?"
+    },
+    {
+      "id": "standard-20",
+      "group": "standard",
+      "reference": "Wie unterscheiden sich eine Biene und eine Wespe?"
+    },
+    {
+      "id": "technical-01",
+      "group": "technical",
+      "reference": "Wie starte ich einen Docker Container unter Linux?"
+    },
+    {
+      "id": "technical-02",
+      "group": "technical",
+      "reference": "Erkläre mir einen Git Commit und einen Pull Request."
+    },
+    {
+      "id": "technical-03",
+      "group": "technical",
+      "reference": "Was ist der Unterschied zwischen TypeScript und JavaScript?"
+    },
+    {
+      "id": "technical-04",
+      "group": "technical",
+      "reference": "Warum schlägt mein Unit Test in der Pipeline fehl?"
+    },
+    {
+      "id": "technical-05",
+      "group": "technical",
+      "reference": "Wie funktioniert ein HTTP Request an eine REST API?"
+    },
+    {
+      "id": "technical-06",
+      "group": "technical",
+      "reference": "Was bedeutet ein Timeout beim Download eines Updates?"
+    },
+    {
+      "id": "technical-07",
+      "group": "technical",
+      "reference": "Wie lege ich ein Backup auf meinem Server an?"
+    },
+    {
+      "id": "technical-08",
+      "group": "technical",
+      "reference": "Erkläre mir den Cache in einem Web Browser."
+    },
+    {
+      "id": "technical-09",
+      "group": "technical",
+      "reference": "Wie finde ich einen Bug mit einem Debugger?"
+    },
+    {
+      "id": "technical-10",
+      "group": "technical",
+      "reference": "Was passiert beim Deployment auf einem lokalen Server?"
+    },
+    {
+      "id": "dialect-01",
+      "group": "dialect",
+      "reference": "Grüß Gott, kannst du mir des bitte noch mal erklären?"
+    },
+    {
+      "id": "dictation-01",
+      "group": "dictation",
+      "reference": "Heute habe ich zuerst die Dokumentation gelesen, danach einen kleinen Fehler behoben und anschließend alle Tests ausgeführt. Morgen möchte ich die Änderungen mit meinem Team besprechen und die nächsten Schritte planen."
+    },
+    {
+      "id": "language_switching-01",
+      "group": "language_switching",
+      "reference": "Bitte erkläre diesen Satz: the build failed because the dependency was missing."
+    }
+  ]
+}

@@ -374,3 +374,6 @@ mode; wake detection remains unavailable.
 Opt-in bounded playback control recognition, conservative echo rejection and manual
 fallback are documented in [spoken-stop.md](docs/spoken-stop.md). Disabled by default;
 FR-09 remains **unvalidated** separately on actual headset and speakers.
+
+German CPU recognizer measurements, corpus provenance and reproduction commands:
+[recognition comparison](docs/recognition-comparison.md).

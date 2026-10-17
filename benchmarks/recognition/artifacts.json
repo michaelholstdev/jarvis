@@ -1,0 +1,32 @@
+{
+  "parakeet.tar.bz2": {
+    "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2",
+    "sha256": "5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf",
+    "revision": "release asset 283097583, updated 2025-08-16T09:29:29Z",
+    "license": "NVIDIA Parakeet CC-BY-4.0; sherpa-onnx export"
+  },
+  "vosk.zip": {
+    "url": "https://alphacephei.com/vosk/models/vosk-model-small-de-0.15.zip",
+    "sha256": "b7e53c90b1f0a38456f4cd62b366ecd58803cd97cd42b06438e2c131713d5e43",
+    "revision": "vosk-model-small-de-0.15; archive hash is authoritative",
+    "license": "Apache-2.0 per Alpha Cephei model list"
+  },
+  "whisper.tar.bz2": {
+    "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2",
+    "sha256": "c46116994e539aa165266d96b325252728429c12535eb9d8b6a2b10f129e66b1",
+    "revision": "release asset 179373699, updated 2024-07-13T13:29:43Z",
+    "license": "MIT, OpenAI Whisper; sherpa-onnx export"
+  },
+  "de_DE-thorsten-medium.onnx": {
+    "url": "https://huggingface.co/rhasspy/piper-voices/resolve/c10ece1aade47bb51c153c893d14e5bf8e5b7117/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx",
+    "sha256": "7e64762d8e5118bb578f2eea6207e1a35a8e0c30595010b666f983fc87bb7819",
+    "revision": "c10ece1aade47bb51c153c893d14e5bf8e5b7117",
+    "license": "CC0 dataset; pinned MODEL_CARD; Piper runtime GPL-3.0"
+  },
+  "de_DE-thorsten-medium.onnx.json": {
+    "url": "https://huggingface.co/rhasspy/piper-voices/resolve/c10ece1aade47bb51c153c893d14e5bf8e5b7117/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json",
+    "sha256": "974adee790533adb273a1ac88f49027d2a1b8f0f2cf4905954a4791e79264e85",
+    "revision": "c10ece1aade47bb51c153c893d14e5bf8e5b7117",
+    "license": "See voice MODEL_CARD"
+  }
+}
