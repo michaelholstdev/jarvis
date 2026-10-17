@@ -23,7 +23,7 @@ from apps.audio.input import verify_input
 from apps.audio.main import load_config
 from apps.audio.output import verify_voice
 from benchmarks.latency.report import summarize
-from benchmarks.latency.resources import snapshot, summarize_resources
+from benchmarks.latency.measurements import Measurements, stop_collectors
 from benchmarks.recognition.prepare import digest, write_json
 from benchmarks.recognition.run import hardware
 
@@ -83,24 +83,11 @@ async def run(args: argparse.Namespace) -> None:
     loaded_before = ollama('ps')
     modules: list[str] = []
     children: list[asyncio.subprocess.Process] = []
-    readers: list[asyncio.Task[None]] = []
+    streams: list[asyncio.StreamReader] = []
+    measurements: Measurements | None = None
     events: list[dict[str, Any]] = []
     trials: list[dict[str, Any]] = []
-    phase = 'idle'
-    phases: dict[str, list[dict[str, Any]]] = {'idle': [], 'active': []}
     report: dict[str, Any] = {}
-
-    async def consume(stream: asyncio.StreamReader) -> None:
-        while line := await stream.readline():
-            event = json.loads(line)
-            # Explicit field allowlist: never retain unexpected diagnostic content.
-            if event.get('event') in {'operation_started', 'llm_first_token', 'endpoint',
-                                      'recognition_final', 'tts_first_audio', 'playback_started',
-                                      'playback_completed', 'interruption', 'speech_started'}:
-                events.append({k: event[k] for k in ('event', 'operation', 'operation_id',
-                              'turn_id', 'target_operation_id', 'monotonic_ms') if k in event})
-                if len(events) > 20000:
-                    raise RuntimeError('event_budget_exceeded')
 
     async def request(kind: str, **fields: Any) -> dict[str, Any]:
         reader, writer = await asyncio.open_unix_connection(str(runtime / 'jarvis/core.sock'))
@@ -116,13 +103,9 @@ async def run(args: argparse.Namespace) -> None:
             await writer.wait_closed()
 
     async def health() -> dict[str, Any]:
+        if measurements is not None:
+            measurements.check()
         return dict((await request('hello', role='cli'))['status'])
-
-    async def sample() -> None:
-        while True:
-            row = snapshot(children[0].pid)
-            phases[phase].append(row)
-            await asyncio.sleep(.1)
 
     async def trial(index: int) -> dict[str, Any]:
         # Use natural follow-ups so the worker and inference models remain resident.
@@ -181,13 +164,13 @@ async def run(args: argparse.Namespace) -> None:
                 row['error'] = 'missing_monitor_signal'
             return row
         finally:
-            for task in tasks:
-                task.cancel()
-            await asyncio.gather(*tasks, return_exceptions=True)
+            monitor_failed = await stop_collectors(tasks)
             for recorder in monitors:
                 if recorder.returncode is None:
                     recorder.terminate()
                 await recorder.wait()
+            if monitor_failed:
+                raise RuntimeError('signal_monitor_failed')
 
     try:
         for side in ('in', 'out'):
@@ -211,23 +194,25 @@ async def run(args: argparse.Namespace) -> None:
                         raise RuntimeError('service_start_failed')
                     if json.loads(line).get('event') == 'service_started':
                         break
-                readers.extend([asyncio.create_task(consume(child.stdout)), asyncio.create_task(consume(child.stderr))])
-            sampling = asyncio.create_task(sample())
-            readers.append(sampling)
+                streams.extend([child.stdout, child.stderr])
+            measurements = Measurements(children[0].pid, streams)
+            events = measurements.events
             await asyncio.sleep(3)
-            phase = 'active'
+            measurements.begin_active()
             # One separately reported initial query warms Ollama and the actual speech path.
             cold = await trial(0)
             loaded_warm = ollama('ps')
             # Natural follow-ups retain bounded delivered conversation context.
             for index in range(args.samples):
                 row = await trial(index)
+                measurements.check()
                 trials.append(row)
                 write_json(args.output, {'run_completed': False, 'expected_attempts': args.samples,
                                          'model': selected, 'initial_trial': cold, 'trials': trials,
                                          'summary': {**summarize(trials), 'proxy_target': 'unvalidated'}})
                 print(json.dumps({'sample': index + 1, 'completed': 'signal_start_ms' in row}), flush=True)
-            phase = 'idle'
+            await measurements.stop()
+            frozen = measurements.report()
             await request('inhibition-changed', source='muted', active=True)
             report = {'run_completed': True, 'expected_attempts': args.samples,
                       'timestamp_utc': datetime.now(timezone.utc).isoformat(),
@@ -244,21 +229,20 @@ async def run(args: argparse.Namespace) -> None:
                       'ollama_version': ollama('version'), 'ollama_before': loaded_before,
                       'ollama_warm': loaded_warm, 'ollama_after': ollama('ps'),
                       'initial_trial': cold, 'trials': trials, 'summary': summarize(trials),
-                      'resources': {k: summarize_resources(v) for k, v in phases.items()},
-                      'resource_samples': phases,
+                      'resources': frozen['resources'],
+                      'resource_samples': frozen['resource_samples'],
                       'usefulness': {'method': 'fixed case required-word screen; no human judgment',
                                      'passed': sum(t.get('usefulness_screen', False) for t in trials),
                                      'attempts': len(trials), 'human_german_conversation': 'unvalidated'},
                       'unvalidated': ['physical audibility', 'headset', 'speaker', 'noisy', 'long',
                                       'concurrent STT/TTS', 'controlled cold/unloaded', 'wake']}
     finally:
+        if measurements is not None:
+            await measurements.stop()
         for child in reversed(children):
             if child.returncode is None:
                 child.terminate()
             await child.wait()
-        for reader in readers:
-            reader.cancel()
-        await asyncio.gather(*readers, return_exceptions=True)
         for module in reversed(modules):
             await command('pactl', 'unload-module', module)
     write_json(args.output, report)

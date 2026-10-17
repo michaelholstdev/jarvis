@@ -77,3 +77,37 @@ requirements remain unchecked and the status remains `ready-for-human`.
 Follow-up reviewer confirmed accurate tracker status, preserved CPU settings and
 no new software defect. These human acceptance gaps are not represented as
 resolved by the synthetic proxy or keyword screen.
+
+## Review correction: collection lifetime and resource evidence
+
+Fixed all three software findings from the fresh review:
+
+- Diagnostic readers, signal monitors and the resource sampler now have checked
+  lifetimes. Unexpected EOF or a collection exception prevents publication of a
+  completed report with a fixed content-free error. Prior incomplete checkpoints
+  remain unvalidated. Cleanup still stops all collectors and services.
+- Collectors stop and are awaited before mute/teardown. Summaries and raw resource
+  data are produced from the same frozen sample set, preventing late idle samples.
+  Both baseline artifacts retain their original 30 resident-idle samples; the
+  excluded teardown sample is preserved verbatim separately with correction
+  provenance. Latency trials, percentiles and active measurements are unchanged.
+- The output guide now documents `interruption`, its monotonic timestamp,
+  operation ID and optional cancellation target, matching actual diagnostics.
+
+Validation: `npm run check` and full `npm test` pass (**203 Node / 35 Python**).
+Eight focused benchmark tests include regressions for the published evidence,
+frozen collection, malformed/closed diagnostic streams, and an external `/proc`
+inspection failure after valid samples. The artifact and collector regressions
+were observed red before correction. A real synthetic daemon/audio smoke passes
+(805 ms signal proxy for one sample, insufficient for target validation); every
+resource summary matches its frozen raw samples. A real benchmark invocation with
+an injected external `/proc` failure aborts without a completed report.
+`git diff --check` passes.
+
+Follow-up Standards reviewer: both findings resolved, no remaining/new actionable
+code defect. Follow-up Spec reviewer independently verified corrected idle counts,
+all resource summaries, verbatim excluded rows and unchanged latency evidence;
+original software defect resolved, no new correction defect. The two previously
+recorded **human acceptance gaps remain open**: physical audible latency and human
+German usefulness/remaining scenario measurements. Fixing software and evidence
+consistency does not establish those acoustic or quality results.

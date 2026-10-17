@@ -125,6 +125,13 @@ missed. File-descriptor races/permission failures yield unknown VRAM rather than
 invented zero. No open DRM descriptor in the inspected CPU-only speech tree is
 reported as zero direct dedicated speech VRAM for that sample.
 
+Resource sampling and diagnostic collection stop and are awaited **before** mute
+or service teardown. Reports summarize frozen sample sets; the resident idle
+interval cannot acquire cleanup samples. A diagnostic reader, signal monitor or
+sampler that fails or stops prematurely aborts publication of a completed report
+with a content-free error. Any prior checkpoint remains explicitly incomplete and
+unvalidated; it cannot serve as a passing regression baseline.
+
 The separate concurrency command loads CPU recognition and synthesis into two
 resident processes and runs both for ten seconds after a three-second idle
 interval. It samples its own process tree including both workers; the coordinator's
@@ -248,3 +255,20 @@ remain **unvalidated**. The scenario table specifies their reproduction work.
 Ticket #17's implementation and synthetic baseline are delivered; its physical
 acceptance is ready for human measurement. Original latency targets remain
 unchanged, and no physical-audibility target is marked passed.
+
+
+### Resource baseline correction
+
+A follow-up review found that the original collector could append a teardown
+sample to the idle list after its summary was constructed. Each original model
+report therefore contained 31 raw idle samples but declared 30. Including the
+late sample also spanned the active run and changed Llama's recomputed idle CPU
+from the stored 0% to 0.237569%, which is not a resident-idle measurement.
+
+The corrected artifacts retain only the 30 idle samples preceding the first
+active sample and recompute every resource summary from its reported sample set.
+The excluded sample is preserved verbatim under `excluded_resource_samples`,
+with the reason and boundary rule in `resource_correction`. This correction does
+not replace any latency trial or alter latency percentiles, active resource
+samples, or the three-second resident-idle figures in the table. Future runs stop
+and await the collectors before constructing the report or performing cleanup.

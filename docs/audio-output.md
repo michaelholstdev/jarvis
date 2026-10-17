@@ -95,8 +95,9 @@ watchdog (default 120 seconds); short control exchanges retain transport deadlin
 not a measured acoustic onset. `playback_completed` follows successful server
 drain; synthesis completion never implies playback completion. Core follow-up
 starts after that result. Cancel/privacy destroys the process and Pulse stream,
-erases its PCM and model memory, and emits `playback_cancelled`; next use reloads
-the model. The server/device may have a small already-submitted hardware tail.
+erases its PCM and model memory, and emits `interruption` with monotonic
+milliseconds and the operation ID. Cancellation also records its target operation
+ID; privacy barriers have no target. The next use reloads the model. The server/device may have a small already-submitted hardware tail.
 Completed replies report their UTF-16 text length. Interrupted replies retain only fully drained sentence prefixes. The current
 sentence is omitted even if partly audible; this voice has no validated word
 alignment. Delivery diagnostics contain operation IDs and UTF-16 character counts,

@@ -71,3 +71,76 @@ class LatencyReportTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 ollama('tags')
         self.assertEqual(requests, ['http://127.0.0.1:11434/api/tags'])
+
+    def test_published_idle_resource_samples_exclude_active_run_and_teardown(self):
+        from pathlib import Path
+        from benchmarks.latency.resources import summarize_resources
+        for name in ('gemma3-270m', 'llama3-8b'):
+            with self.subTest(configuration=name):
+                report = json.loads(Path(f'benchmarks/latency/{name}.json').read_text())
+                phases = report['resource_samples']
+                self.assertLess(phases['idle'][-1]['monotonic_ms'],
+                                phases['active'][0]['monotonic_ms'])
+                for phase, rows in phases.items():
+                    self.assertEqual(report['resources'][phase], summarize_resources(rows))
+
+
+class MeasurementLifecycleTest(unittest.IsolatedAsyncioTestCase):
+    async def test_published_measurements_are_frozen_before_services_teardown(self):
+        import asyncio
+        import os
+        from benchmarks.latency.measurements import Measurements
+        reader = asyncio.StreamReader()
+        measurements = Measurements(os.getpid(), [reader])
+        await asyncio.sleep(0)
+        measurements.begin_active()
+        reader.feed_data(b'{"event":"endpoint","operation_id":"turn","monotonic_ms":10}\n')
+        await asyncio.sleep(.11)
+        await measurements.stop()
+        report = measurements.report()
+        self.assertGreater(len(report['resource_samples']['idle']), 0)
+        self.assertGreater(len(report['resource_samples']['active']), 0)
+        self.assertEqual(report['events'], [{'event': 'endpoint', 'operation_id': 'turn',
+                                            'monotonic_ms': 10}])
+        frozen = json.dumps(report, sort_keys=True)
+        reader.feed_data(b'{"event":"interruption","monotonic_ms":100}\n')
+        reader.feed_eof()
+        await asyncio.sleep(.11)
+        self.assertEqual(json.dumps(measurements.report(), sort_keys=True), frozen)
+        for phase, rows in report['resource_samples'].items():
+            self.assertEqual(report['resources'][phase]['samples'], len(rows))
+        self.assertLess(report['resource_samples']['idle'][-1]['monotonic_ms'],
+                        report['resource_samples']['active'][0]['monotonic_ms'])
+
+    async def test_failed_or_closed_diagnostic_stream_cannot_publish_a_report(self):
+        import asyncio
+        import os
+        from benchmarks.latency.measurements import Measurements
+        for malformed in (True, False):
+            with self.subTest(malformed=malformed):
+                reader = asyncio.StreamReader()
+                measurements = Measurements(os.getpid(), [reader])
+                await asyncio.sleep(0)
+                if malformed:
+                    reader.feed_data(b'private diagnostic that is not JSON\n')
+                else:
+                    reader.feed_eof()
+                await asyncio.sleep(0)
+                await measurements.stop()
+                with self.assertRaisesRegex(RuntimeError, '^measurement_collection_failed$'):
+                    measurements.report()
+
+    async def test_sampler_failure_after_valid_samples_cannot_publish_zero_vram_pass(self):
+        import asyncio
+        import os
+        from unittest.mock import patch
+        from benchmarks.latency.measurements import Measurements
+        measurements = Measurements(os.getpid(), [])
+        await asyncio.sleep(0)
+        with patch('pathlib.Path.iterdir', side_effect=PermissionError('private diagnostic')):
+            await asyncio.sleep(.11)
+        with self.assertRaisesRegex(RuntimeError, '^measurement_collection_failed$'):
+            measurements.check()
+        await measurements.stop()
+        with self.assertRaisesRegex(RuntimeError, '^measurement_collection_failed$'):
+            measurements.report()

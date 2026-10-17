@@ -3061,13 +3061,6 @@
         "rss_bytes": 331247616,
         "speech_vram_bytes": 0,
         "processes": 2
-      },
-      {
-        "monotonic_ms": 2113508.426858,
-        "cpu_seconds": 3.31,
-        "rss_bytes": 33226752,
-        "speech_vram_bytes": 0,
-        "processes": 1
       }
     ],
     "active": [
@@ -20315,5 +20308,24 @@
     "concurrent STT/TTS",
     "controlled cold/unloaded",
     "wake"
-  ]
+  ],
+  "excluded_resource_samples": {
+    "idle_teardown": [
+      {
+        "monotonic_ms": 2113508.426858,
+        "cpu_seconds": 3.31,
+        "rss_bytes": 33226752,
+        "speech_vram_bytes": 0,
+        "processes": 1
+      }
+    ]
+  },
+  "resource_correction": {
+    "reason": "sampler remained active during cleanup",
+    "method": "exclude idle-tagged samples at or after the first active resource sample",
+    "excluded_idle_samples": 1,
+    "original_idle_summary_samples": 30,
+    "original_idle_raw_samples": 31,
+    "latency_trials_changed": false
+  }
 }
