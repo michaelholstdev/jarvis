@@ -1303,3 +1303,94 @@
 {"realtime_us": "1792424364404331", "pid": "1545371", "event": "playback_started", "operation_id": "14", "monotonic_ms": 28285095.081256}
 {"realtime_us": "1792424364575893", "pid": "1545371", "event": "playback_completed", "operation_id": "14", "monotonic_ms": 28285266.709604}
 {"realtime_us": "1792424364576401", "pid": "1603509", "event": "playback_completed", "operation_id": "14", "completed": true, "delivered_chars": 0, "elapsed_ms": 191.7533470000053, "state": "idle", "monotonic_ms": 28285267.372438}
+{"realtime_us": "1792425194797346", "pid": "1707304", "event": "service_started", "service": "audio", "mode": "voice"}
+{"realtime_us": "1792425195416416", "pid": "1707491", "event": "audio_recovered", "monotonic_ms": 29116107.395127}
+{"realtime_us": "1792425195440026", "pid": "1707491", "event": "operation_started", "turn_id": "", "operation": "privacy", "operation_id": "2", "state": "idle", "monotonic_ms": 29116131.009205}
+{"realtime_us": "1792425195440516", "pid": "1707491", "event": "service_started", "service": "core", "mode": "mock", "desktop": true}
+{"realtime_us": "1792425195460648", "pid": "1707491", "event": "operation_started", "turn_id": "", "operation": "privacy", "operation_id": "4", "state": "idle", "monotonic_ms": 29116151.624661}
+{"realtime_us": "1792425195461721", "pid": "1707304", "event": "interruption", "operation_id": "4", "target_operation_id": null, "monotonic_ms": 29116152.737}
+{"realtime_us": "1792425195500986", "pid": "1707304", "event": "interruption", "operation_id": "2", "target_operation_id": null, "monotonic_ms": 29116191.984703}
+{"realtime_us": "1792426259835278", "pid": "1707491", "event": "operation_started", "turn_id": "", "operation": "acknowledge", "operation_id": "5", "state": "acknowledging", "monotonic_ms": 30180525.881969}
+{"realtime_us": "1792426263339729", "pid": "1707304", "event": "playback_started", "operation_id": "5", "monotonic_ms": 30184030.585004}
+{"realtime_us": "1792426263511239", "pid": "1707304", "event": "playback_completed", "operation_id": "5", "monotonic_ms": 30184202.068153}
+{"realtime_us": "1792426263511857", "pid": "1707491", "event": "playback_completed", "operation_id": "5", "completed": true, "delivered_chars": 0, "elapsed_ms": 3676.5046839998104, "state": "listening", "monotonic_ms": 30184202.825229}
+{"realtime_us": "1792426263512209", "pid": "1707491", "event": "operation_started", "turn_id": "6", "operation": "recognize", "operation_id": "6", "state": "listening", "monotonic_ms": 30184202.932006}
+{"realtime_us": "1792426293536541", "pid": "1707304", "event": "endpoint", "operation_id": "6", "monotonic_ms": 30214227.390506, "elapsed_ms": 30016}
+{"realtime_us": "1792426293536868", "pid": "1707304", "event": "recognition_final", "operation_id": "6", "monotonic_ms": 30214227.433898, "elapsed_ms": 0}
+{"realtime_us": "1792426301239166", "pid": "1707491", "event": "operation_started", "turn_id": "6", "operation": "acknowledge", "operation_id": "7", "state": "acknowledging", "monotonic_ms": 30221930.155039}
+{"realtime_us": "1792426301257611", "pid": "1707304", "event": "playback_started", "operation_id": "7", "monotonic_ms": 30221948.44458}
+{"realtime_us": "1792426301429086", "pid": "1707304", "event": "playback_completed", "operation_id": "7", "monotonic_ms": 30222119.918781}
+{"realtime_us": "1792426301429516", "pid": "1707491", "event": "playback_completed", "operation_id": "7", "completed": true, "delivered_chars": 0, "elapsed_ms": 190.26822299999185, "state": "listening", "monotonic_ms": 30222120.495667}
+{"realtime_us": "1792426301429572", "pid": "1707491", "event": "operation_started", "turn_id": "8", "operation": "recognize", "operation_id": "8", "state": "listening", "monotonic_ms": 30222120.598913}
+{"realtime_us": "1792426315702301", "pid": "1707304", "event": "speech_started", "operation_id": "8", "monotonic_ms": 30236393.093027}
+{"realtime_us": "1792426316556210", "pid": "1707304", "event": "endpoint", "operation_id": "8", "monotonic_ms": 30237247.063355, "elapsed_ms": 15117}
+{"realtime_us": "1792426316712624", "pid": "1707304", "event": "recognition_final", "operation_id": "8", "monotonic_ms": 30237403.453088, "elapsed_ms": 156}
+{"realtime_us": "1792426316713325", "pid": "1707491", "event": "operation_started", "turn_id": "8", "operation": "infer", "operation_id": "9", "state": "thinking", "monotonic_ms": 30237404.285319}
+{"realtime_us": "1792426318537523", "pid": "1707491", "event": "llm_first_token", "operation_id": "9", "monotonic_ms": 30239228.489822}
+{"realtime_us": "1792426318820384", "pid": "1707491", "event": "operation_started", "turn_id": "8", "operation": "synthesize", "operation_id": "10", "state": "synthesizing", "monotonic_ms": 30239511.356799}
+{"realtime_us": "1792426318937314", "pid": "1707304", "event": "tts_first_audio", "operation_id": "10", "monotonic_ms": 30239628.171317}
+{"realtime_us": "1792426319349697", "pid": "1707491", "event": "operation_started", "turn_id": "8", "operation": "play", "operation_id": "11", "state": "speaking", "monotonic_ms": 30240040.657294}
+{"realtime_us": "1792426319369135", "pid": "1707304", "event": "playback_started", "operation_id": "11", "monotonic_ms": 30240059.952654}
+{"realtime_us": "1792426320778264", "pid": "1707304", "event": "playback_completed", "operation_id": "11", "monotonic_ms": 30241469.102073}
+{"realtime_us": "1792426320778608", "pid": "1707304", "event": "playback_delivered", "operation_id": "11", "monotonic_ms": 30241469.237711, "delivered_chars": 24}
+{"realtime_us": "1792426320794104", "pid": "1707304", "event": "playback_started", "operation_id": "11", "monotonic_ms": 30241484.880004}
+{"realtime_us": "1792426323253200", "pid": "1707304", "event": "playback_completed", "operation_id": "11", "monotonic_ms": 30243944.024711}
+{"realtime_us": "1792426323253583", "pid": "1707304", "event": "playback_delivered", "operation_id": "11", "monotonic_ms": 30243944.16972, "delivered_chars": 67}
+{"realtime_us": "1792426323267839", "pid": "1707304", "event": "playback_started", "operation_id": "11", "monotonic_ms": 30243958.660072}
+{"realtime_us": "1792426324831932", "pid": "1707304", "event": "playback_completed", "operation_id": "11", "monotonic_ms": 30245522.772853}
+{"realtime_us": "1792426324832284", "pid": "1707304", "event": "playback_delivered", "operation_id": "11", "monotonic_ms": 30245522.909272, "delivered_chars": 91}
+{"realtime_us": "1792426324832753", "pid": "1707491", "event": "playback_completed", "operation_id": "11", "completed": true, "delivered_chars": 91, "elapsed_ms": 5482.975692000007, "state": "follow-up", "monotonic_ms": 30245523.740183}
+{"realtime_us": "1792426324871551", "pid": "1707491", "event": "operation_started", "turn_id": "12", "operation": "recognize", "operation_id": "12", "state": "follow-up", "monotonic_ms": 30245562.530488}
+{"realtime_us": "1792426326640878", "pid": "1707304", "event": "speech_started", "operation_id": "12", "monotonic_ms": 30247331.701594}
+{"realtime_us": "1792426333168709", "pid": "1707304", "event": "endpoint", "operation_id": "12", "monotonic_ms": 30253859.495242, "elapsed_ms": 8288}
+{"realtime_us": "1792426333742709", "pid": "1707304", "event": "recognition_final", "operation_id": "12", "monotonic_ms": 30254433.502558, "elapsed_ms": 574}
+{"realtime_us": "1792426333743314", "pid": "1707491", "event": "operation_started", "turn_id": "12", "operation": "infer", "operation_id": "14", "state": "thinking", "monotonic_ms": 30254434.300427}
+{"realtime_us": "1792426333774644", "pid": "1707491", "event": "llm_first_token", "operation_id": "14", "monotonic_ms": 30254465.636033}
+{"realtime_us": "1792426338588210", "pid": "1707491", "event": "operation_started", "turn_id": "12", "operation": "synthesize", "operation_id": "15", "state": "synthesizing", "monotonic_ms": 30259279.202772}
+{"realtime_us": "1792426338690919", "pid": "1707304", "event": "tts_first_audio", "operation_id": "15", "monotonic_ms": 30259381.7578}
+{"realtime_us": "1792426341705135", "pid": "1707491", "event": "operation_started", "turn_id": "12", "operation": "play", "operation_id": "16", "state": "speaking", "monotonic_ms": 30262396.085883}
+{"realtime_us": "1792426341738628", "pid": "1707304", "event": "playback_started", "operation_id": "16", "monotonic_ms": 30262429.416447}
+{"realtime_us": "1792426348225520", "pid": "1707304", "event": "playback_completed", "operation_id": "16", "monotonic_ms": 30268916.363149}
+{"realtime_us": "1792426348226079", "pid": "1707304", "event": "playback_delivered", "operation_id": "16", "monotonic_ms": 30268916.514098, "delivered_chars": 130}
+{"realtime_us": "1792426348240035", "pid": "1707304", "event": "playback_started", "operation_id": "16", "monotonic_ms": 30268930.815334}
+{"realtime_us": "1792426354412671", "pid": "1707304", "event": "playback_completed", "operation_id": "16", "monotonic_ms": 30275103.504287}
+{"realtime_us": "1792426354413041", "pid": "1707304", "event": "playback_delivered", "operation_id": "16", "monotonic_ms": 30275103.654527, "delivered_chars": 247}
+{"realtime_us": "1792426354427894", "pid": "1707304", "event": "playback_started", "operation_id": "16", "monotonic_ms": 30275118.753754}
+{"realtime_us": "1792426359191670", "pid": "1707304", "event": "playback_completed", "operation_id": "16", "monotonic_ms": 30279882.493001}
+{"realtime_us": "1792426359192070", "pid": "1707304", "event": "playback_delivered", "operation_id": "16", "monotonic_ms": 30279882.643871, "delivered_chars": 334}
+{"realtime_us": "1792426359204878", "pid": "1707304", "event": "playback_started", "operation_id": "16", "monotonic_ms": 30279895.726532}
+{"realtime_us": "1792426365677435", "pid": "1707304", "event": "playback_completed", "operation_id": "16", "monotonic_ms": 30286368.262787}
+{"realtime_us": "1792426365677831", "pid": "1707304", "event": "playback_delivered", "operation_id": "16", "monotonic_ms": 30286368.414757, "delivered_chars": 454}
+{"realtime_us": "1792426365691787", "pid": "1707304", "event": "playback_started", "operation_id": "16", "monotonic_ms": 30286382.596749}
+{"realtime_us": "1792426374125918", "pid": "1707304", "event": "playback_completed", "operation_id": "16", "monotonic_ms": 30294816.751221}
+{"realtime_us": "1792426374126333", "pid": "1707304", "event": "playback_delivered", "operation_id": "16", "monotonic_ms": 30294816.88732, "delivered_chars": 609}
+{"realtime_us": "1792426374140900", "pid": "1707304", "event": "playback_started", "operation_id": "16", "monotonic_ms": 30294831.705444}
+{"realtime_us": "1792426379075595", "pid": "1707304", "event": "playback_completed", "operation_id": "16", "monotonic_ms": 30299766.422547}
+{"realtime_us": "1792426379075984", "pid": "1707304", "event": "playback_delivered", "operation_id": "16", "monotonic_ms": 30299766.558976, "delivered_chars": 685}
+{"realtime_us": "1792426379090386", "pid": "1707304", "event": "playback_started", "operation_id": "16", "monotonic_ms": 30299781.217961}
+{"realtime_us": "1792426381977085", "pid": "1707304", "event": "playback_completed", "operation_id": "16", "monotonic_ms": 30302667.904378}
+{"realtime_us": "1792426381977476", "pid": "1707304", "event": "playback_delivered", "operation_id": "16", "monotonic_ms": 30302668.060558, "delivered_chars": 728}
+{"realtime_us": "1792426381991612", "pid": "1707304", "event": "playback_started", "operation_id": "16", "monotonic_ms": 30302682.443556}
+{"realtime_us": "1792426389657530", "pid": "1707304", "event": "playback_completed", "operation_id": "16", "monotonic_ms": 30310348.369862}
+{"realtime_us": "1792426389657971", "pid": "1707304", "event": "playback_delivered", "operation_id": "16", "monotonic_ms": 30310348.513596, "delivered_chars": 861}
+{"realtime_us": "1792426389673025", "pid": "1707304", "event": "playback_started", "operation_id": "16", "monotonic_ms": 30310363.835995}
+{"realtime_us": "1792426395672341", "pid": "1707304", "event": "playback_completed", "operation_id": "16", "monotonic_ms": 30316363.183178}
+{"realtime_us": "1792426395672668", "pid": "1707304", "event": "playback_delivered", "operation_id": "16", "monotonic_ms": 30316363.319695, "delivered_chars": 959}
+{"realtime_us": "1792426395687460", "pid": "1707304", "event": "playback_started", "operation_id": "16", "monotonic_ms": 30316378.291839}
+{"realtime_us": "1792426401473146", "pid": "1707304", "event": "playback_completed", "operation_id": "16", "monotonic_ms": 30322163.968456}
+{"realtime_us": "1792426401473530", "pid": "1707304", "event": "playback_delivered", "operation_id": "16", "monotonic_ms": 30322164.128638, "delivered_chars": 1064}
+{"realtime_us": "1792426401473751", "pid": "1707491", "event": "playback_completed", "operation_id": "16", "completed": true, "delivered_chars": 1064, "elapsed_ms": 59768.50854099984, "state": "follow-up", "monotonic_ms": 30322164.722748}
+{"realtime_us": "1792426401520799", "pid": "1707491", "event": "operation_started", "turn_id": "17", "operation": "recognize", "operation_id": "17", "state": "follow-up", "monotonic_ms": 30322211.769133}
+{"realtime_us": "1792426407602536", "pid": "1707304", "event": "speech_started", "operation_id": "17", "monotonic_ms": 30328293.377494}
+{"realtime_us": "1792426409003267", "pid": "1707304", "event": "endpoint", "operation_id": "17", "monotonic_ms": 30329694.121677, "elapsed_ms": 7474}
+{"realtime_us": "1792426409201123", "pid": "1707304", "event": "recognition_final", "operation_id": "17", "monotonic_ms": 30329891.913825, "elapsed_ms": 198}
+{"realtime_us": "1792426409201779", "pid": "1707491", "event": "operation_started", "turn_id": "19", "operation": "recognize", "operation_id": "19", "state": "follow-up", "monotonic_ms": 30329892.757214}
+{"realtime_us": "1792426413630578", "pid": "1707304", "event": "speech_started", "operation_id": "19", "monotonic_ms": 30334321.418867}
+{"realtime_us": "1792426414356489", "pid": "1707304", "event": "endpoint", "operation_id": "19", "monotonic_ms": 30335047.341338, "elapsed_ms": 5145}
+{"realtime_us": "1792426414504200", "pid": "1707304", "event": "recognition_final", "operation_id": "19", "monotonic_ms": 30335194.992967, "elapsed_ms": 148}
+{"realtime_us": "1792426414504790", "pid": "1707491", "event": "operation_started", "turn_id": "21", "operation": "recognize", "operation_id": "21", "state": "follow-up", "monotonic_ms": 30335195.752188}
+{"realtime_us": "1792426421531030", "pid": "1707491", "event": "turn_expired", "code": "timeout", "state": "idle", "elapsed_ms": 7026.04660799983, "monotonic_ms": 30342221.986646}
+{"realtime_us": "1792426421630493", "pid": "1707491", "event": "operation_started", "turn_id": "21", "operation": "close-conversation", "operation_id": "22", "state": "idle", "monotonic_ms": 30342321.462709}
+{"realtime_us": "1792426425170689", "pid": "1707304", "event": "playback_started", "operation_id": "22", "monotonic_ms": 30345861.508494}
+{"realtime_us": "1792426425342470", "pid": "1707304", "event": "playback_completed", "operation_id": "22", "monotonic_ms": 30346033.298322}
+{"realtime_us": "1792426425342888", "pid": "1707491", "event": "playback_completed", "operation_id": "22", "completed": true, "delivered_chars": 0, "elapsed_ms": 3712.3112930001225, "state": "idle", "monotonic_ms": 30346033.872001}

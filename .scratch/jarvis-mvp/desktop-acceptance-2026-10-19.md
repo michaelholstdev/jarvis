@@ -304,8 +304,11 @@ The individual observations above are setup-specific. Remaining coverage:
 - Hardware mute detection is unsupported for this microphone; see [#24](issues/24-jieli-hardware-mute-detection.md).
 - Long answers initially failed synthesis; [#23](issues/23-long-speech-duration-overflow.md)
   is now corrected with bounded prefix/notice speech on `f3092e7`, reviewed, and
-  passed the real Piper/PCM boundary probe. The affected headset rerun is pending;
-  the original failure remains recorded above.
+  passed the real Piper/PCM boundary probe. The affected headset rerun also passed
+  at 16:12:21–16:13:21 UTC: full bounded playback (1,064 UTF-16 units), with the
+  user-confirmed too-long/full-text notice at the end. Normal follow-up closes
+  afterward; idle/ready, no capture and cleared temporary text are confirmed.
+  #23 is resolved; the original failure remains recorded above.
 - Audio-service recovery initially resumed capture. [#25](issues/25-audio-restart-resumes-capture.md)
   is corrected, reviewed and the same actual playback/crash rerun passed above.
 - Source mute at inference entry and during synthesis passed as recorded above.

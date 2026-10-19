@@ -18,5 +18,25 @@
     "delivered_chars": 1057
   },
   "playback_scope": "real production worker, real Piper and resampler; external Pulse replaced with byte-counting drain-confirming sink; no audible output",
-  "audible_headset_trial": "pending"
+  "audible_headset_trial": {
+    "verdict": "passed",
+    "deployed_candidate": "8325e6e",
+    "runtime_revision": "f3092e7",
+    "playback_started_utc": "2026-10-19 16:12:21",
+    "playback_completed_utc": "2026-10-19 16:13:21",
+    "playback_operation_id": "16",
+    "completed": true,
+    "delivered_utf16_units": 1064,
+    "last_drained_segment_utf16_units": 105,
+    "operation_elapsed_ms": 59768.50854099984,
+    "timing_scope": "software operation elapsed; not a physical acoustic latency measurement",
+    "user_confirmation": "Notice that text is too long was audible at the end.",
+    "post_conversation": {
+      "state": "idle",
+      "ready": true,
+      "capture_streams": 0,
+      "temporary_text_cleared": true
+    },
+    "private_answer_retained": false
+  }
 }

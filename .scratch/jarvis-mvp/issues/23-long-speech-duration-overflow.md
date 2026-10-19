@@ -4,7 +4,9 @@
 
 **Status:** ready-for-human
 
-**Blocked by:** None for implementation; actual headset rerun remains required.
+**Resolution:** Implemented, reviewed and confirmed in the actual headset rerun.
+
+**Blocked by:** None
 
 **Claimed by:** Codex, implementation baseline `dbf2b5f`.
 
@@ -124,5 +126,15 @@ Pulse library replaced by a byte-counting, drain-confirming sink. It submitted
 59.5243125 seconds of PCM and completed 1,057 UTF-16 units including the notice.
 Voice synthesis varies between runs; this measures the actual submitted bytes,
 not a duration inferred from a separately regenerated waveform. No audible output
-was produced by this probe. The affected actual headset playback trial remains
-required. Keep this ticket open until the headset rerun is recorded.
+was produced by this probe.
+
+Actual headset rerun on deployed `8325e6e` (runtime correction `f3092e7`): long
+answer playback begins at 16:12:21 UTC and completes at 16:13:21. Core reports
+`completed:true`, 1,064 delivered UTF-16 units and 59,768.51 ms operation elapsed;
+the last drained segment adds 105 units. User confirms the too-long/full-text
+notice was audible at the end. No synthesis/runtime failure occurs. Normal
+follow-up then expires; subsequent health is idle/ready with no capture streams
+and the temporary answer is cleared after conversation closure. This passes
+the affected actual headset trial and resolves #23. Full temporary-text and
+delivered-only context behavior are covered by the agreed public Core tests;
+the live private answer itself was not retained. Other #12 gates remain separate.
