@@ -82,6 +82,7 @@ def main() -> None:
             raise RuntimeError('text_too_large')
         notice = 'Die Antwort ist zu lang zum Vorlesen. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.'
         limit = voice.config.sample_rate * 60
+        text_budget = min(4096, config['llm']['max_context_tokens'])
         first_audio = True
 
         def render(sentence: str, budget: int) -> tuple[bytes, int] | None:
@@ -115,7 +116,7 @@ def main() -> None:
             candidate = delivered_text + sentence
             rendered = (
                 render(sentence, remaining)
-                if len((candidate + notice).encode('utf-8')) <= 4096 else None
+                if len((candidate + notice).encode('utf-8')) <= text_budget else None
             )
             if rendered is None:
                 delivered_text += notice

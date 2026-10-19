@@ -50,6 +50,13 @@ class LongSpeechTest(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(report, {'completed': True, 'delivered_chars': units})
                             self.assertEqual(delivered[-1], units)
                             await output.stop()
+                    config['llm']['max_context_tokens'] = 512
+                    small_sentence = 'Ein Computer verarbeitet Daten. '
+                    result = await output.run({'type': 'synthesize', 'operation_id': 'small-budget', 'text': small_sentence * 16})
+                    self.assertEqual(result['text'], small_sentence * 12 + notice)
+                    self.assertLessEqual(len(result['text'].encode('utf-8')), 512)
+                    await output.stop()
+                    config['llm']['max_context_tokens'] = 8192
                     block = True
                     result = await output.run({'type': 'synthesize', 'operation_id': 'synth', 'text': sentence * 20})
                     delivered_first = asyncio.Event()

@@ -111,5 +111,9 @@ Real installed Thorsten/Piper synthetic reproduction also passes synthesis:
 notice, rather than failing completely. No microphone, audible playback or
 private answer content was used/retained for that reproduction.
 
-Standards/Spec review and the affected actual headset playback trial are the
-remaining checks. Keep this ticket open until the headset rerun is recorded.
+Initial Standards review found no issues. Spec review found that adding the
+notice could exceed Core's smaller configured answer budget (supported minimum
+512). A new public Output regression reproduced this, then passed after aligning
+the reserved speech byte budget with `min(4096, llm.max_context_tokens)`.
+Final review and the affected actual headset playback trial remain required.
+Keep this ticket open until the headset rerun is recorded.

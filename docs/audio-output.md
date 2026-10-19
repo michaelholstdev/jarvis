@@ -95,9 +95,11 @@ Long speech uses a bounded sentence prefix, followed by: “Die Antwort ist zu l
 zum Vorlesen. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.”
 The worker measures and reserves audio space for that notice before synthesizing
 the answer. Only whole sentences fitting the remaining duration/text budget are
-retained; an oversized first sentence yields the notice alone. This can shorten
-an answer that would fit 60 seconds without the reserved notice. Short answers
-are spoken unchanged. The full generated answer remains available through `text`
+retained; an oversized first sentence yields the notice alone. The speech byte
+budget is `min(4096, llm.max_context_tokens)`, matching Core's existing answer
+bound. Reserving notice space can shorten an answer that would fit without the
+notice. Answers fitting the reserved budgets are spoken unchanged.
+The full generated answer remains available through `text`
 within the current conversation; its unheard remainder never enters delivered
 context. Synthesis may return the actual bounded speech as `audio-result.text`;
 core uses that text for playback and delivery counts. Synthesis itself still
