@@ -101,6 +101,9 @@ starting another microphone capture. Press the activation shortcut again before
 speaking a retry or a new question. The existing follow-up deadline still bounds
 retained retry/context; recovery and health probes do not renew it. Ordinary
 successful replies still open their automatic follow-up window.
+While recovered voice waits for activation, conversation-duration expiry does
+not start an extension prompt. Deliberate activation can request that prompt;
+the original follow-up deadline still closes retained context normally.
 
 
 If `audio_cleanup_pending:true`, the peer may still have old work running.

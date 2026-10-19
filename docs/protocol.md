@@ -210,6 +210,8 @@ In real voice mode, audio transport/service recovery also leaves microphone
 capture stopped. Readiness/cleanup acknowledgments and health probes cannot
 create a new recognition operation; deliberate activation is required first.
 Retained retry/context still expires at its existing follow-up deadline.
+Conversation-duration expiry cannot open an extension prompt/recognition while
+recovered voice is waiting for activation. Normal configured closure cues remain.
 Capability changes can also enter through public `capabilities-changed` events;
 a future Ollama adapter must report inference failure/recovery through this
 boundary. No real Ollama process is contacted by this ticket.

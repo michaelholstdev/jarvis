@@ -28,7 +28,9 @@ resumed capture". It is not a successful restart/privacy acceptance result.
 ## Acceptance criteria
 
 - [ ] After audio transport/service loss in voice mode, cleanup and readiness
-  recovery do not initiate microphone capture, inference or playback on their own.
+  recovery do not initiate microphone capture, inference or answer/extension
+  playback on their own, including at conversation-duration expiry. Normal
+  configured conversation-end cues remain part of bounded closure.
 - [ ] Preserve existing bounded retry/context behavior while the conversation
   remains open (#07); a new deliberate activation can start a fresh microphone
   turn. Lock/mute closure and ordinary successful follow-ups remain unchanged.
@@ -67,3 +69,11 @@ Validation: `npm run check` passed; full `npm test` passed **205 Node + 42 Pytho
 tests. Focused restart, recovery and successful voice-follow-up suites passed.
 Independent Standards/Spec review and deployment/headset rerun follow next.
 The original real failure above is retained; #12 is not marked passed.
+
+Review follow-up: Standards found no issues. Spec identified duration expiry
+opening an extension prompt after recovery, which would restart capture. A new
+public-Core regression reproduced that failure with a fake clock; the follow-up
+fix requires an active follow-up recognition operation before prompting on timer
+expiry. It passes along with ordinary expiry and recovery tests. Explicit
+activation can still request extension, and the original follow-up deadline
+continues to bound retained context. Final validation and re-review pending.

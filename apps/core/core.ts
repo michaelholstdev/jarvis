@@ -405,6 +405,7 @@ export function createCore(
       }
       if (
         state === 'follow-up' &&
+        operation?.type === 'recognize' &&
         expired() &&
         (conversationDeadline ?? Infinity) <= deadline
       )

@@ -1,6 +1,48 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { loadConfig } from '../apps/core/config.js';
 import { createCore } from '../apps/core/core.js';
+
+test('conversation expiry cannot restart voice capture or an extension prompt after audio recovery', () => {
+  let now = 0;
+  const config = loadConfig();
+  config.audio.mode = 'voice';
+  config.interaction.activation_sound = false;
+  config.session.max_duration_seconds = 30;
+  const core = createCore({ now: () => now }, config);
+  core.dispatch({ type: 'audio-ready' });
+  core.activate();
+  const recognition = core.operations()[0];
+  assert.ok(recognition);
+  core.dispatch({
+    type: 'recognized',
+    operation_id: recognition.operation_id,
+    text: 'Eine Testfrage.',
+  });
+  now = 29000;
+  core.dispatch({ type: 'audio-lost' });
+  core.dispatch({ type: 'audio-ready' });
+  const cleanup = core.operations()[0];
+  assert.equal(cleanup?.type, 'privacy');
+  core.dispatch({
+    type: 'privacy-applied',
+    operation_id: cleanup.operation_id,
+  });
+  now = 30000;
+  core.dispatch({ type: 'tick' });
+  assert.deepEqual(
+    core.operations(),
+    [],
+    'expiry cannot reopen recovered voice work',
+  );
+  assert.equal(core.status().retry_available, true);
+  core.activate();
+  assert.equal(
+    core.operations()[0]?.type,
+    'synthesize',
+    'deliberate activation can request extension',
+  );
+});
 
 function fixture() {
   let now = 0;
