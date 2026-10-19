@@ -57,7 +57,9 @@ to byte/line/operation counters; no raw lines or conversation content are saved.
 Predeclared diagnostic screens: average CPU ≤5% of one core, final-minus-initial
 summed RSS ≤32 MiB, and log growth ≤1024 bytes/minute plus 1024 startup bytes.
 These are acceptance-runner screens, not new product resource promises. Reports are initialized as incomplete before work starts, and failures overwrite
-prior passing reports with a failed execution verdict. Offline voice evidence is
+prior passing reports with a failed execution verdict. Zero, negative and non-finite
+timing values also invalidate old evidence before returning a CLI usage error.
+Offline voice evidence is
 also invalidated at startup and requires the current command to succeed. Resource
 screens require ≥60 seconds; shorter command checks cannot pass the two-hour gate.
 RSS endpoint growth is not proof of a leak-free heap. Operation diagnostics and
@@ -190,7 +192,7 @@ with a passing fixture result. M3 and physical stability acceptance remain open.
 ## Review and regression checks
 
 `npm run check` passes. The full `npm test` run passes **204 Node tests and
-38 Python tests**, including the new acceptance command failure/rerun cases.
+39 Python tests**, including the new acceptance command failure/rerun cases.
 No production changes followed those checks.
 
 ### Standards

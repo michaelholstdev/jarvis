@@ -231,12 +231,14 @@ def main() -> None:
     parser.add_argument('--config', type=Path)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    if not all(math.isfinite(v) and v > 0 for v in (args.seconds, args.interval)):
-        parser.error('seconds and interval must be finite and positive')
     args.output.parent.mkdir(parents=True, exist_ok=True)
     started = datetime.now(timezone.utc).isoformat()
     initial = {'run_completed': False, 'started_utc': started, 'checks': {'execution': 'running'}}
     args.output.write_text(json.dumps(initial, indent=2) + '\n')
+    if not all(math.isfinite(v) and v > 0 for v in (args.seconds, args.interval)):
+        failure = {**initial, 'checks': {'execution': 'failed'}, 'error_type': 'invalid_arguments'}
+        args.output.write_text(json.dumps(failure, indent=2) + '\n')
+        parser.error('seconds and interval must be finite and positive')
     try:
         report = {'run_completed': True, **asyncio.run(run(args))}
     except Exception as error:

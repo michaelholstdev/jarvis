@@ -50,3 +50,19 @@ class IdleAcceptanceTest(unittest.TestCase):
             self.assertFalse(report['run_completed'])
             self.assertEqual(report['checks']['execution'], 'failed')
             self.assertFalse(json.loads((output / 'voice.json').read_text())['run_completed'])
+
+    def test_invalid_idle_timings_replace_prior_passing_evidence(self):
+        for option in ('--seconds', '--interval'):
+            for value in ('0', '-1', 'nan', 'inf', '-inf'):
+                with self.subTest(option=option, value=value), tempfile.TemporaryDirectory() as directory:
+                    output = Path(directory) / 'idle.json'
+                    output.write_text('{"run_completed":true,"checks":{"resource_screen":"passed"}}')
+                    result = subprocess.run(
+                        [sys.executable, '-m', 'benchmarks.stability.idle',
+                         f'{option}={value}', '--output', str(output)],
+                        capture_output=True, timeout=30)
+                    self.assertEqual(result.returncode, 2)
+                    report = json.loads(output.read_text())
+                    self.assertFalse(report['run_completed'])
+                    self.assertEqual(report['checks']['execution'], 'failed')
+                    self.assertNotIn('passed', report['checks'].values())

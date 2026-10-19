@@ -37,7 +37,7 @@ and [map](../map.md).
   stale passing reports after failed reruns. Review found/fixed CPU undercount
   after worker exit and stale evidence. Both review axes have zero remaining
   implementation findings.
-- `npm run check` and full `npm test` pass: **204 Node / 38 Python tests**.
+- `npm run check` and full `npm test` pass: **204 Node / 39 Python tests**.
 - Real headset/speaker lock/mute, actual device/backend hotplug, installed systemd
   restart and suspend/resume remain unvalidated, with exact manual procedures.
   Internal queue/buffer occupancy and external-request-attempt auditing remain
@@ -45,3 +45,16 @@ and [map](../map.md).
 
 Original mixed hardware acceptance checkboxes remain open where the available
 evidence covers only software/synthetic behavior.
+
+
+## Comments
+
+Review follow-up: invalid zero, negative and non-finite `--seconds`/`--interval`
+values now replace prior passing evidence with an incomplete failed report before
+returning CLI usage error 2. Ten command-level regression cases reproduced the
+finding before the fix and pass afterward. Both review axes rechecked the fix
+without new findings. The user-stopped idle observation and open acceptance gates
+are preserved.
+
+Follow-up validation: `npm run check` and full `npm test` pass: 204 Node /
+39 Python tests.
