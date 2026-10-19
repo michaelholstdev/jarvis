@@ -206,6 +206,10 @@ Standalone `Noch einmal` uses the retained unsuccessful question and existing
 completed context. Without one it never invokes inference. Quoted/embedded words
 remain questions. A new question discards the retry candidate; success, closure,
 lock and mute clear it. Recovery alone requests no inference or synthesis.
+In real voice mode, audio transport/service recovery also leaves microphone
+capture stopped. Readiness/cleanup acknowledgments and health probes cannot
+create a new recognition operation; deliberate activation is required first.
+Retained retry/context still expires at its existing follow-up deadline.
 Capability changes can also enter through public `capabilities-changed` events;
 a future Ollama adapter must report inference failure/recovery through this
 boundary. No real Ollama process is contacted by this ticket.

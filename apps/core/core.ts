@@ -280,6 +280,7 @@ export function createCore(
         if (
           state === 'follow-up' &&
           !operation &&
+          config.audio.mode !== 'voice' &&
           followUpDeadline !== null &&
           clock.now() < followUpDeadline
         ) {
@@ -356,7 +357,12 @@ export function createCore(
             clock.now() < followUpDeadline
           ) {
             const remaining = followUpDeadline;
-            transition('follow-up', 'recognize');
+            // Recovery keeps bounded retry/context, but a microphone turn
+            // requires a new deliberate activation after audio loss.
+            transition(
+              'follow-up',
+              config.audio.mode === 'voice' ? undefined : 'recognize',
+            );
             deadline = remaining;
           } else reset();
         } else if (event.type === 'tick') {

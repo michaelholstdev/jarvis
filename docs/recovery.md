@@ -96,6 +96,12 @@ These systemctl commands require [unit installation](../systemd/README.md).
 Hardware, acoustic cue, real-model recovery, and actual restart timing require
 [desktop acceptance](desktop-acceptance.md).
 
+In real voice mode, audio-service/transport recovery restores readiness without
+starting another microphone capture. Press the activation shortcut again before
+speaking a retry or a new question. The existing follow-up deadline still bounds
+retained retry/context; recovery and health probes do not renew it. Ordinary
+successful replies still open their automatic follow-up window.
+
 
 If `audio_cleanup_pending:true`, the peer may still have old work running.
 Healthy hello responses do not release this gate. Jarvis requests a silent
