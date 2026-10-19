@@ -10,6 +10,14 @@
 
 ## Comments
 
+- 2026-10-19 #19 source-level feasibility revisit: upstream English model support
+  and the custom German training/library route were rechecked. No specific model
+  passed artifact/license/runtime/German checks; interactive library inventory,
+  candidate pinning and actual German trials remain work. See the
+  [dated review](../../../docs/wake-activation.md#release-feasibility-revisit--2026-10-19).
+  Keep #13 open and repeat after stable physical manual operation, before final
+  hardware acceptance; manual fallback does not close this ticket.
+
 - 2026-10-16 follow-up decision: keep this ticket open for the actual wake
   implementation; the completed manual-only fallback does not resolve that work.
   Revisit after stable manual voice operation and before final release/hardware

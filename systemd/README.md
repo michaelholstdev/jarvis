@@ -1,5 +1,9 @@
 # Login startup on KDE Plasma / PipeWire
 
+The consolidated [installation runbook](../docs/installation.md) covers prerequisites,
+model acquisition and configuration before these service steps. See the
+[release checklist](../docs/release-checklist.md) for evidence and open hardware gates.
+
 Jarvis runs as two **user** services, tied to `graphical-session.target`. No root
 service, tray or application window is required. Ollama remains independently
 managed. Do not enable linger: Jarvis is intended to run only during login.

@@ -151,3 +151,37 @@ handoff, acknowledgment-safe command preservation, calibration/measurement tools
 and both target-device runs. The missing model gate prevents a meaningful wake
 trial; no recall, false-accept, clipping or timing numbers are invented. Manual
 activation remains the release path; hands-free acceptance and M3 remain open.
+
+## Release feasibility revisit — 2026-10-19
+
+For #19, rechecked the [upstream language/support and license sections](https://github.com/dscripka/openWakeWord#language-support)
+and [Hey Jarvis model card](https://github.com/dscripka/openWakeWord/blob/main/docs/models/hey_jarvis.md).
+The published support remains English; the card's pause recommendation and
+American-English test speaker do not demonstrate immediate German command
+retention. Code/weights terms remain distinct (Apache-2.0 / CC BY-NC-SA 4.0).
+This is a source-level feasibility review, **not** a failed German recall trial
+and not proof that a German candidate cannot work.
+
+Also inspected the [German training entry](https://openwakeword.com/de),
+[community library](https://openwakeword.com/library) and
+[benchmark entry](https://openwakeword.com/benchmarks). The retrieved pages
+advertise multilingual custom ONNX training; their accessible text supplies no
+specific German Hey Jarvis artifact with immutable revision, expected checksum,
+model-specific terms or target-microphone results. The interactive library is a
+JavaScript app; its model inventory was not evaluated in this source retrieval.
+Do not treat a training-service claim as a selected, licensed, validated model.
+No model was trained, downloaded, pinned or run during this revisit.
+
+Outcome: no candidate has **passed the project's artifact/runtime/German gate**;
+actual model feasibility remains incomplete. Manual physical operation itself is
+not yet accepted, so the planned after-stable-operation investigation still
+applies. Follow-up remains [ticket #13](../.scratch/jarvis-mvp/issues/13-optional-validated-wake-activation.md):
+inspect the interactive German library or a reproducible local training route,
+select/pin a candidate and feature artifacts with terms/provenance, lock and test
+CPU runtime compatibility, then evaluate consented German immediate-command
+recordings before judging it promising. If promising, implement detector,
+bounded pre-roll/handoff and timing runner, then run the separate headset and
+speaker acceptance protocol above. Missing recordings, artifact pins, runtime
+probe and handoff remain concrete gaps. Wake stays disabled, #13 stays open;
+repeat this investigation before final hardware acceptance rather than silently
+closing #13 for the manual fallback.

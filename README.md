@@ -1,5 +1,11 @@
 # Jarvis — local German voice conversations
 
+For the experimental manual voice setup, start with the
+[CachyOS installation runbook](docs/installation.md) and
+[requirement-level release checklist](docs/release-checklist.md).
+Fresh-account and physical headset/speaker acceptance remain unvalidated; no
+validated MVP release is claimed. The hardware-free quickstart follows below.
+
 A Node.js/TypeScript core and a separate Python audio service exchange validated
 messages over private Unix sockets. No microphone, speaker, speech model,
 Ollama, cloud fallback or external tool is needed. This milestone verifies the
