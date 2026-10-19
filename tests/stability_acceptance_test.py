@@ -24,3 +24,29 @@ class IdleAcceptanceTest(unittest.TestCase):
             self.assertGreaterEqual(len(report['samples']), 2)
             self.assertGreaterEqual(report['elapsed_seconds'], .2)
             self.assertNotIn('stability privacy sentinel', json.dumps(report))
+
+    def test_failed_rerun_replaces_prior_passing_idle_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'idle.json'
+            output.write_text('{"run_completed":true,"checks":{"resource_screen":"passed"}}')
+            result = subprocess.run([sys.executable, '-m', 'benchmarks.stability.idle',
+                                     '--config', str(Path(directory) / 'missing.json'),
+                                     '--output', str(output)], capture_output=True, timeout=30)
+            self.assertNotEqual(result.returncode, 0)
+            report = json.loads(output.read_text())
+            self.assertFalse(report['run_completed'])
+            self.assertEqual(report['checks']['execution'], 'failed')
+
+    def test_failed_offline_rerun_cannot_reuse_a_prior_voice_pass(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            for name in ('offline.json', 'voice.json'):
+                (output / name).write_text('{"run_completed":true}')
+            result = subprocess.run([sys.executable, '-m', 'benchmarks.stability.offline',
+                                     '--model-store', str(output / 'missing'),
+                                     '--output', str(output)], capture_output=True, timeout=30)
+            self.assertNotEqual(result.returncode, 0)
+            report = json.loads((output / 'offline.json').read_text())
+            self.assertFalse(report['run_completed'])
+            self.assertEqual(report['checks']['execution'], 'failed')
+            self.assertFalse(json.loads((output / 'voice.json').read_text())['run_completed'])

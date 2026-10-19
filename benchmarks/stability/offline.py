@@ -15,16 +15,12 @@ import subprocess
 import sys
 import tempfile
 import time
+from typing import Any
 
 from benchmarks.latency.run import ollama
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--model-store', type=Path, default=Path('/var/lib/ollama'))
-    parser.add_argument('--model', default='gemma3:270m')
-    args = parser.parse_args()
+def run(args: argparse.Namespace) -> dict[str, Any]:
     interfaces = sorted(line.split(':', 1)[0].strip()
                         for line in Path('/proc/net/dev').read_text().splitlines()[2:])
     routes = Path('/proc/net/route').read_text().splitlines()[1:]
@@ -81,10 +77,10 @@ def main() -> None:
                 server.kill()
                 server.wait()
     voice = json.loads((args.output / 'voice.json').read_text())
-    voice_ok = (voice.get('run_completed') is True and voice.get('expected_attempts') == 30
+    voice_ok = (results[-1]['exit_code'] == 0 and voice.get('run_completed') is True and voice.get('expected_attempts') == 30
                 and voice.get('summary', {}).get('completed') == 30
                 and 'signal_start_ms' in voice.get('initial_trial', {}))
-    report = {'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+    report = {'run_completed': True, 'timestamp_utc': datetime.now(timezone.utc).isoformat(),
               'interfaces': interfaces, 'external_ipv4_routes': routes,
               'external_ipv6_routes': [], 'model': model,
               'source_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
@@ -94,9 +90,28 @@ def main() -> None:
               'scope': 'isolated network; actual synthetic voice path plus separate mock control suites',
               'unvalidated': ['physical devices', 'desktop suspend/lock', 'acoustic spoken stop',
                               'human German usefulness', 'two-hour idle', 'external syscall audit']}
-    (args.output / 'offline.json').write_text(json.dumps(report, indent=2) + '\n')
+    return report
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--model-store', type=Path, default=Path('/var/lib/ollama'))
+    parser.add_argument('--model', default='gemma3:270m')
+    args = parser.parse_args()
+    args.output.mkdir(parents=True, exist_ok=True)
+    output = args.output / 'offline.json'
+    initial = {'run_completed': False, 'started_utc': datetime.now(timezone.utc).isoformat(),
+               'checks': {'execution': 'running'}}
+    output.write_text(json.dumps(initial, indent=2) + '\n')
+    (args.output / 'voice.json').write_text(json.dumps({'run_completed': False}) + '\n')
+    try:
+        report = run(args)
+    except (Exception, SystemExit) as error:
+        report = {**initial, 'checks': {'execution': 'failed'}, 'error_type': type(error).__name__}
+    output.write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report), flush=True)
-    if not voice_ok or any(r['exit_code'] != 0 for r in results):
+    if not report['run_completed'] or 'failed' in report['checks'].values():
         raise SystemExit(1)
 
 

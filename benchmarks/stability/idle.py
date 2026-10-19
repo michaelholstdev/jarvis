@@ -21,7 +21,20 @@ import time
 from typing import Any, Callable, Awaitable
 
 from apps.audio.main import load_config
-from benchmarks.latency.resources import snapshot
+from benchmarks.latency.resources import snapshot, process_tree
+
+
+def cumulative_cpu(pids: list[int]) -> float:
+    """Include reaped-child ticks so worker exit cannot erase consumed CPU.
+
+    Five-second polling cannot resolve each worker's instantaneous CPU or peak RSS.
+    """
+    ticks = 0
+    for root in pids:
+        for pid in process_tree(root):
+            fields = Path(f'/proc/{pid}/stat').read_text().rsplit(')', 1)[1].split()
+            ticks += sum(int(v) for v in fields[11:15])
+    return ticks / os.sysconf('SC_CLK_TCK')
 
 
 async def seed_voice(config: dict[str, Any], request: Callable[..., Awaitable[dict[str, Any]]]) -> None:
@@ -80,13 +93,13 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
     samples: list[dict[str, Any]] = []
     started_utc = datetime.now(timezone.utc).isoformat()
     checks: dict[str, str] = {}
-    sentinel = 'stability privacy sentinel'
+    sentinel = 'computer' if config['audio']['mode'] == 'voice' else 'stability privacy sentinel'
 
     async def drain(stream: asyncio.StreamReader) -> None:
         while line := await stream.readline():
             counters['bytes'] += len(line)
             counters['lines'] += 1
-            counters['sentinel_leaks'] += int(sentinel.encode() in line)
+            counters['sentinel_leaks'] += int(sentinel.encode() in line.lower())
             try:
                 event = json.loads(line)
                 if event.get('event') in {'operation_started', 'llm_first_token', 'recognition_final'}:
@@ -140,6 +153,7 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
                 await request('inhibition-changed', source='muted', active=False)
             else:
                 await request('demo', text='Gespräch beenden')
+            del seed_text, seed
             await asyncio.sleep(.2)
             baseline = dict(counters)
             start = time.monotonic()
@@ -153,7 +167,7 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
                 rows = [snapshot(c.pid) for c in children]
                 samples.append({'elapsed_seconds': time.monotonic() - start,
                                 'rss_bytes': sum(r['rss_bytes'] for r in rows),
-                                'cpu_seconds': sum(r['cpu_seconds'] for r in rows),
+                                'cpu_seconds': cumulative_cpu([c.pid for c in children]),
                                 'processes': sum(r['processes'] for r in rows),
                                 'log_bytes': counters['bytes'] - baseline['bytes']})
                 if len(samples) == 1 or samples[-1]['elapsed_seconds'] // 60 > samples[-2]['elapsed_seconds'] // 60:
@@ -168,7 +182,9 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
             if any(t.done() for t in tasks):
                 raise RuntimeError('acceptance_collector_exited')
             elapsed = samples[-1]['elapsed_seconds']
-            cpu = (samples[-1]['cpu_seconds'] - samples[0]['cpu_seconds']) / elapsed * 100
+            cpu_valid = all(b['cpu_seconds'] >= a['cpu_seconds'] for a, b in zip(samples, samples[1:]))
+            cpu = sum(max(0, b['cpu_seconds'] - a['cpu_seconds'])
+                      for a, b in zip(samples, samples[1:])) / elapsed * 100
             growth = samples[-1]['rss_bytes'] - samples[0]['rss_bytes']
             idle_logs = counters['bytes'] - baseline['bytes']
             checks = {'two_hour_duration': 'passed' if elapsed >= 7200 else 'unvalidated',
@@ -176,7 +192,7 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
                       'idle_operations': 'passed' if counters['operations'] == baseline['operations'] else 'failed',
                       'sentinel_absent_from_logs': 'passed' if not counters['sentinel_leaks'] else 'failed',
                       'structured_logs': 'passed' if not counters['non_json'] else 'failed',
-                      'resource_screen': ('unvalidated' if elapsed < 60 else
+                      'resource_screen': ('unvalidated' if elapsed < 60 or not cpu_valid else
                                           'passed' if cpu <= 5 and growth <= 32 * 1024**2 else 'failed'),
                       'log_growth_screen': 'passed' if idle_logs <= 1024 * (1 + elapsed / 60) else 'failed',
                       'queues_and_audio_buffers': 'unvalidated',
@@ -217,8 +233,17 @@ def main() -> None:
     args = parser.parse_args()
     if not all(math.isfinite(v) and v > 0 for v in (args.seconds, args.interval)):
         parser.error('seconds and interval must be finite and positive')
-    report = asyncio.run(run(args))
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    started = datetime.now(timezone.utc).isoformat()
+    initial = {'run_completed': False, 'started_utc': started, 'checks': {'execution': 'running'}}
+    args.output.write_text(json.dumps(initial, indent=2) + '\n')
+    try:
+        report = {'run_completed': True, **asyncio.run(run(args))}
+    except Exception as error:
+        failure = {**initial, 'checks': {'execution': 'failed'}, 'error_type': type(error).__name__}
+        args.output.write_text(json.dumps(failure, indent=2) + '\n')
+        print(json.dumps(failure), flush=True)
+        raise SystemExit(1) from None
     args.output.write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps({k: v for k, v in report.items() if k != 'samples'}), flush=True)
     if 'failed' in report['checks'].values():

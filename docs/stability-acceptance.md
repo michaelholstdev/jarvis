@@ -48,12 +48,17 @@ monitor source, requires an actual answer, then closes via mute/unmute. This
 measures **idle after privacy cleanup**, including worker teardown; it is not a
 claim that STT/TTS worker models remain resident for two hours. It polls public
 health/text access and sums service process-tree CPU/RSS every five seconds.
-Ollama is separately managed and excluded from these resource totals. Logs drain
+CPU accounting includes reaped-child ticks, so exited workers cannot erase consumed
+CPU. A decreasing cumulative counter makes the resource verdict unvalidated;
+process inspection failure aborts the run. Five-second sampling cannot establish
+instantaneous CPU or RSS peaks between samples. Ollama is separately managed and excluded from these resource totals. Logs drain
 to byte/line/operation counters; no raw lines or conversation content are saved.
 
 Predeclared diagnostic screens: average CPU ≤5% of one core, final-minus-initial
 summed RSS ≤32 MiB, and log growth ≤1024 bytes/minute plus 1024 startup bytes.
-These are acceptance-runner screens, not new product resource promises. Resource
+These are acceptance-runner screens, not new product resource promises. Reports are initialized as incomplete before work starts, and failures overwrite
+prior passing reports with a failed execution verdict. Offline voice evidence is
+also invalidated at startup and requires the current command to succeed. Resource
 screens require ≥60 seconds; shorter command checks cannot pass the two-hour gate.
 RSS endpoint growth is not proof of a leak-free heap. Operation diagnostics and
 closed text access do not establish erased heap contents. Internal queue/audio
@@ -134,6 +139,13 @@ ordinary desktop workload, not a controlled empty machine.
 - Starting Ollama against the shared store failed when it attempted to remove
   `manifests-v2` without permission. The corrected private store setup succeeded;
   no permission/ownership change was made to the shared store.
+- Review found that live-process-only CPU counters could lose exited-worker CPU.
+  The initial soak was aborted after at least 541 seconds of recorded idle samples
+  and is **unvalidated**. The corrected collector includes reaped-child CPU and
+  starts a fresh full two-hour run; no partial run is promoted to acceptance.
+- Review also found failed reruns could retain prior passing output. New command
+  tests reproduce that failure and verify incomplete/failed output replaces old
+  evidence, including the offline voice artifact.
 - The initial offline feasibility run completed its separate control suites in
   31.07 seconds and one initial plus three real synthetic turns in 41.78 seconds.
   Its artifacts are replaced by the full 30-turn run; these numbers are setup
