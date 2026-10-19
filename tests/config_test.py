@@ -17,7 +17,7 @@ class AudioConfigurationTest(unittest.TestCase):
             path = Path(directory) / "config.yaml"
             path.write_text(
                 "transport:\n  timeout_ms: 01000\naudio:\n  input_device: on\n  pre_roll_ms: 0750\n"
-                "stt:\n  model: 2026-10-14\ntts:\n  voice: 1_000\nllm:\n  model: 0b1000\n"
+                "stt:\n  model: parakeet-tdt-v3-int8\ntts:\n  voice: 1_000\nllm:\n  model: 0b1000\n"
             )
             with patch.dict(os.environ, {"JARVIS_CONFIG": str(path)}):
                 audio = load_config()
@@ -29,10 +29,23 @@ class AudioConfigurationTest(unittest.TestCase):
             self.assertEqual(audio["transport"]["timeout_ms"], 1000)
             self.assertEqual(audio["audio"]["pre_roll_ms"], 750)
             self.assertEqual(audio["audio"]["input_device"], "on")
-            self.assertEqual(audio["stt"]["model"], "2026-10-14")
+            self.assertEqual(audio["stt"]["model"], "parakeet-tdt-v3-int8")
             self.assertEqual(audio["tts"]["voice"], "1_000")
             self.assertEqual(audio["llm"]["model"], "0b1000")
             self.assertEqual(audio, core)
+
+    def test_unknown_recognizer_is_rejected_by_both_services(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'config.yaml'
+            path.write_text('stt:\n  model: private-unknown-model')
+            with patch.dict(os.environ, {'JARVIS_CONFIG': str(path)}):
+                with self.assertRaisesRegex(Diagnostic, 'invalid_config: /stt/model enum'):
+                    load_config()
+                result = subprocess.run(
+                    ['node', 'dist/apps/core/main.js', 'config'], capture_output=True, text=True,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn('private-unknown-model', result.stderr)
 
     def test_empty_config_has_cpu_defaults(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -7,7 +7,7 @@ remain open. This record applies to the existing CachyOS development checkout;
 it does not certify the nominal target hardware or a newly installed account.
 
 Baseline before documentation work: `9a1af0917a7a38af77d6aed9a5231eb1f6caeea2`.
-The production configuration accepts Whisper tiny INT8, Silero and Thorsten
+The production configuration accepts explicit Parakeet TDT v3 INT8 or Whisper tiny INT8, Silero and Thorsten
 medium CPU speech; wake and spoken stop default off. Real voice requires explicit
 Ollama/device/model configuration; shipped defaults are mocks. Existing reports
 identify their own measured commits/configurations, which take precedence over
@@ -47,7 +47,7 @@ acceptance claim. Source links contain reproduction commands and limitations.
 | FR-01 Login startup | Unvalidated actual login; unit/lifecycle tests passed | Unvalidated | Unvalidated | [User units](../systemd/README.md); fresh login without terminal required |
 | FR-02 Idle privacy | Passed manual-only software scope; no idle microphone/STT/LLM | Unvalidated | Unvalidated | [Privacy/stability](stability-acceptance.md); inspect physical capture and idle; wake disabled |
 | FR-03 Activation + utterance | Passed synthetic manual path; wake unvalidated | Unvalidated | Unvalidated | [Input check](audio-input.md); single-press cue/capture and clipping acceptance required |
-| FR-04 German STT | **Failed** production Whisper synthetic quality screen; benchmark-only Parakeet passed | Unvalidated | Unvalidated | [30-utterance comparison](recognition-comparison.md); integrate/accept selected recognizer, then test human speech |
+| FR-04 German STT | **Failed** Whisper synthetic quality screen; Parakeet passed synthetic screening and production service integration | Unvalidated | Unvalidated | [30-utterance comparison](recognition-comparison.md); [production setup](parakeet-production.md); accept selected recognizer with human speech |
 | FR-05 Spoken response | Passed synthetic synthesis and mock summary/text behavior; real intelligibility/model quality unvalidated | Unvalidated | Unvalidated | [Output](audio-output.md), [text](text-answers.md); no LLM quality selection |
 | FR-06 Follow-up context | Passed 30 contextual socket turns + real synthetic follow-up capture; human usefulness unvalidated | Unvalidated | Unvalidated | [Stability](stability-acceptance.md), [delivered context](delivered-context.md) |
 | FR-07 Timeout | Passed fake-clock/socket noise, empty result and completion-bound tests | Unvalidated | Unvalidated | [Timing rules](../README.md#contextual-follow-ups-and-ending-03); validate physical silence/noise |

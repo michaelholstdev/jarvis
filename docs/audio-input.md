@@ -2,7 +2,7 @@
 
 Ticket 09 adds opt-in `audio.mode: voice`: manual activation → completed activation
 sound → selected microphone → resident CPU Silero VAD → endpointed CPU sherpa-onnx
-Whisper tiny INT8 (multilingual, `language=de`, `task=transcribe`) → existing scripted
+selected Whisper tiny INT8 or Parakeet TDT v3 INT8 → existing scripted
 answer → resident CPU Piper → selected output. Inference is scripted unless [Ollama mode](ollama.md) is enabled.
 `mock` remains the default; `piper` retains scripted recognition.
 
@@ -11,6 +11,10 @@ wake detection, spoken stop, barge-in and calibrated
 German accuracy are **unvalidated**. Experimental playback-only spoken stop is now
 opt-in; see [spoken-stop.md](spoken-stop.md) for its separate hardware gate. Health reports STT/TTS ready, inference mock and
 voice_conversation unavailable in mock inference mode, so this ticket does not imply MVP release readiness.
+
+Parakeet production selection, pinned installation and migration are documented in
+[the production Parakeet guide](parakeet-production.md). The commands below retain
+the Whisper compatibility setup. Both choices use the same endpointed service path.
 
 ## Installation and model verification
 
@@ -140,10 +144,9 @@ in routine logs; current conversation content remains transient in core memory.
 
 `audio_diagnostic` supplies safe fixed codes while the socket returns `unavailable`:
 
-- `missing_input_model` / `input_checksum_mismatch`: verify all four pinned files in
+- `missing_input_model` / `input_checksum_mismatch`: verify the selected recognizer files and Silero VAD in
   `stt.model_dir`; verify archive hash before extracting, then rerun verification.
-- `unsupported_input_model`: select `stt.model: whisper-tiny-int8`; other backends
-  require a replacement adapter and their own manifest/verification.
+- `unsupported_input_model`: select `whisper-tiny-int8` or `parakeet-tdt-v3-int8` with its matching directory.
 - `unsupported_input_runtime`: sync both pinned input runtime packages.
 - `input_device_missing` / `input_device_muted`: select the present stable source,
   inspect `pactl get-source-mute NAME`; never silently switch microphones.

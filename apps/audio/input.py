@@ -21,13 +21,25 @@ class StreamingRecognizer(Protocol):
 
 def verify_input(config: dict[str, Any]) -> None:
     manifest = json.loads((Path(__file__).resolve().parents[2] / 'config/models.json').read_text())
-    for model in manifest['models']:
-        if model['role'] not in {'stt', 'vad'}:
-            continue
+    selection = config['stt']['model']
+    if selection == 'whisper-tiny-int8':
+        names = ['tiny-encoder.int8.onnx', 'tiny-decoder.int8.onnx', 'tiny-tokens.txt']
+    elif selection == 'parakeet-tdt-v3-int8':
+        names = ['parakeet-' + name for name in
+                 ('encoder.int8.onnx', 'decoder.int8.onnx', 'joiner.int8.onnx', 'tokens.txt')]
+    else:
+        raise RuntimeError('unsupported_input_model')
+    models = {model['id']: model for model in manifest['models']}
+    for name in [*names, 'silero_vad.onnx']:
+        model = models[name]
         path = Path(config['stt']['model_dir']) / Path(model['local_path']).name
         if not path.is_file():
             raise RuntimeError('missing_input_model')
-        if hashlib.sha256(path.read_bytes()).hexdigest() != model['sha256']:
+        digest = hashlib.sha256()
+        with path.open('rb') as stream:
+            for block in iter(lambda: stream.read(1024 * 1024), b''):
+                digest.update(block)
+        if digest.hexdigest() != model['sha256']:
             raise RuntimeError('input_checksum_mismatch')
 
 
@@ -43,7 +55,19 @@ def selected_source(config: dict[str, Any]) -> dict[str, Any]:
     return dict(source)
 
 
-class WhisperRecognizer:
+class EndpointedRecognizer:
+    """Shared final decoding for resident sherpa offline engines."""
+
+    engine: Any
+
+    def recognize(self, samples: Any) -> str:
+        stream = self.engine.create_stream()
+        stream.accept_waveform(16000, samples)
+        self.engine.decode_stream(stream)
+        return str(stream.result.text).strip()
+
+
+class WhisperRecognizer(EndpointedRecognizer):
     def __init__(self, config: dict[str, Any], sherpa: Any) -> None:
         directory = Path(config['stt']['model_dir'])
         self.engine = sherpa.OfflineRecognizer.from_whisper(
@@ -52,11 +76,18 @@ class WhisperRecognizer:
             tokens=str(directory / 'tiny-tokens.txt'), language='de', task='transcribe',
             num_threads=2, provider='cpu', debug=False)
 
-    def recognize(self, samples: Any) -> str:
-        stream = self.engine.create_stream()
-        stream.accept_waveform(16000, samples)
-        self.engine.decode_stream(stream)
-        return str(stream.result.text).strip()
+
+class ParakeetRecognizer(EndpointedRecognizer):
+    """Pinned NeMo TDT v3 INT8 export; endpointed CPU inference, no partials."""
+
+    def __init__(self, config: dict[str, Any], sherpa: Any) -> None:
+        directory = Path(config['stt']['model_dir'])
+        self.engine = sherpa.OfflineRecognizer.from_transducer(
+            encoder=str(directory / 'encoder.int8.onnx'),
+            decoder=str(directory / 'decoder.int8.onnx'),
+            joiner=str(directory / 'joiner.int8.onnx'), tokens=str(directory / 'tokens.txt'),
+            model_type='nemo_transducer', num_threads=2, provider='cpu',
+            decoding_method='greedy_search', debug=False)
 
 
 class Input:
@@ -68,8 +99,6 @@ class Input:
         from importlib.metadata import version
         if version('sherpa-onnx') != '1.13.8' or version('sherpa-onnx-core') != '1.13.8':
             raise RuntimeError('unsupported_input_runtime')
-        if config['stt']['model'] != 'whisper-tiny-int8':
-            raise RuntimeError('unsupported_input_model')
         verify_input(config)
         vad_config = sherpa.VadModelConfig()
         vad_config.silero_vad.model = str(Path(config['stt']['model_dir']) / 'silero_vad.onnx')
@@ -81,7 +110,9 @@ class Input:
         vad_config.num_threads = 1
         vad_config.provider = 'cpu'
         self.vad = sherpa.VoiceActivityDetector(vad_config, buffer_size_in_seconds=1)
-        self.recognizer: StreamingRecognizer = WhisperRecognizer(config, sherpa)
+        self.recognizer: StreamingRecognizer = (
+            ParakeetRecognizer(config, sherpa) if config['stt']['model'] == 'parakeet-tdt-v3-int8'
+            else WhisperRecognizer(config, sherpa))
 
     def recognize(self, emit: Any, cancelled: Any = None, echo_reference: Any = None) -> dict[str, Any]:
         source = selected_source(self.config)

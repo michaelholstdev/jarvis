@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "revision": "8a929298a78242476f62faf316e12bfb567e7c7c",
+  "revision_note": "working tree implementation; use commit containing this report",
+  "python": "3.11.14",
+  "system": "Linux-7.2.11-1-cachyos-x86_64-with-glibc2.44",
+  "cpu": "AMD Ryzen 5 5600X 6-Core Processor",
+  "runtimes": {
+    "sherpa-onnx": "1.13.8",
+    "sherpa-onnx-core": "1.13.8",
+    "piper-tts": "1.3.0",
+    "soxr": "1.0.0",
+    "numpy": "2.4.6"
+  },
+  "uv_lock_sha256": "9395f6bed3bafa50b799ea779da8ad2372431389f0aeedc8c6541a8d8313674c",
+  "model_manifest_sha256": "9bbfd10decb7cabb664fdf8feec0240b487b09d3521c1438924af1c4989a71d9",
+  "input_artifacts": [
+    {
+      "id": "silero_vad.onnx",
+      "role": "vad",
+      "revision": "release asset 271935959; updated 2025-07-11",
+      "sha256": "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6",
+      "license": "MIT",
+      "source_url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx",
+      "provenance": "Silero VAD exported by k2-fsa; upstream snakers4/silero-vad, MIT.",
+      "local_path": "models/input/silero_vad.onnx",
+      "validated": false
+    },
+    {
+      "id": "parakeet-encoder.int8.onnx",
+      "role": "stt",
+      "revision": "release asset 283097583, updated 2025-08-16T09:29:29Z",
+      "sha256": "acfc2b4456377e15d04f0243af540b7fe7c992f8d898d751cf134c3a55fd2247",
+      "license": "NVIDIA Parakeet CC-BY-4.0; sherpa-onnx export",
+      "source_url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2",
+      "provenance": "NVIDIA Parakeet TDT v3 0.6b; sherpa INT8 export. Archive SHA256 5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf. CPU endpointed final results; synthetic screening passed, acoustic acceptance unvalidated.",
+      "local_path": "models/parakeet/encoder.int8.onnx",
+      "validated": false
+    },
+    {
+      "id": "parakeet-decoder.int8.onnx",
+      "role": "stt",
+      "revision": "release asset 283097583, updated 2025-08-16T09:29:29Z",
+      "sha256": "179e50c43d1a9de79c8a24149a2f9bac6eb5981823f2a2ed88d655b24248db4e",
+      "license": "NVIDIA Parakeet CC-BY-4.0; sherpa-onnx export",
+      "source_url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2",
+      "provenance": "NVIDIA Parakeet TDT v3 0.6b; sherpa INT8 export. Archive SHA256 5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf. CPU endpointed final results; synthetic screening passed, acoustic acceptance unvalidated.",
+      "local_path": "models/parakeet/decoder.int8.onnx",
+      "validated": false
+    },
+    {
+      "id": "parakeet-joiner.int8.onnx",
+      "role": "stt",
+      "revision": "release asset 283097583, updated 2025-08-16T09:29:29Z",
+      "sha256": "3164c13fc2821009440d20fcb5fdc78bff28b4db2f8d0f0b329101719c0948b3",
+      "license": "NVIDIA Parakeet CC-BY-4.0; sherpa-onnx export",
+      "source_url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2",
+      "provenance": "NVIDIA Parakeet TDT v3 0.6b; sherpa INT8 export. Archive SHA256 5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf. CPU endpointed final results; synthetic screening passed, acoustic acceptance unvalidated.",
+      "local_path": "models/parakeet/joiner.int8.onnx",
+      "validated": false
+    },
+    {
+      "id": "parakeet-tokens.txt",
+      "role": "stt",
+      "revision": "release asset 283097583, updated 2025-08-16T09:29:29Z",
+      "sha256": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
+      "license": "NVIDIA Parakeet CC-BY-4.0; sherpa-onnx export",
+      "source_url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2",
+      "provenance": "NVIDIA Parakeet TDT v3 0.6b; sherpa INT8 export. Archive SHA256 5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf. CPU endpointed final results; synthetic screening passed, acoustic acceptance unvalidated.",
+      "local_path": "models/parakeet/tokens.txt",
+      "validated": false
+    }
+  ],
+  "vad": {
+    "engine": "silero",
+    "end_silence_ms": 350,
+    "max_utterance_seconds": 10
+  },
+  "barrier_ms": {
+    "cancel": 32,
+    "privacy": 33
+  },
+  "recognizer": "parakeet-tdt-v3-int8",
+  "provider": "cpu",
+  "threads": 2,
+  "fixture_pcm_sha256": "dc015eb43452c15751696e6992f64554b9333b44f229adf50e2fdca4736b21bf",
+  "synthesis": {
+    "noise_scale": 0,
+    "noise_w_scale": 0,
+    "length_scale": 1
+  },
+  "scripted_turn_ms": 6979,
+  "events": [
+    {
+      "event": "speech_started",
+      "operation_id": "2",
+      "monotonic_ms": 7491922.445701
+    },
+    {
+      "event": "endpoint",
+      "operation_id": "2",
+      "monotonic_ms": 7493842.89089,
+      "elapsed_ms": 3556
+    },
+    {
+      "event": "recognition_final",
+      "operation_id": "2",
+      "monotonic_ms": 7494074.531869,
+      "elapsed_ms": 232
+    }
+  ],
+  "checks": [
+    "core_voice_loop",
+    "exact_german_recognition",
+    "cancel",
+    "privacy",
+    "stale_admission",
+    "missing_artifacts",
+    "corrupt_artifacts"
+  ],
+  "acoustic_acceptance": "unvalidated",
+  "resources": {
+    "wall_seconds": 36.261,
+    "self_cpu_seconds": 3.383,
+    "reaped_children_cpu_seconds": 27.707,
+    "self_peak_rss_mib": 774.8,
+    "largest_reaped_child_peak_rss_mib": 1158.2,
+    "scope": "whole check including model reloads, synthesis, CLI polling and failed loads; not idle or simultaneous total RSS"
+  }
+}

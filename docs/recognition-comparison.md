@@ -178,3 +178,9 @@ larger, multi-speaker corpus, real endpoints and loaded-Ollama measurements.
 All three tested configurations were compatible with this Linux CPU environment.
 No compatibility failure or missing configuration has been assigned invented numbers.
 Unmeasured platforms, configurations and acoustic conditions remain unvalidated.
+
+## Production follow-up (#20)
+
+The comparison above records #16’s state at measurement time. Parakeet is now
+production-selectable; see [installation, service checks and handoff](parakeet-production.md).
+The original comparison artifacts and quality/latency limitations are unchanged.

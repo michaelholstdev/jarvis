@@ -1,11 +1,12 @@
 # Manual-only CachyOS installation
 
 This is the installation runbook for ticket #19. The supported implementation
-path is manual activation, endpointed Whisper tiny INT8 + Silero on CPU, Piper
+path is manual activation, selected endpointed Parakeet/Whisper + Silero on CPU, Piper
 Thorsten medium on CPU, and independently managed local Ollama. It is an
 **experimental setup, not a validated hardware release**. Read the
 [release checklist](release-checklist.md) before accepting it. Production Whisper
-failed the synthetic quality screen; Parakeet is benchmark-only. No conversational
+failed the synthetic quality screen; Parakeet is now production-selectable, with
+[installation and synthetic service evidence](parakeet-production.md). No conversational
 LLM has yet passed human quality acceptance.
 
 Run commands from the checkout root unless stated otherwise. This guide describes
@@ -87,9 +88,10 @@ replace the expected digest. Startup independently verifies installed files befo
 microphone access. All manifest `validated` fields remain false. Piper runtime is
 GPL-3.0, sherpa-onnx Apache-2.0; preserve relevant notices and review the
 [pinned voice provenance](audio-output.md#install-and-verify) before distribution.
-Benchmark-only Parakeet (CC-BY-4.0) and Vosk small German (Apache-2.0) have separate
-[artifact records](../benchmarks/recognition/artifacts.json); neither is installable
-as a production STT configuration. Wake has no approved artifact/runtime pin.
+Parakeet (CC-BY-4.0) uses the [production acquisition block](parakeet-production.md#install-and-select),
+installing encoder/decoder/joiner INT8, tokens and Silero in `models/parakeet`.
+Vosk small German (Apache-2.0) remains benchmark-only. Both have
+[artifact records](../benchmarks/recognition/artifacts.json). Wake has no approved artifact/runtime pin.
 
 ## 4. Local Ollama and model inventory
 
@@ -154,8 +156,8 @@ audio:
   input_device: alsa_input.YOUR_MICROPHONE_NAME
   output_device: alsa_output.YOUR_HEADSET_NAME
 stt:
-  model: whisper-tiny-int8
-  model_dir: /absolute/path/to/jarvis/models/input
+  model: parakeet-tdt-v3-int8
+  model_dir: /absolute/path/to/jarvis/models/parakeet
 tts:
   model_path: /absolute/path/to/jarvis/models/de_DE-thorsten-medium.onnx
 llm:

@@ -114,7 +114,8 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 256,
-          "default": "whisper-tiny-int8"
+          "default": "whisper-tiny-int8",
+          "enum": ["whisper-tiny-int8", "parakeet-tdt-v3-int8"]
         },
         "device": {
           "type": "string",

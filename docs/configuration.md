@@ -22,7 +22,7 @@ prints deliberately requested configuration, while routine logs never print it.
 | Internal audio | 16000 Hz mono recognition format reserved; pre-roll 750 ms (500–1000); echo cancellation disabled |
 | Wake | `Hey Jarvis`, model path/threshold must be `null`; wake unavailable in every mode; see [decision and validation gaps](wake-activation.md) |
 | VAD | `silero`; end silence 350 ms (50–5000); max utterance 30 s (1–120) |
-| Recognition | `sherpa-onnx`, `to-be-benchmarked`, CPU; no recognizer loaded |
+| Recognition | `sherpa-onnx`, `whisper-tiny-int8` (compatibility default) or `parakeet-tdt-v3-int8`, CPU; mock loads no recognizer |
 | Synthesis | `piper`, `de_DE-thorsten-medium`, CPU; `model_path` defaults to `models/de_DE-thorsten-medium.onnx`; loaded only in `audio.mode: piper` |
 | LLM | `ollama`, `http://127.0.0.1:11434`, `user-configured`; context 8192 tokens (512–32768); `mode: mock` by default; opt-in `ollama` enables local inference |
 | Local endpoint | Only HTTP with literal `127.0.0.1`, `localhost`, or `[::1]` plus a port 1–65535; credentials and remote endpoints rejected |
@@ -78,3 +78,7 @@ Ollama mode adds validated generation settings: `llm.timeout_ms` 120000 (100–3
 trials in voice mode; see [spoken-stop.md](spoken-stop.md) for scope, echo limitations,
 model dependencies and separate headset/speaker acceptance. `features.barge_in`
 remains `false`.
+
+Recognition IDs are schema-validated. `stt.model_dir` contains the selected model
+files plus Silero VAD; see [Parakeet selection and migration](parakeet-production.md).
+There is no automatic recognizer fallback.
