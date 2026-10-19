@@ -100,24 +100,51 @@ gate; the offline suite's goal is functionality without external connectivity.
 
 Measured 2026-10-19 on CachyOS Linux 7.2.11-1-cachyos, Node v24.11.1, Python
 3.11.14; actual CPU/model/runtime inventories and hashes accompany the voice JSON.
-The service revision is `1add1871d8002b36dd5a08e75213ebd72e5963a9`; no production
-service code changes are made for #18. Collectors ran from this implementation's
-working tree. The idle collector's launch hash/command is recorded separately in
+The corrected run starts from `cc0f98271fe7543c52f30f6f70f303e0cd80274a`; production
+service code remains identical to `1add1871d8002b36dd5a08e75213ebd72e5963a9`.
+The collector is committed before the corrected run starts. The idle collector's launch hash/command is recorded separately in
 `benchmarks/stability/idle-provenance.json`. Concurrent checks, editing, model
-startup and offline voice benchmarking occurred during the soak; this is an
+startup and offline voice benchmarking occurred during the observation; this is an
 ordinary desktop workload, not a controlled empty machine.
 
 | Scenario | Evidence | Verdict |
 | --- | --- | --- |
-| Two-hour idle after privacy closure | `benchmarks/stability/idle-two-hour.json` | pending measurement |
-| 30 contextual socket turns, explicit ending | `tests/ollama-daemon.test.ts` | focused run passed |
-| Thirty real synthetic offline follow-ups | `benchmarks/stability/offline/voice.json` | pending final run |
-| Offline extension/text/privacy/recovery | `benchmarks/stability/offline/offline.json` | feasibility passed; final run pending |
-| Noise deadlines, extension, cancellation/delivered context | listed regression suites | final suite pending |
+| Two-hour idle after privacy closure | `benchmarks/stability/idle-two-hour.json` | unvalidated: stopped at user request |
+| 30 contextual socket turns, explicit ending | `tests/ollama-daemon.test.ts` | passed |
+| Thirty real synthetic offline follow-ups | `benchmarks/stability/offline/voice.json` | passed: initial + 30 turns |
+| Offline extension/text/privacy/recovery | `benchmarks/stability/offline/offline.json` | passed |
+| Noise deadlines, extension, cancellation/delivered context | listed regression suites | passed |
 | Queue/buffer occupancy and heap erasure | no direct acceptance instrumentation | unvalidated |
 | Systemd restart, real mic/backend hotplug, suspend/resume | desktop procedure steps 7–9 | unvalidated |
 | Physical lock/mute cessation and independent switches | desktop procedure steps 4–6 | unvalidated |
 | Headset/speaker acoustic spoken stop | separate #14 hardware gate | unvalidated |
+
+The user requested stopping the RAM observation after approximately 39 minutes.
+The collector was interrupted and its final queued stdout checkpoint reports
+**2640.92 seconds (44.02 minutes)**. Across 45 recorded minute checkpoints,
+summed RSS began at **124.35 MiB**, peaked at **124.73 MiB**, and last measured
+**113.39 MiB**; all checkpoints reported **zero idle log bytes**. RSS dropped to
+about 108.36 MiB early and later rose about 5 MiB; these observations do not prove
+a leak-free heap. The minute checkpoints are preserved in `idle-two-hour.json`.
+
+**This is not a completed two-hour soak.** SIGINT cleaned up services but the
+collector's full five-second sample set/final CPU and state verdicts were held in
+memory and were not exported. The artifact explicitly records user-stopped,
+`run_completed:false`, the narrower stdout observation method, and unvalidated
+resource/two-hour gates. No final CPU, queue/buffer or memory-erasure pass is
+claimed. A future full run remains available with the documented command.
+
+Final offline run: **31.22 seconds** for the selected control suites and
+**330.35 seconds** for the real synthetic voice harness. Both commands exit zero;
+all 30 measured trials and the initial trial have monitored input/output signals.
+The namespace contains only `lo`, with no external IPv4/IPv6 routes. Exact model
+digest, speech hashes, configuration and runtime/hardware details are in the JSON.
+These results establish disconnected synthetic operation, not human German
+quality or physical headset/speaker acceptance. The fixed required-word screen
+matches only **12/30** replies; no conversational model is selected from this run.
+Active speech VRAM coverage is unvalidated (1 of
+3188 samples unknown), despite zero allocation in
+known samples. These gaps are not converted to passes by successful turn delivery.
 
 ## Setup failures and limitations
 
@@ -142,7 +169,8 @@ ordinary desktop workload, not a controlled empty machine.
 - Review found that live-process-only CPU counters could lose exited-worker CPU.
   The initial soak was aborted after at least 541 seconds of recorded idle samples
   and is **unvalidated**. The corrected collector includes reaped-child CPU and
-  starts a fresh full two-hour run; no partial run is promoted to acceptance.
+  started a fresh run, later stopped at user request; no partial run is promoted
+  to two-hour acceptance.
 - Review also found failed reruns could retain prior passing output. New command
   tests reproduce that failure and verify incomplete/failed output replaces old
   evidence, including the offline voice artifact.
@@ -158,3 +186,22 @@ replayed. Run during listening, inference, synthesis and playback. A missing
 measurement stays unvalidated; any replay, ongoing capture while inhibited,
 unbounded recovery or uncleared text is failed. Do not replace these observations
 with a passing fixture result. M3 and physical stability acceptance remain open.
+
+## Review and regression checks
+
+`npm run check` passes. The full `npm test` run passes **204 Node tests and
+38 Python tests**, including the new acceptance command failure/rerun cases.
+No production changes followed those checks.
+
+### Standards
+
+No remaining documented-standard violations or material baseline smells. Review
+found two collector correctness hazards (CPU loss on worker exit and stale offline
+voice passes); both are fixed and independently rechecked. **0 remaining findings.**
+
+### Spec
+
+The stale-report finding is fixed and rechecked. **0 remaining implementation
+defects; partial acceptance remains** for internal queue/buffer occupancy, external
+request-attempt auditing and physical desktop/device checks. These are explicitly
+unvalidated and keep the ticket's acceptance gate open.

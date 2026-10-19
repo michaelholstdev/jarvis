@@ -1,0 +1,82 @@
+{
+  "run_completed": true,
+  "timestamp_utc": "2026-10-19T07:03:04.394221+00:00",
+  "interfaces": [
+    "lo"
+  ],
+  "external_ipv4_routes": [],
+  "external_ipv6_routes": [],
+  "model": {
+    "name": "gemma3:270m",
+    "model": "gemma3:270m",
+    "modified_at": "2026-08-27T17:48:13.373618551+02:00",
+    "size": 291554930,
+    "digest": "e7d36fb2c3b3293cfe56d55889867a064b3a2b22e98335f2e6e8a387e081d6be",
+    "details": {
+      "parent_model": "/Users/ollama/.ollama/models/blobs/sha256-735af2139dc652bf01112746474883d79a52fa1c19038265d363e3d42556f7a2",
+      "format": "gguf",
+      "family": "gemma3",
+      "families": [
+        "gemma3"
+      ],
+      "parameter_size": "268.10M",
+      "quantization_level": "Q8_0",
+      "context_length": 32768,
+      "embedding_length": 640,
+      "runner": "ggml"
+    },
+    "capabilities": [
+      "completion"
+    ]
+  },
+  "source_revision": "cc0f98271fe7543c52f30f6f70f303e0cd80274a",
+  "results": [
+    {
+      "command": [
+        "node",
+        "--test",
+        "dist/tests/extension-runtime.test.js",
+        "dist/tests/text-answer-cli.test.js",
+        "dist/tests/privacy-runtime.test.js",
+        "dist/tests/recovery-runtime.test.js",
+        "dist/tests/ollama-daemon.test.js",
+        "dist/tests/delivered-context.test.js",
+        "dist/tests/desktop-runtime.test.js"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 31.223829956000145
+    },
+    {
+      "command": [
+        "/home/michael/projects/jarvis/.venv/bin/python",
+        "-m",
+        "benchmarks.latency.run",
+        "--model",
+        "gemma3:270m",
+        "--voice",
+        "models/benchmark/de_DE-thorsten-medium.onnx",
+        "--input-dir",
+        "models/input",
+        "--samples",
+        "30",
+        "--output",
+        "benchmarks/stability/offline/voice.json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 330.3460624239999
+    }
+  ],
+  "checks": {
+    "local_voice_turns": "passed",
+    "control_suites": "passed"
+  },
+  "scope": "isolated network; actual synthetic voice path plus separate mock control suites",
+  "unvalidated": [
+    "physical devices",
+    "desktop suspend/lock",
+    "acoustic spoken stop",
+    "human German usefulness",
+    "two-hour idle",
+    "external syscall audit"
+  ]
+}

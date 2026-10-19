@@ -1,6 +1,14 @@
 {
-  "service_revision": "1add1871d8002b36dd5a08e75213ebd72e5963a9",
-  "collector_worktree": "uncommitted implementation at launch",
-  "collector_sha256": "c946910ea307ac7a4ae427d828fea61545a7b93ea34cdd9164667a9e34abc94a",
-  "command": ".venv/bin/python -m benchmarks.stability.idle --config /tmp/jarvis-18-voice.json --seconds 7200 --interval 5 --output benchmarks/stability/idle-two-hour.json"
+  "service_revision": "cc0f98271fe7543c52f30f6f70f303e0cd80274a",
+  "collector_worktree": "committed implementation at corrected launch",
+  "collector_sha256": "1794aac42ab19b8cb49e26bfd0682c3284eed303285dedb09fe88d9591b77fe6",
+  "command": ".venv/bin/python -m benchmarks.stability.idle --config /tmp/jarvis-18-voice.json --seconds 7200 --interval 5 --output benchmarks/stability/idle-two-hour.json",
+  "aborted_first_soak": {
+    "service_revision": "1add1871d8002b36dd5a08e75213ebd72e5963a9",
+    "collector_worktree": "uncommitted implementation at launch",
+    "collector_sha256": "c946910ea307ac7a4ae427d828fea61545a7b93ea34cdd9164667a9e34abc94a",
+    "command": ".venv/bin/python -m benchmarks.stability.idle --config /tmp/jarvis-18-voice.json --seconds 7200 --interval 5 --output benchmarks/stability/idle-two-hour.json",
+    "verdict": "unvalidated; stopped for CPU-accounting review finding",
+    "last_observed_idle_seconds": 541.1993838100002
+  }
 }

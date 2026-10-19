@@ -1,0 +1,247 @@
+{
+  "run_completed": false,
+  "started_utc": "2026-10-19T06:57:00.876624+00:00",
+  "checks": {
+    "execution": "user-stopped",
+    "two_hour_duration": "unvalidated",
+    "resource_screen": "unvalidated",
+    "queues_and_audio_buffers": "unvalidated",
+    "physical_devices": "unvalidated",
+    "idle_log_growth_observation": "passed"
+  },
+  "stop_reason": "stopped_at_user_request",
+  "last_observed_elapsed_seconds": 2640.916601752,
+  "requested_seconds": 7200,
+  "observation_method": "Minute checkpoints transcribed from collector stdout; full five-second samples and final checks were not persisted after SIGINT. No completed-run or CPU verdict is claimed.",
+  "observed_rss_initial_bytes": 130392064,
+  "observed_rss_last_bytes": 118898688,
+  "observed_checkpoint_rss_peak_bytes": 130785280,
+  "observed_idle_log_bytes": 0,
+  "observed_checkpoints": [
+    {
+      "checkpoint_minute": 0,
+      "rss_bytes": 130392064,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 1,
+      "rss_bytes": 130785280,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 2,
+      "rss_bytes": 114241536,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 3,
+      "rss_bytes": 114241536,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 4,
+      "rss_bytes": 113758208,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 5,
+      "rss_bytes": 113623040,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 6,
+      "rss_bytes": 113623040,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 7,
+      "rss_bytes": 113754112,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 8,
+      "rss_bytes": 113754112,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 9,
+      "rss_bytes": 113754112,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 10,
+      "rss_bytes": 113754112,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 11,
+      "rss_bytes": 113885184,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 12,
+      "rss_bytes": 113885184,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 13,
+      "rss_bytes": 113885184,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 14,
+      "rss_bytes": 114155520,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 15,
+      "rss_bytes": 114155520,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 16,
+      "rss_bytes": 115884032,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 17,
+      "rss_bytes": 116539392,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 18,
+      "rss_bytes": 116539392,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 19,
+      "rss_bytes": 116670464,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 20,
+      "rss_bytes": 116801536,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 21,
+      "rss_bytes": 116801536,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 22,
+      "rss_bytes": 116801536,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 23,
+      "rss_bytes": 116932608,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 24,
+      "rss_bytes": 116932608,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 25,
+      "rss_bytes": 117194752,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 26,
+      "rss_bytes": 117194752,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 27,
+      "rss_bytes": 117194752,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 28,
+      "rss_bytes": 117194752,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 29,
+      "rss_bytes": 117194752,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 30,
+      "rss_bytes": 117194752,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 31,
+      "rss_bytes": 117325824,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 32,
+      "rss_bytes": 117325824,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 33,
+      "rss_bytes": 117325824,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 34,
+      "rss_bytes": 117850112,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 35,
+      "rss_bytes": 117981184,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 36,
+      "rss_bytes": 118636544,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 37,
+      "rss_bytes": 118636544,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 38,
+      "rss_bytes": 118636544,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 39,
+      "rss_bytes": 118636544,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 40,
+      "rss_bytes": 118636544,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 41,
+      "rss_bytes": 118767616,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 42,
+      "rss_bytes": 118898688,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 43,
+      "rss_bytes": 118898688,
+      "idle_log_bytes": 0
+    },
+    {
+      "checkpoint_minute": 44,
+      "rss_bytes": 118898688,
+      "idle_log_bytes": 0
+    }
+  ]
+}

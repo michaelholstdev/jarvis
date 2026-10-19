@@ -381,3 +381,6 @@ German CPU recognizer measurements, corpus provenance and reproduction commands:
 Content-free real voice-path timing, local LLM comparison and speech resource
 baselines: [latency benchmarks](docs/latency-benchmarks.md). Silent-sink signal
 measurements are separate from unvalidated headset/speaker audibility.
+
+Repeatable two-hour idle collection, 30-turn offline voice flows, failure evidence
+and remaining hardware gates: [stability acceptance](docs/stability-acceptance.md).
