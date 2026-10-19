@@ -6,6 +6,16 @@ and acoustic spoken stop remain **unvalidated**. See the step-by-step
 [desktop procedure](desktop-acceptance.md) and separate [spoken-stop gate](spoken-stop.md).
 No physical device settings or desktop session are changed by the commands below.
 
+## Idle duration waiver — 2026-10-19
+
+The user waived repeating or completing the two-hour idle run after the existing
+44.02-minute observation showed no reported anomalies. The two-hour duration is
+no longer a closure requirement for #18 or its release checklist. This explicitly
+changes the original two-hour stability gate; it does not establish a two-hour
+pass or a final CPU verdict. Historical artifacts remain unchanged. Queue/buffer
+bounds, idle privacy, physical recovery and the other acceptance checks remain
+required. The long-run command below is available for optional future testing.
+
 ## Reproduction
 
 Run from the repository root with the pinned Node/Python dependencies installed,
@@ -111,7 +121,7 @@ ordinary desktop workload, not a controlled empty machine.
 
 | Scenario | Evidence | Verdict |
 | --- | --- | --- |
-| Two-hour idle after privacy closure | `benchmarks/stability/idle-two-hour.json` | unvalidated: stopped at user request |
+| Two-hour idle after privacy closure | `benchmarks/stability/idle-two-hour.json` | waived 2026-10-19; prior run incomplete, 44.02-minute partial observation retained |
 | 30 contextual socket turns, explicit ending | `tests/ollama-daemon.test.ts` | passed |
 | Thirty real synthetic offline follow-ups | `benchmarks/stability/offline/voice.json` | passed: initial + 30 turns |
 | Offline extension/text/privacy/recovery | `benchmarks/stability/offline/offline.json` | passed |

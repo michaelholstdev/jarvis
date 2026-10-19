@@ -79,7 +79,7 @@ acceptance claim. Source links contain reproduction commands and limitations.
 | M2 Conversation core | Passed scripted/fake-clock/socket scope | Follow-up/timeout/expiry/extension/privacy/failure/late cancellation and delivered context; acoustic FR-09 separate |
 | M3 Manual daemon | Unvalidated | Actual KDE login/shortcut/lock/mute/device recovery missing; manual mode is permitted, wake is optional and disabled |
 | M3 Hands-free | Unvalidated | No detector/model/handoff, no headset/speaker calibration; linked #13 remains open |
-| M4 Benchmark/stability release | Unvalidated | Published measurements and reproduction exist; incomplete soak, acoustic/load/quality/fresh-install gaps remain |
+| M4 Benchmark/stability release | Unvalidated | Published measurements and reproduction exist; two-hour soak waived by user 2026-10-19; resource/privacy, acoustic/load/quality/fresh-install gaps remain |
 
 ## Measured evidence inventory
 
@@ -172,8 +172,10 @@ physical devices or release acceptance.
   capture/output cessation, recovery, text clearing and absence of replay.
 - [ ] Complete human German quality/recognizer integration/model selection and
   quiet/noisy/whisper/long/cold/loaded latency scenarios from #16/#17.
-- [ ] Complete two-hour idle collection and queue/buffer evidence from #18;
-  distinguish blocked network access from an external-request attempt audit.
+- Two-hour idle collection: **waived by the user, 2026-10-19**. Retain the
+  44.02-minute partial observation; no two-hour or final CPU pass is claimed.
+- [ ] Complete queue/buffer evidence from #18; distinguish blocked network
+  access from an external-request attempt audit.
 - [ ] Validate [spoken stop](spoken-stop.md) separately for headset/speakers or
   retain an explicit FR-09 gap with manual cancellation for a limited release.
 - [ ] Before final hardware acceptance, revisit [#13](../.scratch/jarvis-mvp/issues/13-optional-validated-wake-activation.md)

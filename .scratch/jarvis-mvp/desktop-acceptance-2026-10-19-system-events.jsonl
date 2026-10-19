@@ -1,0 +1,90 @@
+{"realtime_us": "1792410304525248", "pid": "2207", "unit": "init.scope", "message": "Starting Jarvis local audio service..."}
+{"realtime_us": "1792410308609970", "pid": "2207", "unit": "init.scope", "message": "Started Jarvis local audio service."}
+{"realtime_us": "1792410308611460", "pid": "2207", "unit": "init.scope", "message": "Starting Jarvis private desktop conversation core..."}
+{"realtime_us": "1792410309199657", "pid": "2207", "unit": "init.scope", "message": "Started Jarvis private desktop conversation core."}
+{"realtime_us": "1792412393406600", "pid": "2207", "unit": "init.scope", "message": "jarvis-core.service: Sent signal SIGKILL to main process 1038284 (MainThread) on client request."}
+{"realtime_us": "1792412393411268", "pid": "2207", "unit": "init.scope", "message": "jarvis-core.service: Main process exited, code=killed, status=9/KILL"}
+{"realtime_us": "1792412393412275", "pid": "2207", "unit": "init.scope", "message": "jarvis-core.service: Failed with result 'signal'."}
+{"realtime_us": "1792412408484021", "pid": "2207", "unit": "init.scope", "message": "jarvis-core.service: Scheduled restart job, restart counter is at 1."}
+{"realtime_us": "1792412408485187", "pid": "2207", "unit": "init.scope", "message": "Starting Jarvis private desktop conversation core..."}
+{"realtime_us": "1792412409060961", "pid": "2207", "unit": "init.scope", "message": "Started Jarvis private desktop conversation core."}
+{"realtime_us": "1792412941610917", "pid": "2207", "unit": "init.scope", "message": "Stopping Jarvis private desktop conversation core..."}
+{"realtime_us": "1792412941618369", "pid": "2207", "unit": "init.scope", "message": "Stopped Jarvis private desktop conversation core."}
+{"realtime_us": "1792412941618805", "pid": "2207", "unit": "init.scope", "message": "Stopping Jarvis local audio service..."}
+{"realtime_us": "1792412941638490", "pid": "2207", "unit": "init.scope", "message": "Stopped Jarvis local audio service."}
+{"realtime_us": "1792412952710131", "pid": "2207", "unit": "init.scope", "message": "Starting Jarvis local audio service..."}
+{"realtime_us": "1792412956793598", "pid": "2207", "unit": "init.scope", "message": "Started Jarvis local audio service."}
+{"realtime_us": "1792412956795114", "pid": "2207", "unit": "init.scope", "message": "Starting Jarvis private desktop conversation core..."}
+{"realtime_us": "1792412957371900", "pid": "2207", "unit": "init.scope", "message": "Started Jarvis private desktop conversation core."}
+{"realtime_us": "1792413152224270", "pid": "1", "unit": "init.scope", "message": "Starting System Suspend..."}
+{"realtime_us": "1792413152242221", "pid": "1204655", "unit": "systemd-suspend.service", "message": "Successfully froze unit 'user.slice'."}
+{"realtime_us": "1792413152242579", "pid": "1204655", "unit": "systemd-suspend.service", "message": "Performing sleep operation 'suspend'..."}
+{"realtime_us": "1792413169506172", "pid": "1204655", "unit": "systemd-suspend.service", "message": "System returned from sleep operation 'suspend'."}
+{"realtime_us": "1792413169530167", "pid": "1204655", "unit": "systemd-suspend.service", "message": "Successfully thawed unit 'user.slice'."}
+{"realtime_us": "1792413169530209", "pid": "1", "unit": "init.scope", "message": "systemd-suspend.service: Deactivated successfully."}
+{"realtime_us": "1792413169530655", "pid": "1", "unit": "init.scope", "message": "Finished System Suspend."}
+{"realtime_us": "1792413169531669", "pid": "1", "unit": "init.scope", "message": "systemd-suspend.service: Consumed 3.933s CPU time over 7.865s wall clock time, 2.2M memory peak."}
+{"realtime_us": "1792413266904175", "pid": "1", "unit": "init.scope", "message": "Starting System Suspend..."}
+{"realtime_us": "1792413266927345", "pid": "1210061", "unit": "systemd-suspend.service", "message": "Successfully froze unit 'user.slice'."}
+{"realtime_us": "1792413266928145", "pid": "1210061", "unit": "systemd-suspend.service", "message": "Performing sleep operation 'suspend'..."}
+{"realtime_us": "1792413294472938", "pid": "1210061", "unit": "systemd-suspend.service", "message": "System returned from sleep operation 'suspend'."}
+{"realtime_us": "1792413294482728", "pid": "1210061", "unit": "systemd-suspend.service", "message": "Successfully thawed unit 'user.slice'."}
+{"realtime_us": "1792413294488611", "pid": "1", "unit": "init.scope", "message": "systemd-suspend.service: Deactivated successfully."}
+{"realtime_us": "1792413294488992", "pid": "1", "unit": "init.scope", "message": "Finished System Suspend."}
+{"realtime_us": "1792413294489104", "pid": "1", "unit": "init.scope", "message": "systemd-suspend.service: Consumed 1.171s CPU time over 4.587s wall clock time, 2.2M memory peak."}
+{"realtime_us": "1792414188393320", "pid": "2207", "unit": "init.scope", "message": "Stopping Jarvis private desktop conversation core..."}
+{"realtime_us": "1792414188478305", "pid": "2207", "unit": "init.scope", "message": "Stopped Jarvis private desktop conversation core."}
+{"realtime_us": "1792414188479379", "pid": "2207", "unit": "init.scope", "message": "Stopping Jarvis local audio service..."}
+{"realtime_us": "1792414188534178", "pid": "2207", "unit": "init.scope", "message": "Stopped Jarvis local audio service."}
+{"realtime_us": "1792414199177858", "pid": "2207", "unit": "init.scope", "message": "Stopping PipeWire PulseAudio..."}
+{"realtime_us": "1792414199180060", "pid": "2207", "unit": "init.scope", "message": "Stopped PipeWire PulseAudio."}
+{"realtime_us": "1792414199180453", "pid": "2207", "unit": "init.scope", "message": "Stopping Multimedia Service Session Manager..."}
+{"realtime_us": "1792414199193170", "pid": "2207", "unit": "init.scope", "message": "Stopped Multimedia Service Session Manager."}
+{"realtime_us": "1792414199193597", "pid": "2207", "unit": "init.scope", "message": "Stopping PipeWire Multimedia Service..."}
+{"realtime_us": "1792414199195085", "pid": "2207", "unit": "init.scope", "message": "Stopped PipeWire Multimedia Service."}
+{"realtime_us": "1792414207924714", "pid": "1259804", "unit": "init.scope", "message": "Started PipeWire Multimedia Service."}
+{"realtime_us": "1792414207926278", "pid": "1259804", "unit": "init.scope", "message": "Started Multimedia Service Session Manager."}
+{"realtime_us": "1792414207927018", "pid": "1259804", "unit": "init.scope", "message": "Started PipeWire PulseAudio."}
+{"realtime_us": "1792414207927826", "pid": "1259804", "unit": "init.scope", "message": "Starting Jarvis local audio service..."}
+{"realtime_us": "1792414213994320", "pid": "1259804", "unit": "init.scope", "message": "Started Jarvis local audio service."}
+{"realtime_us": "1792414213995467", "pid": "1259804", "unit": "init.scope", "message": "Starting Jarvis private desktop conversation core..."}
+{"realtime_us": "1792414214574576", "pid": "1259804", "unit": "init.scope", "message": "Started Jarvis private desktop conversation core."}
+{"realtime_us": "1792414753005584", "pid": "1259804", "unit": "init.scope", "message": "jarvis-audio.service: Sent signal SIGKILL to main process 1260019 (python) on client request."}
+{"realtime_us": "1792414753006979", "pid": "1259804", "unit": "init.scope", "message": "jarvis-audio.service: Main process exited, code=killed, status=9/KILL"}
+{"realtime_us": "1792414753049568", "pid": "1259804", "unit": "init.scope", "message": "jarvis-audio.service: Failed with result 'signal'."}
+{"realtime_us": "1792414768166453", "pid": "1259804", "unit": "init.scope", "message": "jarvis-audio.service: Scheduled restart job, restart counter is at 1."}
+{"realtime_us": "1792414768167689", "pid": "1259804", "unit": "init.scope", "message": "Starting Jarvis local audio service..."}
+{"realtime_us": "1792414772242876", "pid": "1259804", "unit": "init.scope", "message": "Started Jarvis local audio service."}
+{"realtime_us": "1792415496727243", "pid": "1259804", "unit": "init.scope", "message": "Stopping Jarvis private desktop conversation core..."}
+{"realtime_us": "1792415496744149", "pid": "1259804", "unit": "init.scope", "message": "Stopped Jarvis private desktop conversation core."}
+{"realtime_us": "1792415496744360", "pid": "1259804", "unit": "init.scope", "message": "Starting Jarvis private desktop conversation core..."}
+{"realtime_us": "1792415497327348", "pid": "1259804", "unit": "init.scope", "message": "Started Jarvis private desktop conversation core."}
+{"realtime_us": "1792422759290492", "pid": "1259804", "unit": "init.scope", "message": "jarvis-audio.service: Sent signal SIGKILL to main process 1284742 (python) on client request."}
+{"realtime_us": "1792422759292508", "pid": "1259804", "unit": "init.scope", "message": "jarvis-audio.service: Main process exited, code=killed, status=9/KILL"}
+{"realtime_us": "1792422759342304", "pid": "1259804", "unit": "init.scope", "message": "jarvis-audio.service: Failed with result 'signal'."}
+{"realtime_us": "1792422774372159", "pid": "1259804", "unit": "init.scope", "message": "jarvis-audio.service: Scheduled restart job, restart counter is at 2."}
+{"realtime_us": "1792422774373337", "pid": "1259804", "unit": "init.scope", "message": "Starting Jarvis local audio service..."}
+{"realtime_us": "1792422778452397", "pid": "1259804", "unit": "init.scope", "message": "Started Jarvis local audio service."}
+{"realtime_us": "1792423003697649", "pid": "1259804", "unit": "init.scope", "message": "Stopping PipeWire PulseAudio..."}
+{"realtime_us": "1792423003702046", "pid": "1259804", "unit": "init.scope", "message": "Stopped PipeWire PulseAudio."}
+{"realtime_us": "1792423003703655", "pid": "1259804", "unit": "init.scope", "message": "Stopping Multimedia Service Session Manager..."}
+{"realtime_us": "1792423003713297", "pid": "1259804", "unit": "init.scope", "message": "Stopped Multimedia Service Session Manager."}
+{"realtime_us": "1792423003714766", "pid": "1259804", "unit": "init.scope", "message": "Stopping PipeWire Multimedia Service..."}
+{"realtime_us": "1792423003715628", "pid": "1259804", "unit": "init.scope", "message": "Stopped PipeWire Multimedia Service."}
+{"realtime_us": "1792423008725931", "pid": "1259804", "unit": "init.scope", "message": "Started PipeWire Multimedia Service."}
+{"realtime_us": "1792423008726939", "pid": "1259804", "unit": "init.scope", "message": "Started Multimedia Service Session Manager."}
+{"realtime_us": "1792423008727833", "pid": "1259804", "unit": "init.scope", "message": "Started PipeWire PulseAudio."}
+{"realtime_us": "1792423765370315", "pid": "1259804", "unit": "init.scope", "message": "Stopping Jarvis private desktop conversation core..."}
+{"realtime_us": "1792423765377545", "pid": "1259804", "unit": "init.scope", "message": "Stopped Jarvis private desktop conversation core."}
+{"realtime_us": "1792423765377906", "pid": "1259804", "unit": "init.scope", "message": "Stopping Jarvis local audio service..."}
+{"realtime_us": "1792423765395993", "pid": "1259804", "unit": "init.scope", "message": "Stopped Jarvis local audio service."}
+{"realtime_us": "1792423765397401", "pid": "1259804", "unit": "init.scope", "message": "Starting Jarvis local audio service..."}
+{"realtime_us": "1792423769475932", "pid": "1259804", "unit": "init.scope", "message": "Started Jarvis local audio service."}
+{"realtime_us": "1792423769477424", "pid": "1259804", "unit": "init.scope", "message": "Starting Jarvis private desktop conversation core..."}
+{"realtime_us": "1792423770058670", "pid": "1259804", "unit": "init.scope", "message": "Started Jarvis private desktop conversation core."}
+{"realtime_us": "1792424265334114", "pid": "1259804", "unit": "init.scope", "message": "jarvis-core.service: Sent signal SIGKILL to main process 1545556 (MainThread) on client request."}
+{"realtime_us": "1792424265349194", "pid": "1259804", "unit": "init.scope", "message": "jarvis-core.service: Main process exited, code=killed, status=9/KILL"}
+{"realtime_us": "1792424265363410", "pid": "1259804", "unit": "init.scope", "message": "jarvis-core.service: Failed with result 'signal'."}
+{"realtime_us": "1792424280372812", "pid": "1259804", "unit": "init.scope", "message": "jarvis-core.service: Scheduled restart job, restart counter is at 1."}
+{"realtime_us": "1792424280377663", "pid": "1259804", "unit": "init.scope", "message": "Starting Jarvis private desktop conversation core..."}
+{"realtime_us": "1792424281083840", "pid": "1259804", "unit": "init.scope", "message": "Started Jarvis private desktop conversation core."}
