@@ -302,8 +302,10 @@ The individual observations above are setup-specific. Remaining coverage:
 - Five-minute uninhibited idle observation passed above. This remains separate
   from the waived two-hour #18 duration and does not establish resource bounds.
 - Hardware mute detection is unsupported for this microphone; see [#24](issues/24-jieli-hardware-mute-detection.md).
-- Long answers fail synthesis; [#23](issues/23-long-speech-duration-overflow.md)
-  requires a bounded speech policy/fix and affected-trial rerun.
+- Long answers initially failed synthesis; [#23](issues/23-long-speech-duration-overflow.md)
+  is now corrected with bounded prefix/notice speech on `f3092e7`, reviewed, and
+  passed the real Piper/PCM boundary probe. The affected headset rerun is pending;
+  the original failure remains recorded above.
 - Audio-service recovery initially resumed capture. [#25](issues/25-audio-restart-resumes-capture.md)
   is corrected, reviewed and the same actual playback/crash rerun passed above.
 - Source mute at inference entry and during synthesis passed as recorded above.

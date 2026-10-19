@@ -1,0 +1,22 @@
+{
+  "candidate": "f3092e7",
+  "fixture": "issue-23 synthetic Computer sentence repeated 20 times",
+  "voice": "de_DE-thorsten-medium",
+  "original_characters": 1120,
+  "spoken_utf16_units": 1057,
+  "full_text_notice": true,
+  "shortened": true,
+  "pulse_write_boundary": {
+    "pcm_bytes": 5714334,
+    "sample_rate": 48000,
+    "channels": 1
+  },
+  "actual_submitted_pcm_seconds": 59.5243125,
+  "max_audio_seconds": 60,
+  "playback_report": {
+    "completed": true,
+    "delivered_chars": 1057
+  },
+  "playback_scope": "real production worker, real Piper and resampler; external Pulse replaced with byte-counting drain-confirming sink; no audible output",
+  "audible_headset_trial": "pending"
+}

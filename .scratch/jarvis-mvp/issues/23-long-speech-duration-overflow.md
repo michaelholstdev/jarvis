@@ -115,5 +115,14 @@ Initial Standards review found no issues. Spec review found that adding the
 notice could exceed Core's smaller configured answer budget (supported minimum
 512). A new public Output regression reproduced this, then passed after aligning
 the reserved speech byte budget with `min(4096, llm.max_context_tokens)`.
-Final review and the affected actual headset playback trial remain required.
-Keep this ticket open until the headset rerun is recorded.
+Final Standards and Spec re-reviews of `dbf2b5f...f3092e7` both report **0 remaining
+findings**. Final `npm run check` and full `npm test` pass **208 Node + 43 Python**.
+
+The [real Piper/PCM boundary probe](../long-speech-2026-10-19.json) also completed
+bounded playback through the production worker/resampler with only the external
+Pulse library replaced by a byte-counting, drain-confirming sink. It submitted
+59.5243125 seconds of PCM and completed 1,057 UTF-16 units including the notice.
+Voice synthesis varies between runs; this measures the actual submitted bytes,
+not a duration inferred from a separately regenerated waveform. No audible output
+was produced by this probe. The affected actual headset playback trial remains
+required. Keep this ticket open until the headset rerun is recorded.
