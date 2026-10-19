@@ -1,0 +1,257 @@
+{
+  "scenario": "manual_usb_microphone_starship_speakers_human_smoke",
+  "date": "2026-10-19",
+  "candidate_sha": "4c9c3548020ae797c16cd7c4884590996a3557ad",
+  "configuration": {
+    "locale": "de-DE",
+    "audio": {
+      "input_device": "alsa_input.usb-Jieli_Technology_USB_Composite_Device_4150345930323108-00.pro-input-0",
+      "output_device": "alsa_output.pci-0000_2f_00.4.analog-stereo",
+      "sample_rate_hz": 16000,
+      "pre_roll_ms": 750,
+      "echo_cancellation": false,
+      "mode": "voice"
+    },
+    "wake_word": {
+      "phrase": "Hey Jarvis",
+      "model_path": null,
+      "threshold": null
+    },
+    "vad": {
+      "engine": "silero",
+      "end_silence_ms": 350,
+      "max_utterance_seconds": 30
+    },
+    "stt": {
+      "engine": "sherpa-onnx",
+      "model": "parakeet-tdt-v3-int8",
+      "device": "cpu",
+      "model_dir": "/home/michael/projects/jarvis/models/parakeet"
+    },
+    "tts": {
+      "engine": "piper",
+      "voice": "de_DE-thorsten-medium",
+      "device": "cpu",
+      "model_path": "/home/michael/projects/jarvis/models/benchmark/de_DE-thorsten-medium.onnx"
+    },
+    "llm": {
+      "provider": "ollama",
+      "base_url": "http://127.0.0.1:11434",
+      "model": "llama3:latest",
+      "max_context_tokens": 2048,
+      "mode": "ollama",
+      "timeout_ms": 120000,
+      "num_predict": 256,
+      "temperature": 0.3,
+      "seed": 42
+    },
+    "session": {
+      "follow_up_seconds": 20,
+      "max_duration_seconds": 300,
+      "extension_response_seconds": 20,
+      "extension_duration_seconds": 300,
+      "recognition_completion_seconds": 5,
+      "persistence": false
+    },
+    "interaction": {
+      "manual_activation": "single_press",
+      "activation_sound": true,
+      "conversation_end_sound": true
+    },
+    "features": {
+      "barge_in": false,
+      "external_tools": false,
+      "tray": false,
+      "voice_stop": false
+    },
+    "logging": {
+      "content_logging": false
+    },
+    "transport": {
+      "timeout_ms": 1000,
+      "max_frame_bytes": 8192,
+      "max_connections": 8
+    },
+    "recovery": {
+      "probe_interval_ms": 2000,
+      "playback_timeout_ms": 120000
+    }
+  },
+  "speech_artifacts": [
+    {
+      "path": "models/benchmark/de_DE-thorsten-medium.onnx",
+      "sha256": "7e64762d8e5118bb578f2eea6207e1a35a8e0c30595010b666f983fc87bb7819"
+    },
+    {
+      "path": "models/benchmark/de_DE-thorsten-medium.onnx.json",
+      "sha256": "974adee790533adb273a1ac88f49027d2a1b8f0f2cf4905954a4791e79264e85"
+    },
+    {
+      "path": "models/parakeet/decoder.int8.onnx",
+      "sha256": "179e50c43d1a9de79c8a24149a2f9bac6eb5981823f2a2ed88d655b24248db4e"
+    },
+    {
+      "path": "models/parakeet/encoder.int8.onnx",
+      "sha256": "acfc2b4456377e15d04f0243af540b7fe7c992f8d898d751cf134c3a55fd2247"
+    },
+    {
+      "path": "models/parakeet/joiner.int8.onnx",
+      "sha256": "3164c13fc2821009440d20fcb5fdc78bff28b4db2f8d0f0b329101719c0948b3"
+    },
+    {
+      "path": "models/parakeet/silero_vad.onnx",
+      "sha256": "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6"
+    },
+    {
+      "path": "models/parakeet/tokens.txt",
+      "sha256": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"
+    }
+  ],
+  "llm_identity": {
+    "model": "llama3:latest",
+    "digest": "365c0bd3c000a25d28ddbf732fe1c6add414de7275464c4e4d1c3b5fcb5d8ad1",
+    "quantization": "Q4_0",
+    "source": "local_api_tags_before_trial"
+  },
+  "observations": [
+    {
+      "case_id": "output-diagnostic",
+      "setup": "usb-composite-pro-starship-speakers",
+      "initial_activation_cue": "not_heard",
+      "direct_tone": "heard_clearly",
+      "repeated_jarvis_cues_and_synthetic_reply": "heard",
+      "cause": "unresolved"
+    },
+    {
+      "case_id": "short-german-01",
+      "setup": "usb-composite-pro-starship-speakers",
+      "user_report": "first_voice_round_worked_and_was_okay",
+      "correctness_intelligibility_latency": "no_problem_reported_overall",
+      "numerical_quality_ratings": null,
+      "physical_audible_latency_ms": null,
+      "audible_target": "unvalidated"
+    },
+    {
+      "case_id": "technical-context-01",
+      "setup": "usb-composite-pro-starship-speakers",
+      "recognition": "user_confirmed_both_questions_understood",
+      "correctness": "user_confirmed_both_answers_correct",
+      "contextual_follow_up": "user_confirmed_understood",
+      "numerical_quality_ratings": null,
+      "physical_audible_latency_ms": null,
+      "audible_target": "unvalidated"
+    },
+    {
+      "case_id": "explicit-end-01",
+      "user_report": "no_answer_and_no_closing_cue_heard",
+      "status_after_trial": "idle",
+      "closing_operation_in_diagnostics": false,
+      "end_phrase_recognition": "unvalidated",
+      "verdict": "not_passed",
+      "cause": "unresolved"
+    },
+    {
+      "case_id": "explicit-end-02",
+      "procedure": "standalone_end_command_after_one_second_pause_following_activation_cue",
+      "user_report": "closing_cue_heard",
+      "verdict": "user_confirmed_closing_cue",
+      "physical_audible_latency_ms": null
+    },
+    {
+      "case_id": "explicit-end-03",
+      "procedure": "original_end_phrase_after_one_second_pause_following_activation_cue",
+      "user_report": "llm_thanked_user_instead_of_closing_cue",
+      "closing_operation_for_recognition_37": false,
+      "inference_operation_for_recognition_37": "38",
+      "verdict": "failed",
+      "live_transcript": "not_retained",
+      "synthetic_parakeet_spelling": "Javis",
+      "synthetic_core_result_before_fix": "infer",
+      "synthetic_cause_confirmed": true,
+      "live_cause_confirmed": false
+    },
+    {
+      "case_id": "explicit-end-04",
+      "procedure": "original_end_phrase_after_short_pause_following_activation_cue_with_fix",
+      "user_report": "closing_cue_well_heard",
+      "core_operations": [
+        "recognize",
+        "close-conversation"
+      ],
+      "llm_inference_requested": false,
+      "verdict": "passed_for_this_trial",
+      "live_transcript": "not_retained"
+    }
+  ],
+  "limitations": [
+    "User-selected speaker setup; no headset acceptance inferred.",
+    "Qualitative user feedback only; no numerical 0\u20132 quality scores.",
+    "No independent physical speech-end/audible-start measurement.",
+    "No controlled quiet/noisy/load/cold matrix or resource sampling.",
+    "Initial missing activation cue and failed original end phrase remain disclosed.",
+    "Synthetic recognizer reproduction does not establish exact live transcription.",
+    "Microphone gain, speaker volume, room/noise and CPU/GPU load were not captured as controlled provenance; this is an exploratory smoke trial."
+  ],
+  "audible_target": "unvalidated",
+  "model_selection": "unvalidated",
+  "bug_ticket": ".scratch/jarvis-mvp/issues/22-parakeet-end-phrase.md",
+  "correction": {
+    "bug": 22,
+    "baseline_sha": "4c9c3548020ae797c16cd7c4884590996a3557ad",
+    "files": [
+      {
+        "path": "apps/core/core.ts",
+        "sha256": "da597c06bfb3bd7eddebf6e5ac78f3d5ce19e4bf3548bf8e079abfeeee322b39"
+      },
+      {
+        "path": "tests/conversation.test.ts",
+        "sha256": "37d34778470465e19dafa23f1df28e0d27b5d887cdffbec0b18c7c678850b6cf"
+      }
+    ],
+    "post_fix_core_events": [
+      {
+        "event": "operation_started",
+        "turn_id": "",
+        "operation": "acknowledge",
+        "operation_id": "1",
+        "state": "acknowledging",
+        "monotonic_ms": 9361948.477907
+      },
+      {
+        "event": "playback_completed",
+        "operation_id": "1",
+        "completed": true,
+        "delivered_chars": 0,
+        "elapsed_ms": 205.77115400000184,
+        "state": "listening",
+        "monotonic_ms": 9362154.384681
+      },
+      {
+        "event": "operation_started",
+        "turn_id": "2",
+        "operation": "recognize",
+        "operation_id": "2",
+        "state": "listening",
+        "monotonic_ms": 9362154.480151
+      },
+      {
+        "event": "operation_started",
+        "turn_id": "2",
+        "operation": "close-conversation",
+        "operation_id": "3",
+        "state": "idle",
+        "monotonic_ms": 9365394.09742
+      },
+      {
+        "event": "playback_completed",
+        "operation_id": "3",
+        "completed": true,
+        "delivered_chars": 0,
+        "elapsed_ms": 216.4048189999885,
+        "state": "idle",
+        "monotonic_ms": 9365610.585439
+      }
+    ],
+    "scope": "One exact standalone synthetic Parakeet spelling accepted; precise live transcription remains unknown."
+  }
+}

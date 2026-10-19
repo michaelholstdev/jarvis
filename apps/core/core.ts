@@ -652,6 +652,8 @@ function normalizePhrase(text: string): string {
 function isEndPhrase(text: string): boolean {
   return [
     "danke jarvis das war's",
+    // Observed Parakeet spelling of the standalone spoken end command.
+    "danke javis das war's",
     'gespräch beenden',
     'gute nacht jarvis',
   ].includes(normalizePhrase(text));

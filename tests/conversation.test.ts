@@ -343,6 +343,7 @@ test('standalone German end phrases close before inference and clear context; qu
     'Gespräch beenden',
     'Gute Nacht Jarvis',
     '  DANKE Jarvis, das war’s! ',
+    "Danke, Javis, das war's.",
   ]) {
     const { core } = fixture();
     deliver(core);
@@ -381,6 +382,9 @@ test('standalone German end phrases close before inference and clear context; qu
     '"Gute Nacht Jarvis"',
     '„Gespräch beenden“',
     "Er sagte Danke Jarvis, das war's",
+    'Was bedeutet „Danke, Javis, das war’s“?',
+    '„Danke, Javis, das war’s.“',
+    "Er sagte Danke, Javis, das war's.",
     'Was bedeutet Stopp?',
   ]) {
     const { core } = fixture();

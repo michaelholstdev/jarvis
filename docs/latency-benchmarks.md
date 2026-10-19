@@ -272,3 +272,28 @@ with the reason and boundary rule in `resource_correction`. This correction does
 not replace any latency trial or alter latency percentiles, active resource
 samples, or the three-second resident-idle figures in the table. Future runs stop
 and await the collectors before constructing the report or performing cleanup.
+
+## Exploratory human speaker trial — 2026-10-19
+
+The user selected a USB Composite Device Pro microphone and Starship/Matisse
+analog speaker output. With CPU Parakeet, Thorsten and local Llama 3 8B, the user
+reported successful ordinary German questions, a technical explanation and a
+correct contextual follow-up. These are qualitative observations; no numerical
+quality scores or independent physical audible-latency measurements were taken.
+The [content-free smoke report](../benchmarks/latency/usb-starship-human-smoke.json)
+records configuration, speech hashes, model digest, failures and the corrected
+source identity separately from the original candidate commit.
+
+The initial activation cue was not heard, while a direct tone and repeated
+Jarvis cues/speech were subsequently audible; its initial cause remains unknown.
+The shorter explicit end command worked, but the thank-you end phrase reached
+the LLM. [Bug #22](../.scratch/jarvis-mvp/issues/22-parakeet-end-phrase.md) records a
+synthetic Parakeet spelling mismatch and its finite standalone-command correction.
+After the correction, the same original end phrase closed directly without an
+LLM call and the user confirmed a clearly audible closing cue. The original live
+transcription was not retained, so its precise spelling remains unknown.
+
+This user-selected speaker smoke does not establish headset acceptance, general
+speaker support, a selected conversational model, or the 30-query audible target.
+The full quality, latency, resource and scenario matrix remains open under #17;
+separate speaker acceptance remains #21.
