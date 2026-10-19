@@ -77,7 +77,12 @@ Core sends `audio-operation` with an `operation` object containing `type`
 (`acknowledge`, `recognize`, `synthesize`, `play`, `close-conversation`, `cancel`), a unique `operation_id`, and
 optional bounded `text`. Python returns `audio-result` with matching ID,
 recognition `text`, or playback `completed` and `delivered_chars`. Synthesis
-returns the ID without a delivery report. Inference is a deterministic core mock with completed-exchange context;
+returns the ID without a delivery report. Real synthesis may also return `text`
+when duration/text limits shorten the requested speech to a sentence prefix plus
+a full-text notice. Core must use that actual text in the following `play` request
+and its delivery accounting, while retaining the full generated temporary text
+answer. An absent synthesis `text` means the requested speech is unchanged.
+Inference is a deterministic core mock with completed-exchange context;
 Ollama is never contacted. Text is bounded to 4096 characters at the wire and
 more tightly to the configured byte budget at the conversation boundary.
 Delivery counts use UTF-16 code units in both languages, with a wire maximum

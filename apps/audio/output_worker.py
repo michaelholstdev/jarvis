@@ -77,32 +77,55 @@ def main() -> None:
     if config['audio']['mode'] == 'voice':
         microphone = importlib.import_module('apps.audio.input' if __package__ else 'input').Input(config)
 
-    def synthesize(text: str) -> list[tuple[bytes, int]]:
-        if len(text) > 2048:
+    def synthesize(text: str) -> tuple[str, list[tuple[bytes, int]]]:
+        if len(text.encode('utf-8')) > 4096:
             raise RuntimeError('text_too_large')
-        segments = []
-        samples = 0
+        notice = 'Die Antwort ist zu lang zum Vorlesen. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.'
+        limit = voice.config.sample_rate * 60
         first_audio = True
-        delivered_text = ''
-        # Only fully drained sentence prefixes are confirmed delivered. The
-        # current sentence may be heard partly, but is never guessed by time.
-        for sentence in re.findall(r'.+?(?:[.!?](?:\s+|$)|$)', text, re.DOTALL):
+
+        def render(sentence: str, budget: int) -> tuple[bytes, int] | None:
+            nonlocal first_audio
             chunks = []
+            samples = 0
             for chunk in voice.synthesize(sentence):
                 if first_audio and len(chunk.audio_float_array):
                     emit('tts_first_audio')
                     first_audio = False
                 samples += len(chunk.audio_float_array)
-                if samples > voice.config.sample_rate * 60:
-                    raise RuntimeError('audio_too_large')
+                if samples > budget:
+                    return None
                 chunks.append(chunk.audio_float_array)
             audio = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
             if voice.config.sample_rate != rate:
                 audio = soxr.resample(audio, voice.config.sample_rate, rate)
             block = (np.clip(audio, -1, 1) * 32767).astype('<i2').tobytes()
+            return block, samples
+
+        # Reserve measured audio for an explicit notice instead of discarding
+        # the entire answer when a later sentence crosses the duration bound.
+        rendered_notice = render(notice, limit)
+        if rendered_notice is None:
+            raise RuntimeError('audio_too_large')
+        notice_pcm, notice_samples = rendered_notice
+        remaining = limit - notice_samples
+        segments = []
+        delivered_text = ''
+        for sentence in re.findall(r'.+?(?:[.!?](?:\s+|$)|$)', text, re.DOTALL):
+            candidate = delivered_text + sentence
+            rendered = (
+                render(sentence, remaining)
+                if len((candidate + notice).encode('utf-8')) <= 4096 else None
+            )
+            if rendered is None:
+                delivered_text += notice
+                segments.append((notice_pcm, len(delivered_text.encode('utf-16-le')) // 2))
+                return delivered_text, segments
+            block, samples = rendered
+            remaining -= samples
             delivered_text += sentence
             segments.append((block, len(delivered_text.encode('utf-16-le')) // 2))
-        return segments
+        return delivered_text, segments
 
     def play(text: str, segments: list[tuple[bytes, int]]) -> None:
         pcm = b''.join(block for block, _ in segments)
@@ -138,9 +161,10 @@ def main() -> None:
                 raise RuntimeError('invalid_recognition')
             emit('result', result=microphone.recognize(emit))
         elif kind == 'synthesize':
-            cached_text = operation['text']
-            segments = synthesize(cached_text)
-            emit('result', result={})
+            cached_text = ''
+            segments.clear()
+            cached_text, segments = synthesize(operation['text'])
+            emit('result', result={'text': cached_text} if cached_text != operation['text'] else {})
         elif kind == 'play':
             if not segments or operation.get('text') != cached_text:
                 raise RuntimeError('missing_synthesis')

@@ -83,13 +83,25 @@ clear pending audio; `unmute`/`unlock` never resume it. Interaction flags disabl
 activation/end tones independently. Enabled tones are distinct 120 ms tones.
 
 Piper remains resident across normal turns. A single worker holds at most one
-synthesized reply (2048 Unicode characters, 60 seconds at the voice rate). It
+synthesized reply (input limited to 4096 UTF-8 bytes, 60 seconds at the voice rate). It
 resamples 22050 Hz mono explicitly with libsoxr to the selected sink's reported
 rate (8000–192000 Hz), then submits signed 16-bit little-endian mono. There is no
 application audio queue or content on disk. A second audio request gets `busy`.
 The control socket remains available for cancellation/privacy. Frame and connection
 limits still apply. Synthesis and output operations use the configured playback
 watchdog (default 120 seconds); short control exchanges retain transport deadlines.
+
+Long speech uses a bounded sentence prefix, followed by: “Die Antwort ist zu lang
+zum Vorlesen. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.”
+The worker measures and reserves audio space for that notice before synthesizing
+the answer. Only whole sentences fitting the remaining duration/text budget are
+retained; an oversized first sentence yields the notice alone. This can shorten
+an answer that would fit 60 seconds without the reserved notice. Short answers
+are spoken unchanged. The full generated answer remains available through `text`
+within the current conversation; its unheard remainder never enters delivered
+context. Synthesis may return the actual bounded speech as `audio-result.text`;
+core uses that text for playback and delivery counts. Synthesis itself still
+confirms no delivery. Privacy cancellation clears both text and audio normally.
 
 `playback_started` means the first PCM write succeeded on an opened stream,
 not a measured acoustic onset. `playback_completed` follows successful server

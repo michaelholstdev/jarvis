@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
+import { once } from 'node:events';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { loadConfig } from '../apps/core/config.js';
 import { createCore } from '../apps/core/core.js';
+import { runTurn } from '../apps/core/turn-driver.js';
+import { encodeMessage, parseMessage } from '../packages/protocol/index.js';
 
 const generated =
   'So summierst du Werte.\n\n```python\nprint(1 + 2)\n```\n\nDie Ergebnisse stehen in der Tabelle.\n\n| Name | Wert |\n| --- | --- |\n| Summe | 3 |';
@@ -51,6 +58,81 @@ test('code and tables remain available as temporary text while speech gives pros
   const { core } = fixture();
   assert.equal(core.operations()[0]?.text, spoken);
   assert.equal(core.textAnswer()?.text ?? null, generated);
+});
+
+test('duration-limited speech keeps full text but only the played prefix and notice enter context', async () => {
+  const original =
+    'Ein Computer verarbeitet Daten und führt Programme aus. '.repeat(20);
+  const speech =
+    'Ein Computer verarbeitet Daten und führt Programme aus. Die Antwort ist zu lang zum Vorlesen. Den vollständigen Text kannst du mit dem CLI-Befehl „text“ ansehen.';
+  const { core, recognize } = fixture(original);
+  const directory = mkdtempSync(join(tmpdir(), 'jv-long-speech-'));
+  const path = join(directory, 'audio.sock');
+  const audio = createServer((socket) => {
+    socket.once('data', (frame) => {
+      const message = parseMessage(frame);
+      assert.equal(message.type, 'audio-operation');
+      if (message.type !== 'audio-operation') return;
+      const op = message.operation;
+      assert.equal(core.textAnswer()?.text, original);
+      if (op.type === 'play') assert.equal(op.text, speech);
+      socket.end(
+        encodeMessage({
+          version: 1,
+          type: 'audio-result',
+          operation_id: op.operation_id,
+          ...(op.type === 'synthesize'
+            ? { text: speech }
+            : { completed: true, delivered_chars: speech.length }),
+        }),
+      );
+    });
+  });
+  audio.listen(path);
+  await once(audio, 'listening');
+  try {
+    await runTurn(core, path, loadConfig());
+    assert.equal(core.reply()?.text, speech);
+    assert.equal(core.textAnswer()?.text, original);
+    recognize('Bitte weiter.');
+    assert.equal(core.operations()[0]?.context?.[0]?.reply, speech);
+    core.dispatch({
+      type: 'inhibition-changed',
+      source: 'locked',
+      active: true,
+    });
+    assert.equal(core.textAnswer(), null);
+  } finally {
+    await new Promise<void>((resolve) => audio.close(() => resolve()));
+    rmSync(directory, { recursive: true });
+  }
+});
+
+test('stopping duration-limited speech excludes the unheard notice and remainder from context', () => {
+  const original =
+    'Ein Computer verarbeitet Daten und führt Programme aus. '.repeat(20);
+  const speech =
+    'Ein Computer verarbeitet Daten und führt Programme aus. Die Antwort ist zu lang zum Vorlesen.';
+  const { core, recognize } = fixture(original);
+  core.dispatch({
+    type: 'synthesized',
+    operation_id: core.operations()[0]?.operation_id ?? '',
+    text: speech,
+  });
+  assert.equal(core.operations()[0]?.text, speech);
+  core.stop();
+  core.dispatch({
+    type: 'playback-completed',
+    operation_id: core.operations()[0]?.operation_id ?? '',
+    completed: false,
+    delivered_chars: 56,
+  });
+  assert.equal(core.textAnswer()?.text, original);
+  recognize('Bitte weiter.');
+  assert.equal(
+    core.operations()[0]?.context?.[0]?.reply,
+    'Ein Computer verarbeitet Daten und führt Programme aus. ',
+  );
 });
 
 test('viewing a stopped answer does not put its unheard remainder or formatting into follow-up context', () => {

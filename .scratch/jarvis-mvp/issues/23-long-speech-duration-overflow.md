@@ -2,9 +2,24 @@
 
 **Type:** Bug
 
-**Status:** needs-triage
+**Status:** ready-for-human
 
-**Blocked by:** None for reproduction; decide bounded long-answer behavior before implementation.
+**Blocked by:** None for implementation; actual headset rerun remains required.
+
+**Claimed by:** Codex, implementation baseline `dbf2b5f`.
+
+## Implementation decision
+
+Retain at most 60 seconds of synthesized audio. Reserve measured space for a
+German full-text notice, retain only complete sentence prefixes that fit, and
+append the notice when shortening is necessary. An oversized first sentence
+falls back to the notice alone. Preserve the full temporary text answer, and
+use the actual synthesized speech for playback delivery/context accounting.
+Keep operation watchdogs and cancellation unchanged.
+
+User confirmed test seams: public `Output.run` (real worker protocol with external
+voice/audio dependencies substituted) and public Core (full temporary text,
+delivered context and privacy cleanup). Actual headset rerun follows separately.
 
 ## Observed failure
 
@@ -71,3 +86,30 @@ The one-shot core SIGKILL test had separately completed at 12:19:53 UTC; systemd
 restarted core after 15 seconds. No additional crash injector remains armed.
 
 Map: [MVP implementation map](../map.md).
+
+## Answer
+
+Implemented bounded sentence-prefix speech with a measured full-text notice.
+The resident worker keeps the 60-second bound and 4096-byte text budget, and
+returns actual speech through the existing optional `audio-result.text` field.
+Core uses that text for playback and delivered context while retaining the full
+generated answer for deliberate temporary text access. Existing cancellation,
+privacy barriers and operation watchdogs remain in force. A single sentence
+that cannot fit yields the notice alone; no guessed mid-sentence delivery.
+
+Red/green: public `Output.run` reproduced the prior generic runtime failure with
+deterministic external Piper/Pulse dependencies, then passed bounded playback.
+Public Core initially attempted to play the full generated text despite a
+shortened synthesis result; it now plays/account for the actual speech, including
+through the real turn-driver/socket boundary. Checks cover a single oversized
+sentence, input exceeding the old 2048-character cap, short/Unicode controls,
+cancel after one drained sentence, full temporary text and unheard-context
+exclusion. `npm run check` and full `npm test` passed **208 Node + 43 Python**.
+
+Real installed Thorsten/Piper synthetic reproduction also passes synthesis:
+1,120 generated characters become 1,001 spoken characters including the text
+notice, rather than failing completely. No microphone, audible playback or
+private answer content was used/retained for that reproduction.
+
+Standards/Spec review and the affected actual headset playback trial are the
+remaining checks. Keep this ticket open until the headset rerun is recorded.

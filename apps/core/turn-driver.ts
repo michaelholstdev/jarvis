@@ -212,6 +212,7 @@ export async function runTurn(
         core.dispatch({
           type: 'synthesized',
           operation_id: response.operation_id,
+          ...(response.text === undefined ? {} : { text: response.text }),
         });
         break;
       case 'indicate-failure':

@@ -34,7 +34,7 @@ export type ServiceEvent =
       text: string;
     }
   | { type: 'speech-started'; operation_id: string }
-  | { type: 'synthesized'; operation_id: string }
+  | { type: 'synthesized'; operation_id: string; text?: string }
   | ({ type: 'playback-completed'; operation_id: string } & PlaybackReport)
   | { type: 'tick' };
 
@@ -570,6 +570,13 @@ export function createCore(
         answer = speech;
         transition('synthesizing', 'synthesize', answer);
       } else if (event.type === 'synthesized' && state === 'synthesizing') {
+        if (event.text !== undefined) {
+          if (!event.text.trim() || !bounded(event.text)) {
+            fail('invalid_message', 'tts');
+            return;
+          }
+          answer = event.text;
+        }
         transition('speaking', 'play', answer);
       } else if (event.type === 'playback-completed' && state === 'speaking') {
         const unsuccessful = question;
