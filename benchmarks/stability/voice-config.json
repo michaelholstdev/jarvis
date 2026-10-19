@@ -1,0 +1,75 @@
+{
+  "locale": "de-DE",
+  "audio": {
+    "input_device": "jarvis_stability_18.monitor",
+    "output_device": "jarvis_stability_18",
+    "sample_rate_hz": 16000,
+    "pre_roll_ms": 750,
+    "echo_cancellation": false,
+    "mode": "voice"
+  },
+  "wake_word": {
+    "phrase": "Hey Jarvis",
+    "model_path": null,
+    "threshold": null
+  },
+  "vad": {
+    "engine": "silero",
+    "end_silence_ms": 350,
+    "max_utterance_seconds": 30
+  },
+  "stt": {
+    "engine": "sherpa-onnx",
+    "model": "whisper-tiny-int8",
+    "device": "cpu",
+    "model_dir": "/home/michael/projects/jarvis/models/input"
+  },
+  "tts": {
+    "engine": "piper",
+    "voice": "de_DE-thorsten-medium",
+    "device": "cpu",
+    "model_path": "/home/michael/projects/jarvis/models/benchmark/de_DE-thorsten-medium.onnx"
+  },
+  "llm": {
+    "provider": "ollama",
+    "base_url": "http://127.0.0.1:11434",
+    "model": "gemma3:270m",
+    "max_context_tokens": 2048,
+    "mode": "ollama",
+    "timeout_ms": 120000,
+    "num_predict": 64,
+    "temperature": 0,
+    "seed": 42
+  },
+  "session": {
+    "follow_up_seconds": 20,
+    "max_duration_seconds": 300,
+    "extension_response_seconds": 20,
+    "extension_duration_seconds": 300,
+    "recognition_completion_seconds": 5,
+    "persistence": false
+  },
+  "interaction": {
+    "manual_activation": "single_press",
+    "activation_sound": true,
+    "conversation_end_sound": true
+  },
+  "features": {
+    "barge_in": false,
+    "external_tools": false,
+    "tray": false,
+    "voice_stop": false
+  },
+  "logging": {
+    "content_logging": false
+  },
+  "transport": {
+    "timeout_ms": 1000,
+    "max_frame_bytes": 8192,
+    "max_connections": 8
+  },
+  "recovery": {
+    "probe_interval_ms": 2000,
+    "playback_timeout_ms": 120000
+  }
+}

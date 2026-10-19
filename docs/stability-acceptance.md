@@ -1,0 +1,148 @@
+# Offline and desktop stability acceptance (#18)
+
+This report separates automated synthetic/socket evidence from physical desktop
+acceptance. Hardware lock/mute, real unplug/replug, systemd restart, suspend/resume,
+and acoustic spoken stop remain **unvalidated**. See the step-by-step
+[desktop procedure](desktop-acceptance.md) and separate [spoken-stop gate](spoken-stop.md).
+No physical device settings or desktop session are changed by the commands below.
+
+## Reproduction
+
+Run from the repository root with the pinned Node/Python dependencies installed,
+`npm run build` completed, PipeWire/PulseAudio available, the manifest's Whisper,
+Silero and Piper files installed, and Gemma 3 270M already in the local Ollama
+store. These commands never download a model. The published configuration uses
+absolute paths on the measured machine; adjust them for another checkout.
+
+```sh
+npm run check
+node --test dist/tests/ollama-daemon.test.js dist/tests/expiry.test.js \
+  dist/tests/extension-runtime.test.js dist/tests/desktop-runtime.test.js \
+  dist/tests/recovery-runtime.test.js dist/tests/privacy-runtime.test.js \
+  dist/tests/delivered-context.test.js dist/tests/text-answer-runtime.test.js
+.venv/bin/python -m unittest tests/stability_acceptance_test.py
+```
+
+The 30-turn socket case checks each next Ollama request contains the preceding
+question and delivered answer, then verifies explicit ending removes text access.
+Speech and Ollama are boundary fixtures in this case. Existing expiry tests use a
+fake clock to verify five-minute allowances, repeated explicit renewal, context
+retention, noise/empty recognition deadlines and cleanup. The extension runtime
+case additionally exercises 30 seconds of real time across core/Python sockets.
+These are software checks, not a human-rated prolonged German conversation.
+
+For real voice idle, create a private silent sink (retain the returned module ID).
+Do not change the default source/sink. Stop competing acceptance runs before
+removing this sink; remove only the module created by this procedure.
+
+```sh
+pactl load-module module-null-sink sink_name=jarvis_stability_18 rate=48000
+.venv/bin/python -m benchmarks.stability.idle \
+  --config benchmarks/stability/voice-config.json \
+  --seconds 7200 --interval 5 --output benchmarks/stability/idle-two-hour.json
+pactl unload-module MODULE_ID_FROM_FIRST_COMMAND
+```
+
+The runner synthesizes a fixed German question, feeds it through the private
+monitor source, requires an actual answer, then closes via mute/unmute. This
+measures **idle after privacy cleanup**, including worker teardown; it is not a
+claim that STT/TTS worker models remain resident for two hours. It polls public
+health/text access and sums service process-tree CPU/RSS every five seconds.
+Ollama is separately managed and excluded from these resource totals. Logs drain
+to byte/line/operation counters; no raw lines or conversation content are saved.
+
+Predeclared diagnostic screens: average CPU ≤5% of one core, final-minus-initial
+summed RSS ≤32 MiB, and log growth ≤1024 bytes/minute plus 1024 startup bytes.
+These are acceptance-runner screens, not new product resource promises. Resource
+screens require ≥60 seconds; shorter command checks cannot pass the two-hour gate.
+RSS endpoint growth is not proof of a leak-free heap. Operation diagnostics and
+closed text access do not establish erased heap contents. Internal queue/audio
+buffer occupancy is not exported and remains **unvalidated**; the report does not
+turn low RSS into a queue/buffer pass. Fixed-sentinel log screening is narrow;
+existing privacy suites provide separate content-logging regression coverage.
+
+For disconnected external networking, use a disposable user/network namespace,
+bring up only its loopback interface, and run a separate Ollama instance. The
+runner refuses a namespace with another interface or external route. It copies
+small manifests into temporary storage and links existing blobs individually;
+`OLLAMA_NOPRUNE=1` prevents pruning and the system model store is not modified.
+The desktop's networking, Ollama and default audio devices remain available.
+
+```sh
+unshare --user --map-root-user --net sh -c \
+  'ip link set lo up && exec .venv/bin/python -m benchmarks.stability.offline --output benchmarks/stability/offline'
+```
+
+The offline command runs control/recovery/privacy/desktop/delivery/30-turn socket
+suites and the actual latency voice harness with one initial plus 30 synthetic
+questions. Natural follow-up capture, STT, loopback Ollama, Piper synthesis,
+silent-sink playback and temporary text retrieval are real. Inhibition closes the
+real voice session; explicit ending/extension are covered by separate socket
+fixtures. This distinction matters: the script does not claim real spoken
+extension/end recognition or semantic continuity from repeating independent
+benchmark questions. The 30-turn fixture checks actual context contents.
+The report checks **all** 30 measured turns plus the initial trial, rather than
+using the voice command's exit status as proof of successful turns.
+
+Tools are disabled and inference uses loopback. The namespace prevents successful
+external traffic; an external-network syscall/attempt audit is **unvalidated**.
+This is not a claim that blocking connectivity proves zero attempted requests.
+Model usefulness and physical audibility remain unvalidated even if all synthetic
+turns complete. Three short feasibility samples cannot pass a latency percentile
+gate; the offline suite's goal is functionality without external connectivity.
+
+## Environment and results
+
+Measured 2026-10-19 on CachyOS Linux 7.2.11-1-cachyos, Node v24.11.1, Python
+3.11.14; actual CPU/model/runtime inventories and hashes accompany the voice JSON.
+The service revision is `1add1871d8002b36dd5a08e75213ebd72e5963a9`; no production
+service code changes are made for #18. Collectors ran from this implementation's
+working tree. The idle collector's launch hash/command is recorded separately in
+`benchmarks/stability/idle-provenance.json`. Concurrent checks, editing, model
+startup and offline voice benchmarking occurred during the soak; this is an
+ordinary desktop workload, not a controlled empty machine.
+
+| Scenario | Evidence | Verdict |
+| --- | --- | --- |
+| Two-hour idle after privacy closure | `benchmarks/stability/idle-two-hour.json` | pending measurement |
+| 30 contextual socket turns, explicit ending | `tests/ollama-daemon.test.ts` | focused run passed |
+| Thirty real synthetic offline follow-ups | `benchmarks/stability/offline/voice.json` | pending final run |
+| Offline extension/text/privacy/recovery | `benchmarks/stability/offline/offline.json` | feasibility passed; final run pending |
+| Noise deadlines, extension, cancellation/delivered context | listed regression suites | final suite pending |
+| Queue/buffer occupancy and heap erasure | no direct acceptance instrumentation | unvalidated |
+| Systemd restart, real mic/backend hotplug, suspend/resume | desktop procedure steps 7–9 | unvalidated |
+| Physical lock/mute cessation and independent switches | desktop procedure steps 4–6 | unvalidated |
+| Headset/speaker acoustic spoken stop | separate #14 hardware gate | unvalidated |
+
+## Setup failures and limitations
+
+- The first focused Node run was denied local socket access by the sandbox; rerun
+  with local socket permissions. This was an environment failure.
+- The first 30-turn regression failed at two turns, then the expanded fixture hit
+  its original two-second polling budget at 21 recognitions. Expanding the fixture
+  transcript list and bounded polling allowance produced a passing 30-turn case.
+- An initial idle smoke used a ten-second demo request timeout. A later smoke
+  returned idle but did not verify that its seed produced an answer. **That early
+  smoke is invalid as cleanup evidence.** Strengthening the seed check exposed
+  that voice mode correctly ignores injected demo transcripts; the runner now
+  feeds actual synthesized input. The two-hour run uses this corrected path.
+- A sub-second mock command test briefly failed the CPU screen due to startup
+  tick granularity. Resource verdicts now require at least 60 seconds. This changes
+  no two-hour thresholds or samples.
+- Initial namespace inspection used sysfs's host interface view and rejected the
+  isolated namespace. It now uses namespace-aware `/proc/net/dev`.
+- Starting Ollama against the shared store failed when it attempted to remove
+  `manifests-v2` without permission. The corrected private store setup succeeded;
+  no permission/ownership change was made to the shared store.
+- The initial offline feasibility run completed its separate control suites in
+  31.07 seconds and one initial plus three real synthetic turns in 41.78 seconds.
+  Its artifacts are replaced by the full 30-turn run; these numbers are setup
+  history, not the final acceptance results.
+
+For each remaining physical scenario, record exact source/sink IDs, headset vs
+speaker, model identities, before/after health, actual stop/recovery delay,
+remaining inhibitions, text clearing and whether any canceled audio/question
+replayed. Run during listening, inference, synthesis and playback. A missing
+measurement stays unvalidated; any replay, ongoing capture while inhibited,
+unbounded recovery or uncleared text is failed. Do not replace these observations
+with a passing fixture result. M3 and physical stability acceptance remain open.

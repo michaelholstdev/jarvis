@@ -11,17 +11,18 @@ import { setTimeout } from 'node:timers/promises';
 import { request } from '../apps/core/transport.js';
 import { encodeMessage, type Message } from '../packages/protocol/index.js';
 
-for (const [reactivate, activationSound, emptyResults] of [
-  [false, true, 0],
-  [true, true, 0],
-  [true, false, 0],
-  [false, true, 5],
-  [false, true, 6],
-  [false, true, 7],
-  [false, true, 8],
+for (const [reactivate, activationSound, emptyResults, turns] of [
+  [false, true, 0, 2],
+  [false, true, 0, 30],
+  [true, true, 0, 2],
+  [true, false, 0, 2],
+  [false, true, 5, 2],
+  [false, true, 6, 2],
+  [false, true, 7, 2],
+  [false, true, 8, 2],
 ] as const) {
   test(
-    `voice daemon contextual follow-ups and spoken end, manual reactivation=${reactivate}, cue=${activationSound}, noise=${emptyResults}`,
+    `voice daemon contextual follow-ups and spoken end, manual reactivation=${reactivate}, cue=${activationSound}, noise=${emptyResults}, turns=${turns}`,
     { timeout: 10000 },
     async () => {
       const runtime = mkdtempSync(join(tmpdir(), 'jv-voice-'));
@@ -74,6 +75,10 @@ for (const [reactivate, activationSound, emptyResults] of [
         'Private Frage',
         ...Array<string>(emptyResults).fill(''),
         'Private Folgefrage',
+        ...Array.from(
+          { length: turns - 2 },
+          (_, i) => `Private Folgefrage ${i + 3}`,
+        ),
         'Gespräch beenden',
       ];
       let transcriptIndex = 0;
@@ -204,8 +209,8 @@ for (const [reactivate, activationSound, emptyResults] of [
         }
         for (
           let count = 0;
-          count < 200 &&
-          (recognitions < (reactivate ? 4 : 3) + emptyResults ||
+          count < 800 &&
+          (recognitions < turns + 1 + Number(reactivate) + emptyResults ||
             (await status()).state !== 'idle');
           count++
         )
@@ -215,15 +220,36 @@ for (const [reactivate, activationSound, emptyResults] of [
           false,
           'cancel must complete before new audio starts',
         );
-        assert.equal(recognitions, (reactivate ? 4 : 3) + emptyResults);
-        assert.equal(plays, 2);
-        assert.equal(generations, 2);
+        assert.equal(
+          recognitions,
+          turns + 1 + Number(reactivate) + emptyResults,
+        );
+        assert.equal(plays, turns);
+        assert.equal(generations, turns);
         assert.equal((await status()).state, 'idle');
         assert.deepEqual(histories[1]?.slice(1), [
           { role: 'user', content: 'Private Frage' },
           { role: 'assistant', content: 'Eine private Antwort.' },
           { role: 'user', content: 'Private Folgefrage' },
         ]);
+        assert.equal(histories.length, turns);
+        for (let i = 1; i < turns; i++) {
+          assert.equal(histories[i]?.at(-2)?.content, 'Eine private Antwort.');
+          assert.equal(
+            histories[i]?.at(-3)?.content,
+            i === 1
+              ? 'Private Frage'
+              : i === 2
+                ? 'Private Folgefrage'
+                : `Private Folgefrage ${i}`,
+          );
+        }
+        const text = await send({
+          version: 1,
+          type: 'text-answer-request',
+          offset: 0,
+        });
+        assert.ok(text.type === 'text-answer' && text.text === null);
         assert.doesNotMatch(
           logs,
           /Private Frage|Private Folgefrage|Eine private Antwort|Gespräch beenden/,

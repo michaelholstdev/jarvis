@@ -6,6 +6,8 @@
 
 **Status:** ready-for-agent
 
+Claimed by Codex for implementation and acceptance evidence, 2026-10-19.
+
 - [ ] Run a two-hour idle soak showing bounded CPU/RAM, queues, buffers, and log growth with no ambient STT/LLM invocation or retained conversation content.
 - [ ] Complete a 30-turn follow-up conversation and extended sessions with explicit renewal, verifying noise deadlines, context continuity, expiry, and cleanup.
 - [ ] Exercise systemd/service restart, microphone/backend disconnect/reconnect, suspend/resume, and stalled operations; recovered services never replay canceled questions or replies.

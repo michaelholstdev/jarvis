@@ -1,0 +1,6 @@
+{
+  "service_revision": "1add1871d8002b36dd5a08e75213ebd72e5963a9",
+  "collector_worktree": "uncommitted implementation at launch",
+  "collector_sha256": "c946910ea307ac7a4ae427d828fea61545a7b93ea34cdd9164667a9e34abc94a",
+  "command": ".venv/bin/python -m benchmarks.stability.idle --config /tmp/jarvis-18-voice.json --seconds 7200 --interval 5 --output benchmarks/stability/idle-two-hour.json"
+}
