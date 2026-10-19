@@ -152,6 +152,15 @@ are promised. Acquisition/licensing/provenance is listed in the
 linked immutable manifests; redistribution needs review, especially voice ancestry,
 Piper GPL runtime and the actual LLM terms.
 
+## Documentation revision validation
+
+On the existing checkout, `npm run check` passed TypeScript, Biome, Ruff and both
+mypy checks; focused configuration/desktop-runtime tests passed 6/6; full
+`npm test` passed **204 Node and 39 Python tests**. Local documentation link
+targets and all 25 FR matrix rows were checked. These checks validate software
+regressions and document structure, not a fresh account, download availability,
+physical devices or release acceptance.
+
 ## Remaining validation and release sign-off
 
 - [ ] Execute the [fresh-account procedure](installation.md#fresh-account-acceptance-record)

@@ -20,7 +20,6 @@
 - [x] Document dialect/dictation/language-switching, device/acoustic, model, text-lifetime, and distribution limitations; no cloud fallback, tools, tray dependency, persistent memory, or general barge-in is implied.
 - [x] Publishing release documentation does not turn unavailable hardware checks into passing results; retain unresolved evidence gaps and specify how to reproduce the remaining validation.
 
-
 ## Answer
 
 Documentation delivered; **fresh-account and physical release acceptance remain
@@ -45,5 +44,29 @@ No runtime code, configuration defaults or model selection was changed.
 
 Unchecked criteria retain their original acceptance meaning. Existing #14/#17/#18
 physical gates are carried forward, not promoted to passes by documentation.
+
+Validation on the existing checkout: `npm run check` passed (TypeScript/Biome,
+Ruff and mypy); focused config/desktop-runtime tests passed 6/6; full `npm test`
+passed **204 Node + 39 Python tests**. Local documentation link targets and all
+25 requirement rows were checked. Initial sandbox cache/Git writes needed the
+permitted rerun; no fresh-account or hardware check is implied.
+
+### Standards
+
+Independent review of `98157e6` against task-start baseline
+`9a1af0917a7a38af77d6aed9a5231eb1f6caeea2`: no documented-standard violations
+or material baseline smells. Installation commands match existing entrypoints,
+units, configuration and manifests. **0 findings.**
+
+### Spec
+
+Independent review: **0 actionable documentation defects; partial acceptance
+remains** for fresh-account installation, physical headset/speaker checks and the
+post-stability wake investigation. These remain unchecked with reproduction and
+follow-up links; no scope creep or misleading pass claims found. Subsequent edits
+only record check/review results and whitespace cleanup.
+
+Review summary: Standards 0 findings; Spec 0 actionable defects, with the above
+acceptance gaps still open. No release sign-off is granted by either review.
 
 Map: [MVP implementation map](../map.md).
