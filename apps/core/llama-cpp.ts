@@ -2,6 +2,10 @@ import type { Operation } from '../../packages/protocol/index.js';
 import { ProtocolError } from '../../packages/protocol/index.js';
 import type { Config } from './config.js';
 import { diagnostic } from './diagnostics.js';
+import {
+  InferenceError,
+  type InferenceObservation,
+} from './inference-diagnostic.js';
 import { parseInferenceObject, readInference } from './inference-http.js';
 import { inferenceMessages } from './inference-messages.js';
 
@@ -9,6 +13,7 @@ export async function generateAnswer(
   config: Config,
   operation: Operation,
   signal: AbortSignal,
+  observation?: InferenceObservation,
 ): Promise<string> {
   let answer = '';
   let finished = false;
@@ -24,13 +29,14 @@ export async function generateAnswer(
     const payload = data.join('\n');
     data = [];
     if (payload === '[DONE]') {
-      if (!finished) throw new ProtocolError('invalid_message');
+      if (!finished) throw new InferenceError('incomplete_stream');
       done = true;
       return;
     }
     const value = parseInferenceObject(payload);
     if (value.error || !Array.isArray(value.choices))
       throw new ProtocolError('invalid_message');
+    observation?.usage(value.usage);
     // A usage-only chunk can follow the final choice.
     if (!value.choices.length && value.usage) return;
     if (value.choices.length !== 1) throw new ProtocolError('invalid_message');
@@ -42,29 +48,31 @@ export async function generateAnswer(
       !delta ||
       typeof delta !== 'object' ||
       Array.isArray(delta) ||
-      delta.tool_calls ||
-      delta.function_call ||
       (delta.role !== undefined && delta.role !== 'assistant') ||
       (delta.content != null && typeof delta.content !== 'string')
     )
       throw new ProtocolError('invalid_message');
+    if (delta.tool_calls || delta.function_call)
+      throw new InferenceError('unsupported_response');
     const content = delta.content ?? '';
+    observation?.finish(choice.finish_reason);
     if (!answer && content)
       diagnostic({
         event: 'llm_first_token',
         operation_id: operation.operation_id,
       });
     answer += content;
+    observation?.content(answer, delta.reasoning_content);
     if (
       Buffer.byteLength(answer) > Math.min(4096, config.llm.max_context_tokens)
     )
       throw new ProtocolError('frame_too_large');
     // Fail closed if a server ignores reasoning extraction and emits thought tags.
     if (/<\/?think(?:ing)?>/i.test(answer))
-      throw new ProtocolError('invalid_message');
+      throw new InferenceError('unsupported_response');
     if (choice.finish_reason != null) {
       if (!['stop', 'length'].includes(choice.finish_reason))
-        throw new ProtocolError('invalid_message');
+        throw new InferenceError('unsupported_response');
       finished = true;
     }
   };
@@ -78,10 +86,12 @@ export async function generateAnswer(
       max_tokens: config.llm.num_predict,
       temperature: config.llm.temperature,
       seed: config.llm.seed,
+      stream_options: { include_usage: true },
       reasoning_format: 'deepseek',
     },
     AbortSignal.any([signal, AbortSignal.timeout(config.llm.timeout_ms)]),
     (chunk) => {
+      observation?.activity();
       if (skipLf && chunk.startsWith('\n')) chunk = chunk.slice(1);
       skipLf = false;
       pending += chunk;
@@ -101,7 +111,8 @@ export async function generateAnswer(
       return !done;
     },
   );
-  if (!done || !answer.trim()) throw new ProtocolError('invalid_message');
+  if (!done) throw new InferenceError('incomplete_stream');
+  if (!answer.trim()) throw new InferenceError('empty_answer');
   return answer;
 }
 

@@ -6,6 +6,7 @@ import type { Config } from './config.js';
 import type { createCore } from './core.js';
 import { diagnostic as logDiagnostic } from './diagnostics.js';
 import { generateAnswer } from './inference.js';
+import { inferenceFailure } from './inference-diagnostic.js';
 import { operationCapability } from './operation-capability.js';
 import { request } from './transport.js';
 
@@ -44,7 +45,8 @@ export async function runTurn(
           (core.status().state !== 'listening' && config.llm.mode === 'mock')))
     )
       return;
-    if (operation.type === 'recognize') turns.set(core, operation.operation_id);
+    if (operation.type === 'recognize' || operation.type === 'wake')
+      turns.set(core, operation.operation_id);
     logDiagnostic({
       event: 'operation_started',
       turn_id: turns.get(core) ?? '',
@@ -76,7 +78,11 @@ export async function runTurn(
       if (config.llm.mode !== 'mock') {
         try {
           const text = await perform(operation.operation_id, (signal) =>
-            generateAnswer(config, operation, signal),
+            generateAnswer(config, operation, signal, {
+              turn_id: turns.get(core) ?? 'unknown',
+              interruption: () =>
+                core.inferenceInterruption(operation.operation_id),
+            }),
           );
           if (core.operations()[0]?.operation_id !== operation.operation_id)
             return;
@@ -88,10 +94,22 @@ export async function runTurn(
         } catch (error) {
           if (core.operations()[0]?.operation_id !== operation.operation_id)
             return;
+          logDiagnostic({
+            event: 'operation_failed',
+            turn_id: turns.get(core) ?? 'unknown',
+            operation_id: operation.operation_id,
+            operation: 'infer',
+            code: error instanceof ProtocolError ? error.code : 'unavailable',
+          });
           core.dispatch({
             type: 'operation-failed',
             operation_id: operation.operation_id,
             capability: 'inference',
+            unavailable: [
+              'connection_failure',
+              'http_failure',
+              'timeout',
+            ].includes(inferenceFailure(error)),
             code: error instanceof ProtocolError ? error.code : 'unavailable',
           });
         }

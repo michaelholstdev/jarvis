@@ -1,6 +1,7 @@
 import { request } from 'node:http';
 import { ProtocolError } from '../../packages/protocol/index.js';
 import type { Config } from './config.js';
+import { InferenceError } from './inference-diagnostic.js';
 
 /** Bounded loopback HTTP; returning false stops consumption and closes the stream. */
 export async function readInference(
@@ -35,6 +36,7 @@ export async function readInference(
             'Content-Length': Buffer.byteLength(payload),
           },
   });
+  let connected = false;
   try {
     const response = await new Promise<import('node:http').IncomingMessage>(
       (resolve, reject) => {
@@ -46,8 +48,9 @@ export async function readInference(
     const status = response.statusCode ?? 0;
     if (status !== 200 && !(allowLoading && status === 503)) {
       response.destroy();
-      throw new ProtocolError('unavailable');
+      throw new InferenceError('http_failure', 'unavailable');
     }
+    connected = true;
     response.setEncoding('utf8');
     let bytes = 0;
     for await (const chunk of response) {
@@ -60,10 +63,11 @@ export async function readInference(
     return status;
   } catch (error) {
     if (error instanceof ProtocolError) throw error;
-    throw new ProtocolError(
-      signal.aborted && signal.reason?.name === 'TimeoutError'
-        ? 'timeout'
-        : 'unavailable',
+    if (signal.aborted && signal.reason?.name === 'TimeoutError')
+      throw new InferenceError('timeout', 'timeout');
+    throw new InferenceError(
+      connected ? 'incomplete_stream' : 'connection_failure',
+      'unavailable',
     );
   } finally {
     req.destroy();

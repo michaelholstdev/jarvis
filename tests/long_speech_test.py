@@ -72,3 +72,33 @@ class LongSpeechTest(unittest.IsolatedAsyncioTestCase):
                                      {'completed': False, 'delivered_chars': 0})
                 finally:
                     await output.stop()
+
+    async def test_failure_indication_speaks_once_or_falls_back_without_reply_delivery(self):
+        try:
+            __import__('numpy')
+        except ImportError:
+            self.skipTest('install --extra output for waveform checks')
+        spawn = asyncio.create_subprocess_exec
+        for broken in ('0', '1'):
+            async def fixture_process(*args, **kwargs):
+                return await spawn(sys.executable, 'tests/fixtures/long-speech/worker.py',
+                                   env={**os.environ, 'JARVIS_TEST_FAILURE_SYNTHESIS': broken}, **kwargs)
+            config = load_config()
+            config['audio'].update(mode='piper', output_device='fixture')
+            with tempfile.TemporaryDirectory() as directory:
+                config['tts']['model_path'] = str(Path(directory) / 'voice.onnx')
+                Path(config['tts']['model_path'] + '.json').write_text('{}')
+                output = Output(config)
+                events = []
+                with patch('asyncio.create_subprocess_exec', side_effect=fixture_process), patch('builtins.print', side_effect=lambda line, **_: events.append(json.loads(line))):
+                    try:
+                        report = await output.run({'type': 'indicate-failure', 'operation_id': 'failure'})
+                        self.assertEqual(report, {'completed': True, 'delivered_chars': 0})
+                        kinds = [event['event'] for event in events]
+                        self.assertEqual(kinds.count('failure_indication_spoken'), int(broken == '0'))
+                        self.assertEqual(kinds.count('failure_indication_fallback'), int(broken == '1'))
+                        self.assertEqual(kinds.count('playback_completed'), 1)
+                        self.assertNotIn('playback_delivered', kinds)
+                        self.assertNotIn('SECRET_SYNTHESIS_ERROR', json.dumps(events))
+                    finally:
+                        await output.stop()

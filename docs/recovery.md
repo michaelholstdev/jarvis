@@ -114,3 +114,56 @@ reconnect and conversation expiry. Restart the stopped/stalled audio service as
 above; the fresh peer must still acknowledge cleanup. This clears audio-side
 work without replaying the retained question. Core context expires on its
 original follow-up deadline even while cleanup is blocked.
+
+## Inference failure diagnostics
+
+Real inference emits one `inference_terminal` event per attempt through the
+selected gateway, on success, failure or cancellation (subject to the routine
+100-lines/30-seconds diagnostic bound). The turn driver also records
+`operation_failed` with the fixed protocol `code` before dispatching a current
+inference failure. Stale results cannot deliver answers or failure feedback.
+
+Terminal fields are content-free:
+
+| Field | Meaning |
+| --- | --- |
+| `turn_id`, `operation_id` | Recognition turn and inference operation correlation; `unknown` if invoked outside a recognized turn |
+| `backend`, `model` | Configured provider and model alias (model bounded to 128 characters) |
+| `elapsed_ms`, `monotonic_ms` | Attempt duration and local monotonic event timestamp |
+| `outcome` | `success`, `failure`, or deliberate `cancelled` |
+| `category` | `none`, `cancelled`, `empty_answer`, `timeout`, `connection_failure`, `http_failure`, `malformed_stream`, `incomplete_stream`, `unsupported_response`, or `output_size_limit` |
+| `generation_limit` | Configured `num_predict`; this change does not raise it |
+| `finish_reason` | Allowlisted `stop`, `length`, `tool_calls`, `function_call`, `content_filter`, or `unknown` |
+| `prompt_tokens`, `completion_tokens`, `total_tokens` | Nonnegative safe integer usage reported by the server, otherwise `unknown`; Ollama has no reported total |
+| `answer_chars`, `reasoning_chars` | Accumulated UTF-16 code units; reasoning count is `unknown` unless the server sends a separate reasoning string |
+| `first_stream_ms`, `first_answer_ms` | Time from gateway entry to first stream activity and first answer content; `unknown` if absent |
+
+No token counts are estimated from characters. A usable answer with finish
+reason `length` succeeds. Empty or unusable responses and broken streams do not
+by themselves mark inference unavailable; connection/HTTP failures and timeouts
+retain readiness probing and explicit recovery. Failed output never enters
+conversation history. Earlier delivered exchanges remain available while the
+conversation stays open; “Noch einmal” or a new question is required.
+
+Where audio works, `indicate-failure` speaks once: “Ich konnte keine Antwort
+erzeugen. Sag ‘Noch einmal’, um es erneut zu versuchen.” This fixed feedback is
+not a delivered answer. Manual stop/replacement and lock/mute can cancel it.
+Synthesis failure falls back to one tone (`failure_indication_fallback`);
+`failure_indication_spoken` identifies the speech path. If output is unavailable,
+health and bounded operation diagnostics remain, with no recursive notification.
+
+Inspect a short journal interval without changing services or generation settings:
+
+```sh
+journalctl --user -u jarvis-core.service --since '10 minutes ago' -n 100 --no-pager -o cat
+journalctl --user -u jarvis-audio.service --since '10 minutes ago' -n 100 --no-pager -o cat
+```
+
+Find `inference_terminal`, then correlate `operation_id` and `turn_id` with
+`operation_started`/`operation_failed`. Check `category`, finish reason, reported
+usage, counts and timings before forming a hypothesis. Do not capture prompts,
+transcripts, answer/reasoning strings, raw server errors or credentials. These
+local fixture results reproduce empty and reasoning-only output, but do not
+establish the cause of the 2026-10-20 incident. A later physical rerun must record
+the candidate/model/configuration and measured results separately; none was
+performed for this implementation.

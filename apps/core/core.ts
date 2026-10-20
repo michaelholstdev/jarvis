@@ -26,6 +26,7 @@ export type ServiceEvent =
       operation_id: string;
       code: Diagnostic;
       capability: Capability | 'audio';
+      unavailable?: boolean;
     }
   | { type: 'audio-lost'; diagnostic?: Diagnostic }
   | {
@@ -53,6 +54,8 @@ export function createCore(
   let lastFailure: HealthStatus['last_failure'] = null;
   let retryQuestion = '';
   let failureCancellation = false;
+  // Retain only the most recent inference watchdog identity, never content.
+  let inferenceTimeoutOperationId: string | undefined;
   const inhibitions = { locked: false, muted: false, hardware_muted: false };
   let privacyPending = false;
   let cleanupPending = false;
@@ -214,9 +217,16 @@ export function createCore(
   };
   const indicateFailure = () =>
     transition('indicating-failure', 'indicate-failure');
-  const fail = (code: Diagnostic, capability: Capability | 'audio') => {
+  const fail = (
+    code: Diagnostic,
+    capability: Capability | 'audio',
+    unavailable = code === 'unavailable' || code === 'timeout',
+  ) => {
+    if (code === 'timeout' && operation?.type === 'infer')
+      inferenceTimeoutOperationId = operation.operation_id;
     lastFailure = { code, capability };
-    if (capability !== 'audio') capabilities[capability] = 'unavailable';
+    if (capability !== 'audio' && (capability !== 'inference' || unavailable))
+      capabilities[capability] = 'unavailable';
     if (question) retryQuestion = question;
     if (state === 'awaiting-extension') {
       close();
@@ -235,14 +245,20 @@ export function createCore(
   };
   return {
     stop(): void {
-      if (['thinking', 'synthesizing', 'speaking'].includes(state))
+      if (
+        ['thinking', 'synthesizing', 'speaking', 'indicating-failure'].includes(
+          state,
+        )
+      )
         cancel(false);
     },
     activate(): void {
       if (!ready || inhibited() || privacyPending || cleanupPending)
         throw new ProtocolError('unavailable');
       if (
-        ['thinking', 'synthesizing', 'speaking'].includes(state) ||
+        ['thinking', 'synthesizing', 'speaking', 'indicating-failure'].includes(
+          state,
+        ) ||
         operation?.type === 'wake' ||
         (state === 'follow-up' &&
           config.audio.mode === 'voice' &&
@@ -414,7 +430,8 @@ export function createCore(
           capabilities.wake = 'unavailable';
           lastFailure = { code: event.code, capability: 'wake' };
           transition('idle');
-        } else if (state !== 'idle') fail(event.code, event.capability);
+        } else if (state !== 'idle')
+          fail(event.code, event.capability, event.unavailable);
         return;
       }
       // A current explicit end command wins over simultaneous timer expiry.
@@ -672,6 +689,14 @@ export function createCore(
         since_ms: Math.max(0, clock.now() - readinessChangedAt),
         state_since_ms: Math.max(0, clock.now() - stateChangedAt),
       };
+    },
+    inferenceInterruption(
+      operationId: string,
+    ): 'timeout' | 'cancelled' | undefined {
+      if (operation?.operation_id === operationId) return undefined;
+      return inferenceTimeoutOperationId === operationId
+        ? 'timeout'
+        : 'cancelled';
     },
     operations(): readonly Operation[] {
       return operation

@@ -17,6 +17,11 @@ class Voice:
         self.session, self.config = session, config
 
     def synthesize(self, text):
+        if text.startswith('Ich konnte keine Antwort'):
+            if os.environ.get('JARVIS_TEST_FAILURE_SYNTHESIS') == '1':
+                raise RuntimeError('SECRET_SYNTHESIS_ERROR')
+            yield SimpleNamespace(audio_float_array=np.zeros(1600, dtype=np.float32))
+            return
         # The synthetic regression sentence takes 3.286 s, as in the real repro.
         # Reserve a deliberately slow eight-second full-text notice.
         seconds = 8 if text.startswith('Die Antwort ist zu lang') else 3.286

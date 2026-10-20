@@ -405,3 +405,76 @@ test('mute supersedes recovery cleanup and cannot release it through a stale ack
   core.activate();
   assert.equal(current().type, 'acknowledge');
 });
+
+for (const control of [
+  'stop',
+  'replacement',
+  'locked',
+  'muted',
+  'audio-unavailable',
+] as const) {
+  test(`${control} inhibits or cancels failure feedback without repeating it`, () => {
+    const { core, current, recognize, play } = fixture();
+    recognize('Fehlgeschlagene Frage');
+    core.dispatch({
+      type: 'operation-failed',
+      operation_id: current().operation_id,
+      code: 'invalid_message',
+      capability: 'inference',
+    });
+    assert.equal(core.status().capabilities.inference, 'mock');
+    play();
+    const indication = current();
+    assert.equal(indication.type, 'indicate-failure');
+    if (control === 'stop') core.stop();
+    else if (control === 'replacement') core.activate();
+    else if (control === 'audio-unavailable')
+      core.dispatch({
+        type: 'operation-failed',
+        operation_id: indication.operation_id,
+        code: 'unavailable',
+        capability: 'audio',
+      });
+    else
+      core.dispatch({
+        type: 'inhibition-changed',
+        source: control,
+        active: true,
+      });
+    assert.notEqual(
+      core.operations()[0]?.operation_id,
+      indication.operation_id,
+    );
+    const pending = core.operations();
+    core.dispatch({
+      type: 'playback-completed',
+      operation_id: indication.operation_id,
+      completed: true,
+      delivered_chars: 0,
+    });
+    assert.deepEqual(
+      core.operations(),
+      pending,
+      'late feedback cannot restart work',
+    );
+    if (control === 'stop' || control === 'replacement') {
+      assert.equal(current().type, 'cancel');
+      play();
+      assert.equal(
+        current().type,
+        control === 'stop' ? 'recognize' : 'acknowledge',
+      );
+      assert.equal(
+        core.status().state,
+        control === 'stop' ? 'follow-up' : 'acknowledging',
+      );
+    } else if (control === 'audio-unavailable') {
+      core.dispatch({ type: 'tick' });
+      assert.deepEqual(core.operations(), []);
+      assert.equal(core.status().audio, 'unavailable');
+    } else {
+      assert.equal(current().type, 'privacy');
+      assert.equal(core.status().retry_available, false);
+    }
+  });
+}

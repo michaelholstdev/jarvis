@@ -2,6 +2,10 @@ import type { Operation } from '../../packages/protocol/index.js';
 import { ProtocolError } from '../../packages/protocol/index.js';
 import type { Config } from './config.js';
 import { diagnostic } from './diagnostics.js';
+import {
+  InferenceError,
+  type InferenceObservation,
+} from './inference-diagnostic.js';
 import { parseInferenceObject, readInference } from './inference-http.js';
 import { inferenceMessages } from './inference-messages.js';
 
@@ -12,9 +16,11 @@ async function call(
   body: unknown,
   signal: AbortSignal,
   consume: (line: string) => void,
+  observation?: InferenceObservation,
 ): Promise<void> {
   let pending = '';
   await readInference(config, path, body, signal, (chunk) => {
+    observation?.activity();
     pending += chunk;
     if (body !== undefined) {
       let end = pending.indexOf('\n');
@@ -40,6 +46,7 @@ export async function generateAnswer(
   config: Config,
   operation: Operation,
   signal: AbortSignal,
+  observation?: InferenceObservation,
 ): Promise<string> {
   const timeout = AbortSignal.timeout(config.llm.timeout_ms);
   let answer = '';
@@ -62,16 +69,16 @@ export async function generateAnswer(
     (line) => {
       const value = parse(line);
       const message = value.message as
-        | { content?: unknown; tool_calls?: unknown }
+        | { content?: unknown; tool_calls?: unknown; thinking?: unknown }
         | undefined;
       if (
         done ||
         typeof value.done !== 'boolean' ||
         !message ||
-        typeof message.content !== 'string' ||
-        message.tool_calls
+        typeof message.content !== 'string'
       )
         throw new ProtocolError('invalid_message');
+      if (message.tool_calls) throw new InferenceError('unsupported_response');
       if (!answer && message.content) {
         diagnostic({
           event: 'llm_first_token',
@@ -79,6 +86,12 @@ export async function generateAnswer(
         });
       }
       answer += message.content;
+      observation?.content(answer, message.thinking);
+      observation?.finish(value.done_reason);
+      observation?.usage({
+        prompt_tokens: value.prompt_eval_count,
+        completion_tokens: value.eval_count,
+      });
       if (
         Buffer.byteLength(answer) >
         Math.min(4096, config.llm.max_context_tokens)
@@ -86,8 +99,10 @@ export async function generateAnswer(
         throw new ProtocolError('frame_too_large');
       done = value.done;
     },
+    observation,
   );
-  if (!done || !answer.trim()) throw new ProtocolError('invalid_message');
+  if (!done) throw new InferenceError('incomplete_stream');
+  if (!answer.trim()) throw new InferenceError('empty_answer');
   return answer;
 }
 

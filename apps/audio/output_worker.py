@@ -184,7 +184,24 @@ def main() -> None:
         else:
             cached_text = ''
             segments.clear()
-            if operation.get('sound', True):
+            spoken_failure = False
+            if kind == 'indicate-failure':
+                # Fixed operational feedback never becomes a delivered reply or
+                # opens microphone monitoring. The parent owns privacy cancellation.
+                try:
+                    _, failure_segments = synthesize('Ich konnte keine Antwort erzeugen. Sag „Noch einmal“, um es erneut zu versuchen.')
+                    pcm = b''.join(block for block, _ in failure_segments)
+                    if not pcm:
+                        raise RuntimeError('missing_synthesis')
+                except Exception:
+                    # One bounded tone if synthesis is unavailable; no retry loop
+                    # and no exception text from the external engine.
+                    emit('failure_indication_fallback')
+                else:
+                    emit('failure_indication_spoken')
+                    Pulse(sink['name'], rate).play(pcm, rate)
+                    spoken_failure = True
+            if not spoken_failure and operation.get('sound', True):
                 frequency = {'acknowledge': 880, 'close-conversation': 440, 'indicate-failure': 220}[kind]
                 t = np.arange(int(rate * .12)) / rate
                 tone = (.12 * np.sin(2 * math.pi * frequency * t) * np.sin(math.pi * t / .12)).astype(np.float32)
