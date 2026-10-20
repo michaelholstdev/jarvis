@@ -1,10 +1,89 @@
-# 13: Optional validated wake activation
+# 13: Experimental wake activation enabled by default
 
-**What to build:** Use “Hey Jarvis” followed immediately by a question only when a verified German-capable wake model passes documented tests; otherwise retain manual activation.
+**What to build:** Enable experimental local “Hey Jarvis” activation by default in the real voice setup, preserving the immediately following question. Start with the pinned candidate at threshold 0.2 and its documented 23/30 (76.7%) headset recall. Keep manual activation available and allow wake detection to be disabled explicitly.
 
-**Blocked by:** 12: Login startup, KDE activation, and device recovery — M3.
+**Blocked by:** None for the implementation below. Final desktop/headset/release acceptance under #12/#17/#18/#19 remains separate and open.
 
 **Status:** ready-for-human
+
+## Current implementation scope — user decision, 2026-10-20
+
+**Type:** Feature implementation
+
+The user accepted proceeding with an experimental wake implementation despite
+the measured 23/30 recall, and explicitly requested **wake detection enabled by
+default**. This section supersedes the historical optional/opt-in,
+default-disabled and promising-candidate prerequisites below for this experimental
+voice setup. Candidate preparation and recording evaluation are delivered; the
+resident detector and core/audio handoff remain implementation work.
+
+The four implementation outcomes and acceptance criteria are:
+
+1. **Wake enabled by default, with manual fallback.**
+   - [x] Add an explicit wake enable/disable setting, defaulting to enabled in
+     the real voice setup. Omission selects enabled; explicit disable selects
+     manual-only idle without ambient capture. Mock mode stays hardware-free.
+   - [x] Use the pinned CPU candidate and initial threshold **0.2**. Validate
+     model identity/runtime/terms, document installation and configuration, and
+     report unavailable wake capabilities with manual fallback when required
+     model/runtime/device capabilities are missing. Do not download models
+     implicitly during service startup.
+   - [x] Health/configuration clearly distinguish configured enablement,
+     operational wake readiness and experimental recognition quality. Manual
+     shortcut/CLI activation remains available when capture is permitted.
+2. **Preserve the immediate question.**
+   - [x] Implement resident wake inference with a bounded, overwritten in-memory
+     pre-roll and uninterrupted handoff into VAD/STT. “Hey Jarvis, [question]”
+     works without an intentional pause; acknowledgment cannot reset capture or
+     discard the beginning of the question. No ambient STT/LLM work before wake.
+3. **Enforce privacy, cancellation and recovery.**
+   - [x] Lock, exposed software mute, disable and service/core disconnect stop
+     affected capture/work and clear temporary wake/handoff buffers. Independent
+     inhibitions retain precedence; stale detections/audio cannot enter a new
+     turn. Recovery restores permitted activation readiness without replaying a
+     canceled question or answer. Unsupported Jieli hardware mute remains a
+     disclosed #12/#24 limitation, not a claimed privacy pass.
+   - [x] Test these behaviors at the already agreed config/CLI and daemon/audio
+     socket seams, including continuous handoff, manual activation interaction,
+     bounded buffers and late-event rejection. Physical acceptance is recorded
+     separately from fixture/socket results.
+4. **Use the feature and improve recognition from evidence.**
+   - [x] Document experimental everyday use and content-free measurement of
+     misses/false activations without routine recording or transcription of
+     ambient speech. Retain setup-specific results and follow up on concrete
+     failures; recalibration/model changes require fresh held-out validation.
+
+**Quality decision:** 76.7% recall is accepted as a known limitation for this
+experimental implementation, not as passing the original >=95% target. The
+zero false activations cover only 240 negative seconds. Speaker/noise/media,
+handoff and privacy acceptance remain unvalidated. Do not claim a fully validated
+hands-free release or silently relax those gates.
+
+**Documentation alignment:** This requested experimental default conflicts with
+ADR-0001 §6 (manual default for unvalidated wake), the PRD M3 exit gate and the
+spec's optional-wake/default-disabled rule. During implementation, update those
+documents to record this user-approved experimental exception and the new
+default while retaining the original full-validation criteria and mandatory
+privacy/cancellation requirements. No additional approval is needed for the
+default-on decision already given here.
+
+The plans and answers below are historical evidence; this section governs the
+remaining implementation. Tracking stays in #13; do not create a duplicate issue
+for the same four outcomes.
+
+## Remaining work plan — 2026-10-19
+
+**Type:** Optional feature
+
+**Outcome:** Independently validated hands-free activation, if feasible. Keep this
+work separate from the manual headset release path. Begin candidate/runtime/German
+feasibility after stable physical manual operation under #17; then implement and
+validate detector/handoff only if promising. Preserve immediate trailing speech,
+idle privacy and bounded pre-roll. Keep headset/speaker verdicts separate.
+
+#19 must revisit feasibility and link concrete gaps; it need not wait for successful
+wake activation. Manual fallback does not resolve this ticket.
+
 
 **Claimed by:** Codex — 2026-10-20; implementing the user-approved experimental default-on scope. Review baseline: `6b7c11113d7497dc479215d5bbbe861c6a0cd937`. Physical acceptance remains separate.
 
@@ -143,6 +222,41 @@ Independent review of `7e6308a` against
 Worst issue within either review axis: none. These reviews do not close #13 or
 establish acoustic/privacy acceptance. The user's preexisting tracker edits
 were preserved outside the implementation commits.
+
+
+### Physical headset calibration — 2026-10-20
+
+The user completed the prepared 20-clip recording session. Local evaluation
+verified the complete manifest and all WAV checksums/formats/durations, then
+ran the real pinned CPU detector at eight thresholds. At 0.2: **10/10** intended
+wakes and **0/10** triggered near-miss clips (80 negative seconds). Thresholds
+0.05–0.3 show the same counts; 0.5 detects 6/10. At 0.01, three negatives trigger.
+The provisional calibration candidate is **0.2**, with unchanged model/device/gain
+settings. This uses the same data for threshold selection and evaluation, so it
+is not a held-out pass and the 30-per-class screen remains incomplete.
+
+[Calibration summary](../wake-headset-calibration-2026-10-20.md). New held-out
+recordings and remaining handoff/privacy/acoustic criteria are still required.
+No transcription, new capture, service reconfiguration or wake enablement occurred
+during this evaluation. #13 remains open.
+
+
+### Held-out physical headset validation — 2026-10-20
+
+The user completed three fresh 20-clip sessions. Evaluated only the previously
+frozen threshold **0.2**: **23/30 intentional wakes (76.7%)**, no false activations
+in 30 near-miss recordings (240 seconds). Per-session recall: 10/10, 6/10, 7/10.
+All 60 distinct WAVs passed checksum/format/duration checks and have no hash
+overlap with calibration. The >=95% recall screen fails; the original 10/10
+calibration result does not establish fresh-trial reliability. No post-hoc
+threshold adjustment or service enablement occurred. Missed clips are not silent
+or overloaded by the basic RMS/full-scale checks, without an intelligibility
+or pronunciation verdict.
+
+[Held-out evidence](../wake-headset-validation-2026-10-20.md). #13 remains open;
+the candidate at 0.2 is not approved for this headset. A better candidate or a
+separately developed calibration approach needs new held-out evidence; the
+remaining acoustic/handoff/privacy gates also stay open.
 
 
 ## Answer — experimental default-on implementation, 2026-10-20

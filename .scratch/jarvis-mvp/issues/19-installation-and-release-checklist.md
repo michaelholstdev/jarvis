@@ -2,9 +2,34 @@
 
 **What to build:** Install the supported Jarvis setup on a fresh CachyOS user account and inspect an honest requirement-level release checklist with known restrictions.
 
-**Blocked by:** 14: Spoken stop and acoustic acceptance; 16: German recognition comparison; 17: End-to-end latency and resource benchmarks; 18: Offline and desktop stability acceptance.
+**Blocked by:** 12: Desktop acceptance; 17: Headset quality/model/latency acceptance; 18: Stability/privacy evidence. #20 is required through #17; #13/#14/#21 results or disclosed gaps must be reviewed, but successful optional-mode acceptance is not required for a limited manual headset release.
 
 **Status:** ready-for-human
+
+## Remaining work plan — 2026-10-19
+
+**Type:** Release acceptance
+
+**Outcome:** Reproduce the settled manual headset setup in a fresh CachyOS account,
+then record an explicit release decision using the existing installation runbook
+and requirement matrix.
+
+- [ ] Include #20's final recognizer/runtime/model installation and #17's selected
+  LLM/settings in the runbook before the fresh-account trial.
+- [ ] Perform fresh installation, verified model acquisition, login/shortcut,
+  permissions/health, update/rollback and uninstall checks; record failures.
+- [ ] Review #12/#17/#18 evidence at the candidate SHA and repeat affected checks
+  after any intervening fixes. Mandatory privacy/cancellation/locality/bounds
+  failures block release; missing evidence cannot be called passed.
+- [ ] Revisit #13 feasibility after stable manual operation and link its remaining
+  gaps. Record #14's result or explicit FR-09 gap, and #21's separate speaker
+  verdict. Neither wake success nor speaker support is required for a manual
+  headset-only release. An FR-09 gap prevents an all-P0-pass claim.
+- [ ] Record owner/date/SHA, supported setup, requirement verdicts, disclosed gaps
+  and release decision; do not infer approval from delivered documentation.
+
+The original acceptance criteria and historical documentation checks remain below.
+
 
 **Claimed by:** Codex — 2026-10-19; installation documentation and release evidence consolidation. Physical acceptance remains open.
 
@@ -70,6 +95,14 @@ Review summary: Standards 0 findings; Spec 0 actionable defects, with the above
 acceptance gaps still open. No release sign-off is granted by either review.
 
 Map: [MVP implementation map](../map.md).
+
+## Comments
+
+2026-10-19: Actual existing-account headset login/shortcut and partial desktop
+privacy/recovery results are recorded in [#12 session evidence](../desktop-acceptance-2026-10-19.md).
+Reuse only its observed scenarios and retain unsupported hardware mute (#24),
+long-speech overflow (#23), remaining coverage and the fresh-account gate as open.
+This is not fresh-account acceptance or release sign-off.
 
 
 ### Runbook and release review follow-up — 2026-10-20

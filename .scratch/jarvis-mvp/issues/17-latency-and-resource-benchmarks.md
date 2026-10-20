@@ -2,9 +2,34 @@
 
 **What to build:** Compare local-model configurations and see reproducible answer-latency and resource measurements for the actual voice conversation path.
 
-**Blocked by:** 11: Concise speech and temporary text answers; 15: Real playback delivery in follow-up context.
+**Blocked by:** 20: Production Parakeet recognition, before final headset model/latency acceptance.
 
 **Status:** ready-for-human
+
+## Remaining work plan — 2026-10-19
+
+**Type:** Acceptance
+
+**Outcome:** Select a useful German headset configuration and measure its real audible
+response time. Start with a short human trial; run the full matrix once obvious
+problems are fixed. Use [latency protocols](../../../docs/latency-benchmarks.md).
+
+- [ ] Trial manual activation/cue, German and technical questions, contextual
+  follow-ups, manual stop/replacement, delivered reply, explicit end, silence,
+  retry, extension and temporary text access on the actual headset.
+- [ ] Compare local LLM candidates on the same questions; record human ratings for
+  correctness, relevance, concise German and intelligibility, alongside latency.
+  Choose and document the model/settings from quality plus timing evidence.
+- [ ] Complete at least 30 warm short queries and the cold, long, quiet/noisy,
+  whisper and loaded/unloaded scenarios; record physical audible p50/p95 and
+  CPU/RAM/speech VRAM, distinguishing incomplete samples and target misses.
+- [ ] Record exact candidate SHA, device/gain, recognizer/voice/LLM hashes and
+  settings; link focused bug tickets and rerun affected scenarios after fixes.
+
+Speaker scenarios from the original criteria are tracked in #21. Spoken-stop
+acoustics remain #14 and wake remains #13; neither is required to begin this
+manual headset trial. Original criteria and historical evidence remain below.
+
 
 - [x] Capture content-free timestamps for wake where enabled, speech endpoint, STT final, LLM first token, first TTS audio, playback start/end, and interruption.
 - [ ] For at least 30 warm short local no-tool queries, compute speech-end-to-audible-answer p50/p95 against initial targets of at most 1.5 and 3 seconds.
@@ -127,3 +152,21 @@ use deliberate manual activation while recording the actual wake setting.
 
 Continue using [the fresh-context handoff](../headset-acceptance-handoff.md).
 No physical #17 test or model-selection decision is claimed by this preparation.
+
+### Headset acceptance started — 2026-10-20
+
+Fresh-context inspection and first manual activation are recorded in the
+[content-free headset trial note](../headset-acceptance-2026-10-20.md).
+Candidate `003847bea329d3f97420d7e93b66e57895db00bb`; existing local preparations
+preserved. User confirmed Jieli input / Starship analog headset output and
+readiness; services restarted with unchanged voice configuration and wake 0.2.
+The first attempt reached recognition and then idle without an LLM operation;
+human observations are pending. No conversational-quality, audible-latency or
+model-selection pass is claimed. Status remains `ready-for-human`.
+
+Follow-up: user identified wake activation with a greeting-like reply instead of
+executing the attached question. [#26](26-wake-integrated-question.md) records
+real-model replay and a local pre-roll adjustment from 750 to 1000 ms. The user
+reports the live rerun works substantially better. Retain this setup for further
+acceptance; no general wake, human quality score or audible-latency pass is
+claimed. Next short-trial item: manual interruption/replacement and ending.

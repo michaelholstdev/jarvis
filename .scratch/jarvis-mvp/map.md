@@ -22,9 +22,39 @@
 - [18: Offline and desktop stability acceptance](issues/18-offline-desktop-stability.md) — **closed for delivered implementation/tooling**, including reviewed capture occupancy evidence and fixes through `ee483ce`; 211 Node / 65 Python tests pass. Remaining physical/privacy/network/native-buffer evidence carried to #12/#17/#19, explicitly unvalidated. Two-hour duration waived; 44.02-minute observation partial.
 - [19: Reproducible installation and release checklist](issues/19-installation-and-release-checklist.md#answer) — documentation delivered; consolidated installation/lifecycle/model inventory and FR-01–FR-25/M0–M4 evidence matrix. **Ready for human:** fresh-account target-desktop installation and release acceptance; mandatory hardware gates remain unvalidated, no MVP release claimed. #13 feasibility revisited at source level, actual candidate/runtime/German trials remain open.
 - [20: Production Parakeet recognition](issues/20-production-parakeet-recognition.md#answer) — resolved; selectable pinned CPU recognizer, synthetic production path, cancellation/privacy and error checks passed; human headset quality/latency handed to #17.
+- [21: Separate speaker acceptance](issues/21-speaker-acceptance.md) — ready-for-human after stable headset operation; independent support verdict, not a headset-release blocker.
 - [23: Long spoken answers fail at the duration limit](issues/23-long-speech-duration-overflow.md#answer) — resolved; bounded prefix/notice speech, full temporary text and delivered-only context; 208 Node/43 Python tests, both review axes, real Piper PCM-boundary probe and actual headset rerun pass.
-- Remaining tickets are in [issues/](issues/); other M1–M4 gates remain open.
 - [24: Jieli hardware-mute detection](issues/24-jieli-hardware-mute-detection.md#answer) — resolved as unsupported/wontfix for this device/configuration; actual held-switch checks found unchanged ALSA/source mute and no HID/event interface. Development use only; #12/FR-19 hardware privacy release gate stays open. [Evidence](hardware-mute-2026-10-20.md).
+- [25: Audio restart resumes capture](issues/25-audio-restart-resumes-capture.md#answer) — resolved; recovery and timer expiry wait for deliberate activation, 206 Node/42 Python tests and both reviews pass; actual playback/audio-crash headset rerun confirms readiness without resumed capture or answer. Other #12 gates remain open.
+
+## Remaining work order — 2026-10-19
+
+- [27: llama.cpp inference adapter](issues/27-llama-cpp-inference-adapter.md) — ready-for-agent, unclaimed; add a configurable local llama-server backend alongside Ollama, including streaming, readiness, cancellation and live integration evidence. Requested for later implementation; current #17 setup unchanged.
+
+**Current next task — 2026-10-20:** #17 physical headset acceptance. #18
+instrumentation and review fixes are delivered; #20 and #13 implementation are
+delivered. The historical sequence below retains earlier acceptance dependencies.
+
+This plan supersedes historical queue hints above, not their evidence. Delivered
+comparison #16 is complete; its remaining production work is #20. #12 is now
+ready-for-human. Status describes who can do remaining work; dependencies below
+determine when it can begin. Do not treat old ready-for-agent labels on delivered
+tickets as a fresh implementation queue.
+
+| Order | Ticket / outcome | Dependency and shared work |
+| --- | --- | --- |
+| 1 | #20 Production Parakeet | Next unblocked agent implementation; no hardware pass claimed |
+| 2 | #17 Headset acceptance and model selection | After #20; start with a short human trial, fix failures, then complete quality/latency scenarios |
+| 3 | #12 Desktop privacy and recovery | Can prepare/run independently; final evidence uses #17's selected setup; share results with #18/#19 |
+| 4 | #18 Stability and privacy evidence | Tooling can proceed independently; final acceptance incorporates #12/#17; two-hour idle run waived by user 2026-10-19, 44.02-minute partial observation retained; queue/buffer and privacy checks remain |
+| 5 | #19 Fresh installation and release decision | After #12/#17/#18 on the settled candidate; review all gaps explicitly |
+| Separate | #13 Wake, #14 spoken stop, #21 speakers | Independent outcomes; share trials where useful; #13 feasibility revisit required before sign-off, successful wake/speaker validation optional for a manual headset release; FR-09 gap must remain disclosed |
+
+Run related checks in one session and link the same evidence from every affected
+ticket. Record candidate SHA/config/models/devices and setup-specific verdicts.
+Create focused bug tickets when testing exposes failures; repeat affected checks
+after fixes. No acceptance criterion is silently dropped by grouping sessions.
+No runtime changes, hardware acceptance or release sign-off is claimed by this plan.
 
 
 ## Wake candidate follow-up — 2026-10-20
@@ -46,6 +76,10 @@ and [evidence/method](../../docs/capture-buffer-evidence.md). Remaining #18 work
 requires physical/privacy/network acceptance; no release gate is closed here.
 
 ## Next task: #17 — user decision, 2026-10-20
+
+Headset trial exposed [#26: wake with an integrated question](issues/26-wake-integrated-question.md).
+Claimed for diagnosis before continuing the full #17 matrix; no headset wake
+handoff pass is claimed.
 
 #18 is closed for delivered implementation/tooling through `ee483ce`; outstanding
 acceptance gaps are carried by #12/#17/#19. This supersedes the earlier #18 next-task

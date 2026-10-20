@@ -2,9 +2,32 @@
 
 **What to build:** Use Jarvis after login through a global KDE shortcut, with real lock/mute privacy enforcement and graceful desktop audio recovery.
 
-**Blocked by:** 07: Failures, explicit retry, and capability recovery; 09: Manual microphone question and scripted spoken reply — M1.
+**Blocked by:** None for desktop acceptance; use the configuration selected by #17 for final candidate evidence.
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
+
+## Remaining work plan — 2026-10-19
+
+**Type:** Acceptance
+
+**Outcome:** A manual headset session starts at KDE login and remains private and
+recoverable through ordinary desktop failures. Implementation is delivered;
+remaining work requires the actual desktop, so status is now ready-for-human.
+
+Run one desktop acceptance session using [the procedure](../../../docs/desktop-acceptance.md):
+
+- [ ] Verify login startup, single-press shortcut, device selection and health.
+- [ ] Exercise lock, software mute and exposed hardware mute during capture,
+  inference and playback; check independent inhibitions and actual cessation.
+- [ ] Exercise unplug/replug, audio backend outage, service restart and
+  suspend/resume; verify readiness recovery without replay or resumed capture.
+- [ ] Check cleared text/context and late-event rejection; attach setup, candidate
+  SHA, timings and verdicts. Link the same evidence from #18 and #19.
+
+Physical privacy/recovery criteria in #18 are verified here once, rather than
+repeated in a separate session. Speaker-specific results belong to #21.
+Open focused bug tickets for failures and repeat affected checks after fixes.
+
 
 **Claimed by:** Codex (implementation complete; target-desktop acceptance pending).
 
@@ -17,6 +40,16 @@
 - [x] Document exact user-service installation/enable/start/stop/status/log commands, KDE shortcut setup, device configuration, suspend/reconnect troubleshooting, update and uninstall procedures, and manual-only readiness; describe any system package steps separately from user services.
 
 ## Comments
+
+2026-10-19: Installed both user units with a local Node path override and began
+the actual user-confirmed headset desktop trials. Partial [session evidence](../desktop-acceptance-2026-10-19.md)
+records real lock, source/CLI mute precedence, microphone unplug/replug,
+stop/muted startup, core restart and suspend observations with explicit coverage
+limits. Hardware mute is not exposed through the selected source's PipeWire mute
+property. Repeated long-answer synthesis failures are tracked in [#23](23-long-speech-duration-overflow.md).
+Login, remaining scenarios and precise physical timing remain open; no full
+acceptance or closure claimed. This supersedes the historical statement below
+that services have not been installed, without changing its earlier results.
 
 - Claimed for implementation; baseline `7db9f4b941d9c1fddcd76bf51eac58d86bf3849e` (recorded below before review). Confirmed test seams: desktop monitor → privacy/capability interface and CLI/service startup under temporary XDG directories. Target desktop acceptance remains an explicit hardware gate.
 

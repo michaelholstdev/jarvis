@@ -6,6 +6,21 @@
 
 **Status:** ready-for-human
 
+## Remaining work plan — 2026-10-19
+
+**Type:** Acoustic acceptance
+
+**Outcome:** Measure standalone spoken-stop reliability, delay and false stops
+separately on actual headset and speakers, using the existing acoustic protocol.
+Manual cancellation remains independently usable. Keep this separate from basic
+headset acceptance so an unvalidated/failed FR-09 is visible as a release gap.
+Share compatible fixtures/results with #17/#21; do not duplicate trials or claim
+general barge-in. Final trials use the selected production configuration.
+
+#19 may consider a limited manual release with an explicit FR-09 gap; successful
+spoken stop is required before claiming that P0 requirement passed.
+
+
 - [x] Provide bounded microphone processing for the narrowly scoped stop control during playback without enabling general voice barge-in or indefinite ambient transcription.
 - [x] Only a validated standalone spoken “Stopp” stops the reply; quoted/embedded words, playback echo, and VAD activity alone do not establish a control intent.
 - [x] Voice stop cancels remaining reply work, retains delivered-reply semantics, and starts the default follow-up window when playback stops.

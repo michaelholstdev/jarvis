@@ -6,6 +6,21 @@
 
 **Status:** ready-for-agent
 
+## Remaining work plan — 2026-10-19
+
+**Type:** Evaluation
+
+**Outcome already delivered:** the synthetic recognizer comparison and recommendation.
+The ready-for-agent label is historical; all comparison criteria below are checked.
+The allowed triage vocabulary has no resolved status, so use the map/Answer as the
+completion record rather than inventing a status.
+
+Remaining work is assigned to [#20](20-production-parakeet-recognition.md)
+(production integration), [#17](17-latency-and-resource-benchmarks.md)
+(human headset quality and model selection), and [#21](21-speaker-acceptance.md)
+(speaker evidence). This ticket is not an additional implementation queue item.
+
+
 - [x] A fixed consented or synthetic corpus contains at least 30 German utterances, including common English technical terms, with reference transcripts and provenance.
 - [x] Compare at least two German-capable CPU configurations, including the planned Parakeet TDT v3 INT8 candidate where supported and a small true-streaming alternative; record compatibility limitations rather than inventing results.
 - [x] Report recognition errors and latency by configuration, exact model revisions/checksums, quantization, settings, runtime, and hardware state.

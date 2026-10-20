@@ -2,15 +2,134 @@
 
 **What to build:** Verify prolonged private conversation and idle operation survive ordinary desktop failures and work with external connectivity disconnected.
 
-**Blocked by:** 05: Conversation expiry and explicit extension; 11: Concise speech and temporary text answers; 12: Login startup, KDE activation, and device recovery — M3; 15: Real playback delivery in follow-up context.
+**Blocked by:** None for the buffer-instrumentation implementation below. Final physical/release acceptance still depends on #12 desktop privacy/recovery and #17 selected headset configuration.
 
 **Status:** ready-for-human
 
 **Resolution:** closed — delivered implementation/tooling; remaining acceptance tracked in #12/#17/#19.
 
+## Current implementation scope — user decision, 2026-10-20
+
+**Type:** Instrumentation implementation
+
+**Next task:** Implement content-free buffer occupancy evidence before the next
+physical headset trials. The user selected this next step after #13 and requested
+this issue be prepared for a fresh context. Preparation is complete; this section
+specifies implementation work still to do. Earlier claims, reviews and
+`ready-for-human` statements below describe delivered tooling or final acceptance,
+not a current implementation claim. Claim this scoped follow-up before starting.
+
+### Starting point and boundaries
+
+- #13 is implemented and reviewed in `fed827a` / `d2e56dd`. Real voice wake now
+  defaults enabled, threshold **0.2**. Measured headset recall **23/30 (76.7%)**
+  is accepted for experimental use; do not recalibrate it or reopen that decision.
+- `benchmarks/stability/bounds.py` currently wraps existing socket/worker tests;
+  it does **not** observe production audio buffer occupancy. Passing its checks
+  or observing low RSS is not occupancy evidence.
+- Relevant production paths: `apps/audio/input.py` (raw PCM, resampler pending,
+  1280-sample wake-frame accumulator, overwritten pre-roll and utterance),
+  `apps/audio/wake.py`, `apps/audio/output_worker.py`, `apps/audio/output.py`,
+  and `apps/audio/main.py`. Existing fixtures are in `tests/fixtures/wake/`,
+  `tests/wake_socket_test.py`, `tests/wake-runtime.test.ts` and
+  `tests/worker_privacy_test.py`.
+- Read [stability follow-up](../../../docs/stability-follow-up.md),
+  [wake implementation](../../../docs/wake-activation.md) and
+  [stability protocol](../../../docs/stability-acceptance.md). The old follow-up
+  table uses the pre-#13 pre-roll calculation; audit current code/config instead
+  of copying that historical number. Default pre-roll now holds 23 frames of
+  512 float32 samples (736 ms / 47,104 sample bytes).
+- Record the actual task-start Git revision for implementation/review. The old
+  `afc5ac...` baseline below belongs to the previous tooling change.
+- Preserve all preexisting working-tree changes, including tracker edits and
+  local calibration/validation records. Do not reconfigure/restart live services,
+  open physical capture, acquire models or start another long idle run.
+
+### Deliverables and acceptance criteria
+
+- [ ] Add opt-in diagnostic instrumentation to the **production capture path**
+  that measures current occupancy and high-water marks for Jarvis-owned raw PCM,
+  resampled pending frames, wake-frame accumulation, pre-roll and retained
+  utterance/handoff audio. Record samples/bytes and configured or derived limits
+  with explicit units. Observe growth/clear points so a transient peak is not
+  hidden by periodic sampling; keep the instrumentation itself bounded.
+- [ ] Keep diagnostics content-free: counters, limits, operation/generation
+  identity and lifecycle outcomes only. No PCM, transcripts, prompts, question
+  text or content-derived fingerprints. Normal operation must not gain per-frame
+  logging or persistent ambient recording. Diagnostics must not preserve old
+  audio or alter wake defaults, thresholds, cue timing or capture handoff.
+- [ ] Extend the existing acceptance CLI/report path (prefer
+  `benchmarks.stability.bounds`) with a reproducible finite fixture run that
+  consumes those actual production observations. Include candidate/config
+  identity, coverage, observed maxima, limits and passed/failed/unvalidated
+  verdicts. Separate prior contract-test results from new occupancy evidence;
+  mark unobserved buffers unvalidated. Failed/interrupted/invalid runs invalidate
+  previous passing reports and cannot publish a completed passing verdict.
+- [ ] Exercise sustained synthetic idle longer than the pre-roll window,
+  immediate wake-plus-question handoff, manual activation interaction, endpoint
+  and maximum-duration capture, plus lock/software-mute cancellation, owning
+  socket disconnect and recovery. Show overwrite rather than accumulation, no
+  question onset loss, temporary-buffer release at completion/cancellation, and
+  rejection of stale observations/events across operations or generations.
+  Process termination is lifecycle evidence, not a claim of physical heap erasure.
+- [ ] Test through the already agreed **acceptance CLI/report** and
+  **daemon/audio socket** seams, reusing deterministic external audio/model
+  fixtures. Tests must exercise the instrumented production path; do not infer
+  occupancy solely from configured constants, a parallel ring implementation,
+  mocked Jarvis internals or test exit codes. Include failure/missing-observation
+  cases that prevent a false pass. These fixtures require no human speech.
+- [ ] Update bounds documentation and publish a content-free fixture report with
+  reproducible commands and precise coverage. Identify openWakeWord's internal
+  inference buffers, native resampler/VAD/model allocations, Piper synthesis,
+  OS/PipeWire buffers and other unmeasured queues separately; this focused
+  implementation does not establish complete native/backend occupancy or full
+  #18 acceptance. Record observed bound violations as failures rather than
+  silently increasing limits or changing behavior to make a report pass.
+- [ ] Run focused checks during implementation, `npm run check`, the full test
+  suite at completion and the implementation skill's Standards/Spec review.
+  Commit only this scoped work, preserving unrelated existing changes. Append
+  results under `## Comments` and update the map; retain the historical evidence.
+
+**Out of this follow-up:** expanding the network audit to datagrams/inherited
+connections, installing/running `strace`, physical/headset/speaker trials, final
+LLM selection, release sign-off, new features or wake recalibration. The current
+connection-only audit and its disclosed coverage gaps remain separate open #18
+work. A broader audit can be scoped later; it is not part of this buffer task.
+
+**After delivery:** mark the instrumentation outcome separately from remaining
+physical/privacy/network coverage. Return #18 to `ready-for-human` if only those
+acceptance steps remain; do not close it or mark mandatory gates passed merely
+because the fixture report passes. The user-waived two-hour idle duration stays
+waived; preserve the 44.02-minute observation as partial evidence.
+
+## Remaining work plan — 2026-10-19
+
+**Type:** Acceptance
+
+**Outcome:** Complete remaining stability and privacy evidence on the selected manual
+headset configuration. Existing synthetic offline results remain valid only for
+their recorded setup; they do not replace final candidate evidence.
+
+- The two-hour idle run is waived by the user (2026-10-19); retain the existing
+  44.02-minute observation as partial evidence, not a completed two-hour pass.
+- [ ] Complete explicit bounded queue/buffer occupancy evidence independently
+  of the waived long idle run.
+- [ ] Complete 30 physical contextual turns plus extension, interruption,
+  delivered-context, text cleanup and disconnected local operation on the chosen
+  setup. Share applicable session evidence with #17.
+- [ ] Audit external request attempts separately from blocked external routes;
+  document method, coverage and verdict without retaining conversation content.
+- [ ] Import physical lock/mute/recovery evidence from #12 instead of duplicating
+  its session. Record remaining failures/unvalidated coverage explicitly.
+
+Agent instrumentation/preparation can proceed independently; final hardware
+acceptance uses the configuration selected by #17. Speaker coverage is #21.
+Use [existing commands and protocols](../../../docs/stability-acceptance.md).
+
+
 Claimed by Codex for implementation and acceptance evidence, 2026-10-19.
 
-- [ ] Run a two-hour idle soak showing bounded CPU/RAM, queues, buffers, and log growth with no ambient STT/LLM invocation or retained conversation content.
+- Two-hour idle soak: **waived by the user, 2026-10-19**; no longer a closure blocker. Existing 44.02-minute RSS/log observations remain partial; final CPU and queue/buffer verdicts are not established by that run. Queue/buffer and idle privacy checks remain required.
 - [ ] Complete a 30-turn follow-up conversation and extended sessions with explicit renewal, verifying noise deadlines, context continuity, expiry, and cleanup.
 - [ ] Exercise systemd/service restart, microphone/backend disconnect/reconnect, suspend/resume, and stalled operations; recovered services never replay canceled questions or replies.
 - [ ] With real devices, verify lock/mute immediately stops capture/playback, independent inhibitions remain effective, and readiness restoration cannot resume prior work.
@@ -21,8 +140,9 @@ Claimed by Codex for implementation and acceptance evidence, 2026-10-19.
 
 ## Answer
 
-Acceptance tooling and synthetic evidence delivered; **physical and full soak
-acceptance remain open**. See [the report](../../../docs/stability-acceptance.md)
+Acceptance tooling and synthetic evidence delivered; **physical and remaining
+privacy/resource acceptance remain open**. The two-hour idle run is waived by the
+user; it is not a closure blocker or a passed test. See [the report](../../../docs/stability-acceptance.md)
 and [map](../map.md).
 
 - Added a configurable idle collector (two hours by default) with content-free
@@ -50,6 +170,18 @@ evidence covers only software/synthetic behavior.
 
 
 ## Comments
+
+2026-10-19: Partial real headset desktop privacy/recovery trials are recorded once
+in [#12 session evidence](../desktop-acceptance-2026-10-19.md). Import only the
+explicitly observed scenarios; hardware-mute detection is unsupported for this
+setup and long speech overflow is open in #23. This does not close #12 or #18.
+
+2026-10-19: The user requested omitting the two-hour idle test because the prior
+roughly 40-minute observation showed no reported anomalies. Accepted as an
+explicit duration waiver for #18 and its release checklist. Preserve the actual
+44.02-minute checkpoint evidence and incomplete artifact; do not relabel it as a
+two-hour or final CPU pass. Other privacy, queue/buffer, offline, conversation and
+desktop recovery checks remain required.
 
 Review follow-up: invalid zero, negative and non-finite `--seconds`/`--interval`
 values now replace prior passing evidence with an incomplete failed report before
