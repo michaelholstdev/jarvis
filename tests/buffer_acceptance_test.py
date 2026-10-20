@@ -59,7 +59,7 @@ class BufferAcceptanceTest(unittest.TestCase):
             self.assertEqual(report['occupancy']['buffers']['resampled_pending']['verdict'], 'failed')
 
     def test_invalid_and_failed_reruns_invalidate_previous_passing_report(self):
-        for arguments in (('--unknown',), ('--fixture-service', '/missing/fixture.py')):
+        for arguments in (('--unknown',), ('--fixture-service', '/missing/fixture.py'), ('--output',)):
             with self.subTest(arguments=arguments), tempfile.TemporaryDirectory() as directory:
                 output = Path(directory) / 'bounds.json'
                 output.write_text('{"run_completed":true,"checks":{"execution":"passed"}}')

@@ -3,7 +3,10 @@
 This report separates automated synthetic/socket evidence from physical desktop
 acceptance. See the [2026-10-20 follow-up](stability-follow-up.md) for current
 socket-bound evidence, connection-audit tooling and imported #12 physical trials.
-Historical results below retain their original configuration and coverage.
+The separate [production capture follow-up](capture-buffer-evidence.md) adds
+finite logical payload occupancy evidence; native/backend and full queue coverage
+remain unvalidated. Historical results below retain their original configuration
+and coverage.
 Hardware-mute detection is unsupported on the #12 setup; final physical
 acceptance and acoustic spoken stop remain open. See the step-by-step
 [desktop procedure](desktop-acceptance.md) and separate [spoken-stop gate](spoken-stop.md).
@@ -76,8 +79,8 @@ Offline voice evidence is
 also invalidated at startup and requires the current command to succeed. Resource
 screens require ≥60 seconds; shorter command checks cannot pass the two-hour gate.
 RSS endpoint growth is not proof of a leak-free heap. Operation diagnostics and
-closed text access do not establish erased heap contents. Internal queue/audio
-buffer occupancy is not exported and remains **unvalidated**; the report does not
+closed text access do not establish erased heap contents. This historical idle collector does not export internal queue/audio
+buffer occupancy, which remains **unvalidated** in that report; it does not
 turn low RSS into a queue/buffer pass. Fixed-sentinel log screening is narrow;
 existing privacy suites provide separate content-logging regression coverage.
 

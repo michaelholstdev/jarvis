@@ -28,12 +28,21 @@ def main() -> None:
     report: dict[str, Any] = {
         'run_completed': False, 'timestamp_utc': datetime.now(timezone.utc).isoformat(),
         'checks': {'execution': 'failed', 'native_audio_buffer_occupancy': 'unvalidated'}}
-    preliminary = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
-    preliminary.add_argument('--output', type=Path)
-    destination, _ = preliminary.parse_known_args()
-    if destination.output:
-        destination.output.parent.mkdir(parents=True, exist_ok=True)
-        destination.output.write_text(json.dumps(report, indent=2) + '\n')
+    # Recover recognizable destinations without a parser: even a malformed
+    # trailing duplicate --output must invalidate the previously supplied path.
+    arguments = sys.argv[1:]
+    for index, argument in enumerate(arguments):
+        target = None
+        if argument.startswith('--output='):
+            target = argument.partition('=')[2]
+        elif argument == '--output' and index + 1 < len(arguments):
+            candidate = arguments[index + 1]
+            if not candidate.startswith('-'):
+                target = candidate
+        if target:
+            destination = Path(target)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(json.dumps(report, indent=2) + '\n')
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--occupancy-only', action='store_true',
