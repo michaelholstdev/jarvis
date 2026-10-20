@@ -41,7 +41,9 @@ manual activation and voice conversation ready. Wake is disabled. No `pw-record`
 process exists; no recognition, playback or generation was requested in setup.
 The user is asked for a separate start signal before a cued microphone trial.
 
-Pending: final-build physical German/context/cancellation trial and human
-quality feedback; an actual logout/login test of automatic startup. Enabled
-unit/dependency checks alone do not validate that login lifecycle. #17's full
-quality/model/latency matrix remains separate.
+Final-build physical German/context/cancellation trial passed with human
+confirmation; see [acceptance evidence](../llama-cpp-acceptance-2026-10-20.md#final-build-installed-headset-acceptance--2026-10-20).
+Wake remains explicitly disabled after the trial. An actual logout/login test
+of automatic startup remains pending. Enabled unit/dependency checks alone do
+not validate that login lifecycle. #17's full quality/model/latency matrix remains
+separate.

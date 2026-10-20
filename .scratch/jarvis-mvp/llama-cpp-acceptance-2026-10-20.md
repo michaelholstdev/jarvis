@@ -88,3 +88,42 @@ after review. No #17 full quality/model/latency gate is closed.
 `npm run check` passed: TypeScript, Biome, Ruff and both mypy scopes.
 Targeted adapter/runtime regression run passed 44 tests after transport review.
 Full suite passed: `npm test`, 253 Node tests and 66 Python tests.
+
+## Final-build installed headset acceptance — 2026-10-20
+
+This follow-up supersedes the pending human feedback and physical-build limitation
+of the initial trial above. Persistent deployment is recorded in
+[the deployment record](llama-deployment/README.md). Running application code was
+rebuilt from `9e569dee14179370139c64636c19f6e5637eb22b`; documentation commit
+`06b40bd` was HEAD at trial time. Core invocation:
+`739c678509df4cddae72ef72d25ace5c`; audio invocation:
+`abd2e742f09548009c82a992b9eeece7`. Server/model checksum, 8192 context,
+single slot, ROCm/GPU settings and CPU speech models match the deployment record.
+Generation settings: 512 output tokens, temperature 0.3, seed 0, 120000 ms
+inference timeout. Same Jieli microphone and analog stereo output as above;
+wake explicitly disabled, desktop guard enabled, all capture inhibitions clear.
+The user explicitly confirmed readiness before manual activation.
+
+- German question: inference 7, synthesis 8, playback 9 fully delivered 42 chars.
+- Contextual follow-up: inference 12, synthesis 13, playback 14 fully delivered
+  28 chars. User confirmed both answers were understandable, correct and that
+  the follow-up referred to the previously named city.
+- The first conversation's normal follow-up allowance expired while the next
+  test was prepared. A new manual activation started the cancellation question.
+- Cancellation: inference 21 started at monotonic 18500545.298039 ms; CLI stop
+  produced cancel operation 22 at 18500940.072986 ms (about 395 ms later).
+  No synthesis or playback of the canceled answer followed; healthy follow-up
+  resumed at 18500993.656470 ms. User confirmed no answer content was heard
+  after cancellation.
+- Spoken conversation ending: speech onset and endpoint recorded for recognition
+  23; close-conversation 25 completed, returning idle. No inference for the end
+  command. Final health: ready, STT/TTS/inference ready, all inhibitions false,
+  no pending privacy/audio cleanup, no retry or failure, wake disabled.
+
+Verdict: focused #27 final-build physical German/context/cancellation acceptance
+passed with human confirmation. No conversation content or raw audio is retained
+in this record. Timing above is software event timing, not physical audible
+latency. No #17 model/quality/latency matrix, actual login lifecycle, wake accuracy,
+speaker, acoustic spoken-stop or general barge-in gate is passed by this trial.
+Persistent services remain active; future microphone turns require explicit
+manual activation while wake stays disabled.

@@ -132,3 +132,15 @@ no microphone capture or generation requested. Prior config and unit files backe
 up privately. See [deployment record and exact units](../llama-deployment/README.md).
 Final-build headset quality trial awaits the user's separate readiness signal;
 login lifecycle and #17's full matrix remain unvalidated.
+
+
+### Final-build physical acceptance
+
+After separate readiness confirmation, the installed `9e569de` build passed the
+focused German question, contextual follow-up and generation-cancellation trial.
+The user confirmed audible, correct, context-aware answers and no audible canceled
+answer. Spoken ending returned Jarvis to healthy idle. See
+[final-build evidence](../llama-cpp-acceptance-2026-10-20.md#final-build-installed-headset-acceptance--2026-10-20).
+This supersedes earlier pending human-quality/final-build trial notes. #27's
+focused acceptance is complete. Persistent services remain active with wake
+explicitly disabled; login lifecycle and #17's full matrix remain separate.
