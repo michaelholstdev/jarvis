@@ -162,27 +162,32 @@ async def collect(service: Path) -> dict[str, Any]:
             await process.wait()
 
 
+def buffer_verdict(counters: list[dict[str, int]], *, complete: bool) -> str:
+    # Known violations remain failures even when cancellation or missing records
+    # prevents a complete bound validation.
+    if any(counter['high_water_samples'] > counter['limit_samples'] or
+           counter['high_water_bytes'] > counter['limit_bytes'] for counter in counters):
+        return 'failed'
+    if complete and any(counter['high_water_samples'] > 0 for counter in counters):
+        return 'passed'
+    return 'unvalidated'
+
+
 def evaluate(data: dict[str, Any], coverage: dict[str, str]) -> dict[str, Any]:
     operations = data['operations']
     maxima: dict[str, Any] = {}
     for name in BUFFERS:
         counters = [run['buffers'][name] for run in operations if name in run['buffers']]
-        observed = bool(counters and len(counters) == len(operations) and
-                        any(c['high_water_samples'] > 0 for c in counters))
         maxima[name] = {
-            'verdict': ('passed' if all(c['high_water_samples'] <= c['limit_samples'] and
-                                      c['high_water_bytes'] <= c['limit_bytes'] for c in counters)
-                        else 'failed') if observed else 'unvalidated',
+            'verdict': buffer_verdict(counters, complete=len(counters) == len(operations)),
             'high_water_samples': max((c['high_water_samples'] for c in counters), default=0),
             'high_water_bytes': max((c['high_water_bytes'] for c in counters), default=0),
             'limit_samples': sorted({c['limit_samples'] for c in counters}),
             'limit_bytes': sorted({c['limit_bytes'] for c in counters})}
     for run in operations:
         run['buffer_verdicts'] = {
-            name: ('unvalidated' if name not in run['buffers'] or
-                   run['buffers'][name]['high_water_samples'] == 0 or run['outcome'] != 'released'
-                   else 'passed' if run['buffers'][name]['high_water_samples'] <= run['buffers'][name]['limit_samples'] and
-                   run['buffers'][name]['high_water_bytes'] <= run['buffers'][name]['limit_bytes'] else 'failed')
+            name: buffer_verdict([run['buffers'][name]] if name in run['buffers'] else [],
+                                 complete=run['outcome'] == 'released')
             for name in BUFFERS}
     identities = [run['operation_id'] for run in operations]
     complete = (identities == list(SCENARIOS) and all(coverage.get(s) == 'passed' for s in SCENARIOS) and

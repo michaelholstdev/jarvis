@@ -121,3 +121,13 @@ network audit, perform hardware trials or select the final #17 configuration.
 The two-hour duration remains waived; 44.02-minute evidence remains partial.
 
 Validation: `npm run check` passes; full `npm test` passes **211 Node / 64 Python tests**. The focused CLI and wake socket suites pass; the final bounds command passes its historical contract groups and scoped production payload/lifecycle screen. Standards: 0 remaining findings; Spec: 0 remaining findings.
+
+2026-10-20 review correction: Fixed the P3 verdict precedence finding. Received
+sample/byte overflows now remain failed for canceled operations and aggregate
+reports with missing records elsewhere. Unobserved/partial evidence remains
+unvalidated when no violation is known. Three regression cases reproduced the
+incorrect verdict before the fix and pass afterward. Updated
+[method and fixture evidence](../../../docs/capture-buffer-evidence.md).
+The existing ready-for-human status and remaining acceptance limits are unchanged.
+
+Correction validation: `npm run check` and full `npm test` pass (**211 Node / 65 Python tests**); all 12 focused CLI/socket tests pass. The refreshed bounds report passes its scoped screen. Independent Standards and Spec rechecks report **0 remaining findings**.

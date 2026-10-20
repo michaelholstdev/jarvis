@@ -1,6 +1,6 @@
 {
   "run_completed": true,
-  "timestamp_utc": "2026-10-20T10:01:35.533962+00:00",
+  "timestamp_utc": "2026-10-20T10:07:56.450899+00:00",
   "checks": {
     "native_audio_buffer_occupancy": "unvalidated",
     "production_capture_payload_occupancy": "passed",
@@ -16,7 +16,7 @@
         "dist/tests/transport-framing.test.js"
       ],
       "exit_code": 0,
-      "elapsed_seconds": 10.492941196000174
+      "elapsed_seconds": 10.445654327000739
     },
     {
       "command": [
@@ -27,12 +27,12 @@
         "tests.long_speech_test"
       ],
       "exit_code": 0,
-      "elapsed_seconds": 4.67679037599919
+      "elapsed_seconds": 4.726369268999406
     }
   ],
   "source_state": "working tree identified by source_sha256; source_revision is its Git parent",
   "fixture_service": "tests/fixtures/wake/audio_service.py",
-  "source_revision": "a6bdc9fafe77f7a1e83701a7180d5b88e00f0c76",
+  "source_revision": "167535b8b753e24333d1978796cb1bea811ea92e",
   "source_sha256": {
     "apps/audio/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "apps/audio/audio_errors.py": "dd2428e873ac375a30b4f50b02d48b17eb906726de8435b48d0b33e942902470",
@@ -61,7 +61,7 @@
     "benchmarks/stability/bounds.py": "882c032dffd87e5baa6efc52dc63a4d4fcf6086faf26a09090a26a1ac713dbbb",
     "benchmarks/stability/idle.py": "f0f81691e72fb5fc0e2028ab74fddb598a1597f9dbcc8480e2bf0a612cbe4228",
     "benchmarks/stability/network.py": "aecd2a4ab743b0c984bbb1e6bb60325ce831ca3a8e032847f08b3cd2b07b4768",
-    "benchmarks/stability/occupancy.py": "52707b63830310560e6030fbec4bad0bfbd66cc922ced2624a7ed9e61d86f8c4",
+    "benchmarks/stability/occupancy.py": "5e0aba5db0a7b3d7d59835234ac78a1db35ed8119279ebce48988cc8199840ed",
     "benchmarks/stability/offline.py": "9fa2bd7cd7aaed3285952dc83f9e27a4f7cff5e1ee165e375fdef6d21949de79",
     "config/defaults.json": "f67912fb274f0f8603a6fb98c6de98925fb608395be119da46c5247b402f4f14",
     "dist/apps/core/audio-deadline.js": "245e64868416e968c712dfee9d4d34601088f30e4e719b435d3f1ecb3a0c1bc6",
@@ -108,9 +108,9 @@
     "dist/tests/transport.test.js": "11a7ed548dcd7297b43649cf49efa1ea2ab6e3bf22476bc0c0864a3423439e77",
     "dist/tests/wake-runtime.test.js": "9c8c91763f3bf1344947cad4ced74a560cdb3304979b8c13345e6444b3ce3241",
     "packages/protocol/schemas/config.schema.json": "fa33ac46c46bfdb0811bb5ae7ac055b61b96755220b29be9d8464ea861f7fc5c",
-    "tests/buffer_acceptance_test.py": "f47abeca829c97cbb88d5bfe3e9a9fb8576d2ef202faaeb8bac58ef0c5d66954",
+    "tests/buffer_acceptance_test.py": "94cd4e984406ba7b6c022099e2c898cbf9ca11cef5db0fd7fc724baf4f3f4794",
     "tests/fixtures/long-speech/worker.py": "94c33958fdf0706406ca90a7ae9b4e4c8cd1e7db683cb9d382a3d723ead202e9",
-    "tests/fixtures/wake/audio_service.py": "a22ba527acbbf0cf1f58e78baa0203b321a192a7a475a17c02f4cca5b4d18992",
+    "tests/fixtures/wake/audio_service.py": "10274a9c5fb81f6c7ae8dc671ad8d6fd0150130dbe88103afa061a3d9f48116d",
     "tests/long_speech_test.py": "88a6b42652b04691e715421a655ecaad7b64ba8b6b5efe762224a45cbf54f170",
     "tests/output_test.py": "2e0591c04c775d9b6fe9b97eea961000e006dac0932d76200a50ca18bee28127",
     "tests/transport-framing.test.ts": "8055dda89cc79fffb6c55389ca22ffe08e3482e6ac4b26b4d1653d199e82012a",
@@ -242,8 +242,8 @@
           "utterance": {
             "current_samples": 0,
             "current_bytes": 0,
-            "high_water_samples": 18432,
-            "high_water_bytes": 73728,
+            "high_water_samples": 17920,
+            "high_water_bytes": 71680,
             "limit_samples": 28288,
             "limit_bytes": 113152,
             "sample_bytes": 4
@@ -251,15 +251,15 @@
           "handoff": {
             "current_samples": 0,
             "current_bytes": 0,
-            "high_water_samples": 18432,
-            "high_water_bytes": 73728,
+            "high_water_samples": 17920,
+            "high_water_bytes": 71680,
             "limit_samples": 28288,
             "limit_bytes": 113152,
             "sample_bytes": 4
           }
         },
         "overwritten_frames": 140,
-        "frames": 176,
+        "frames": 175,
         "capture_end": "endpoint",
         "buffer_verdicts": {
           "raw_pcm": "passed",
@@ -286,8 +286,8 @@
             "sample_bytes": 2
           },
           "resampled_pending": {
-            "current_samples": 256,
-            "current_bytes": 1024,
+            "current_samples": 448,
+            "current_bytes": 1792,
             "high_water_samples": 768,
             "high_water_bytes": 3072,
             "limit_samples": 1343,
@@ -295,8 +295,8 @@
             "sample_bytes": 4
           },
           "wake_pending": {
-            "current_samples": 1024,
-            "current_bytes": 4096,
+            "current_samples": 512,
+            "current_bytes": 2048,
             "high_water_samples": 1536,
             "high_water_bytes": 6144,
             "limit_samples": 1791,
@@ -331,8 +331,8 @@
             "sample_bytes": 4
           }
         },
-        "overwritten_frames": 34,
-        "frames": 57,
+        "overwritten_frames": 58,
+        "frames": 81,
         "capture_end": "unvalidated",
         "buffer_verdicts": {
           "raw_pcm": "unvalidated",
@@ -505,8 +505,8 @@
             "sample_bytes": 2
           },
           "resampled_pending": {
-            "current_samples": 256,
-            "current_bytes": 1024,
+            "current_samples": 320,
+            "current_bytes": 1280,
             "high_water_samples": 768,
             "high_water_bytes": 3072,
             "limit_samples": 1343,
@@ -514,8 +514,8 @@
             "sample_bytes": 4
           },
           "wake_pending": {
-            "current_samples": 1024,
-            "current_bytes": 4096,
+            "current_samples": 0,
+            "current_bytes": 0,
             "high_water_samples": 1536,
             "high_water_bytes": 6144,
             "limit_samples": 1791,
@@ -550,8 +550,8 @@
             "sample_bytes": 4
           }
         },
-        "overwritten_frames": 49,
-        "frames": 72,
+        "overwritten_frames": 42,
+        "frames": 65,
         "capture_end": "unvalidated",
         "buffer_verdicts": {
           "raw_pcm": "unvalidated",
@@ -578,8 +578,8 @@
             "sample_bytes": 2
           },
           "resampled_pending": {
-            "current_samples": 64,
-            "current_bytes": 256,
+            "current_samples": 0,
+            "current_bytes": 0,
             "high_water_samples": 768,
             "high_water_bytes": 3072,
             "limit_samples": 1343,
@@ -587,8 +587,8 @@
             "sample_bytes": 4
           },
           "wake_pending": {
-            "current_samples": 768,
-            "current_bytes": 3072,
+            "current_samples": 0,
+            "current_bytes": 0,
             "high_water_samples": 1536,
             "high_water_bytes": 6144,
             "limit_samples": 1791,
@@ -623,8 +623,8 @@
             "sample_bytes": 4
           }
         },
-        "overwritten_frames": 61,
-        "frames": 84,
+        "overwritten_frames": 32,
+        "frames": 55,
         "capture_end": "unvalidated",
         "buffer_verdicts": {
           "raw_pcm": "unvalidated",
@@ -660,8 +660,8 @@
             "sample_bytes": 4
           },
           "wake_pending": {
-            "current_samples": 768,
-            "current_bytes": 3072,
+            "current_samples": 256,
+            "current_bytes": 1024,
             "high_water_samples": 1536,
             "high_water_bytes": 6144,
             "limit_samples": 1791,
@@ -696,8 +696,8 @@
             "sample_bytes": 4
           }
         },
-        "overwritten_frames": 46,
-        "frames": 69,
+        "overwritten_frames": 50,
+        "frames": 73,
         "capture_end": "unvalidated",
         "buffer_verdicts": {
           "raw_pcm": "unvalidated",

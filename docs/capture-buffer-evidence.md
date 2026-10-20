@@ -134,3 +134,21 @@ report finding is fixed; native/backend, network and physical coverage remain
 explicitly outside this implementation's passing verdict.
 
 Validation: `npm run check` passes; full `npm test` passes **211 Node / 64 Python tests**. The focused CLI and wake socket suites pass; the final bounds command passes its historical contract groups and scoped production payload/lifecycle screen. Standards: 0 remaining findings; Spec: 0 remaining findings.
+
+## Review correction — known violations take precedence
+
+The subsequent review found that an observed overflow in a canceled capture was
+classified as unvalidated per operation, although the aggregate report failed.
+Both classifiers now check known sample/byte violations first. Missing observations
+elsewhere cannot downgrade a demonstrated aggregate overflow to unvalidated.
+Cancellation and missing/unused buffers still remain unvalidated when no violation
+has been observed. This changes verdict reporting only; capture limits, thresholds
+and lifecycle behavior are unchanged.
+
+Three CLI regression cases inject cancellation sample overflow, byte overflow and
+byte overflow alongside a missing buffer record at the external worker pipe.
+All three reproduced the incorrect per-operation verdict before the fix. The
+regressions also require failed aggregate verdicts and preserve unvalidated status
+for the genuinely missing record.
+
+Correction validation: `npm run check` and full `npm test` pass (**211 Node / 65 Python tests**); all 12 focused CLI/socket tests pass. The refreshed bounds report passes its scoped screen. Independent Standards and Spec rechecks report **0 remaining findings**.

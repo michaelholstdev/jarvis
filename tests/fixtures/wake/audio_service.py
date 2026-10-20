@@ -144,6 +144,15 @@ def worker() -> None:
                     if fault == 'missing':
                         event['buffers'].pop('handoff', None)
                         value = json.dumps(event)
+                    elif fault in {'cancel_sample_overflow', 'cancel_byte_overflow',
+                                   'cancel_overflow_missing'}:
+                        if event.get('operation_id') == 'lock':
+                            counter = event['buffers']['raw_pcm']
+                            unit = 'samples' if fault == 'cancel_sample_overflow' else 'bytes'
+                            counter['high_water_' + unit] = counter['limit_' + unit] + 1
+                        elif fault == 'cancel_overflow_missing' and event.get('operation_id') == 'recovery':
+                            event['buffers'].pop('raw_pcm', None)
+                        value = json.dumps(event)
                     elif fault == 'stale':
                         for key, wrong in (('operation_id', 'old-operation'), ('generation', -1),
                                            ('capture_sequence', -1)):

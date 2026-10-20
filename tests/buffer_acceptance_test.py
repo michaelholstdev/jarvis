@@ -28,6 +28,8 @@ class BufferAcceptanceTest(unittest.TestCase):
             self.assertEqual(occupancy['buffers']['pre_roll']['high_water_bytes'], 47104)
             self.assertGreater(occupancy['operations'][0]['overwritten_frames'], 100)
             self.assertEqual(report['checks']['native_audio_buffer_occupancy'], 'unvalidated')
+            lock = next(run for run in occupancy['operations'] if run['operation_id'] == 'lock')
+            self.assertEqual(lock['buffer_verdicts']['raw_pcm'], 'unvalidated')
             self.assertNotIn('Wie spät', output.read_text())
 
     def test_missing_observations_cannot_pass(self):
@@ -57,6 +59,23 @@ class BufferAcceptanceTest(unittest.TestCase):
             report = json.loads(output.read_text())
             self.assertFalse(report['run_completed'])
             self.assertEqual(report['occupancy']['buffers']['resampled_pending']['verdict'], 'failed')
+
+    def test_observed_cancellation_overflow_remains_failed_with_incomplete_evidence(self):
+        for fault in ('cancel_sample_overflow', 'cancel_byte_overflow', 'cancel_overflow_missing'):
+            with self.subTest(fault=fault), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / 'bounds.json'
+                result = self.run_bounds(output, WAKE_FIXTURE_EVIDENCE_FAULT=fault)
+                self.assertNotEqual(result.returncode, 0)
+                report = json.loads(output.read_text())
+                self.assertFalse(report['run_completed'])
+                occupancy = report['occupancy']
+                lock = next(run for run in occupancy['operations'] if run['operation_id'] == 'lock')
+                self.assertEqual(lock['outcome'], 'worker_terminated')
+                self.assertEqual(lock['buffer_verdicts']['raw_pcm'], 'failed')
+                self.assertEqual(occupancy['buffers']['raw_pcm']['verdict'], 'failed')
+                if fault == 'cancel_overflow_missing':
+                    recovery = next(run for run in occupancy['operations'] if run['operation_id'] == 'recovery')
+                    self.assertEqual(recovery['buffer_verdicts']['raw_pcm'], 'unvalidated')
 
     def test_invalid_and_failed_reruns_invalidate_previous_passing_report(self):
         for arguments in (('--unknown',), ('--fixture-service', '/missing/fixture.py'), ('--output',)):
