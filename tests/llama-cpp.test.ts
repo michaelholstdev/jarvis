@@ -286,3 +286,81 @@ test('terminal bare CR closes generation immediately even without HTTP EOF', asy
     await f.close();
   }
 });
+
+test('inference readiness logs transitions once per configuration, including recovery', async () => {
+  const { probeInference } = await import('../apps/core/inference.js');
+  let status = 'loading';
+  const f = await fixture((req, res) => {
+    if (req.url === '/health') {
+      if (status === 'loading') {
+        res.writeHead(503);
+        res.end(
+          JSON.stringify({
+            error: {
+              code: 503,
+              type: 'unavailable_error',
+              message: 'Loading model',
+            },
+          }),
+        );
+      } else if (status === 'unavailable') {
+        res.writeHead(500);
+        res.end('private server detail');
+      } else res.end('{"status":"ok"}');
+    } else {
+      assert.equal(req.url, '/v1/models');
+      res.end(
+        JSON.stringify({
+          data: [
+            { id: status === 'missing-model' ? 'other-model' : 'local-alias' },
+          ],
+        }),
+      );
+    }
+  });
+  const diagnostics: Record<string, unknown>[] = [];
+  const originalError = console.error;
+  console.error = (line: string) => diagnostics.push(JSON.parse(line));
+  try {
+    for (status of [
+      'loading',
+      'loading',
+      'missing-model',
+      'missing-model',
+      'ready',
+      'ready',
+      'unavailable',
+      'unavailable',
+      'ready',
+      'ready',
+    ]) {
+      assert.equal(await probeInference(f.config), status === 'ready');
+    }
+    assert.deepEqual(
+      diagnostics.map(({ event, status }) => ({ event, status })),
+      [
+        { event: 'inference_readiness', status: 'loading' },
+        { event: 'inference_readiness', status: 'missing-model' },
+        { event: 'inference_readiness', status: 'ready' },
+        { event: 'inference_readiness', status: 'unavailable' },
+        { event: 'inference_readiness', status: 'ready' },
+      ],
+    );
+    assert.equal(
+      await probeInference({ ...f.config, llm: { ...f.config.llm } }),
+      true,
+    );
+    assert.equal(
+      diagnostics.length,
+      6,
+      'a separate configuration reports its initial status',
+    );
+    assert.doesNotMatch(
+      JSON.stringify(diagnostics),
+      /private server detail|local-alias|other-model/,
+    );
+  } finally {
+    console.error = originalError;
+    await f.close();
+  }
+});

@@ -122,3 +122,26 @@ test('llama.cpp selection validates mode/provider consistency and preserves mock
     rmSync(directory, { recursive: true });
   }
 });
+
+test('omitted inference selection fields cannot default to an inconsistent backend', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'jarvis-provider-defaults-'));
+  try {
+    const path = join(directory, 'config.yaml');
+    writeFileSync(path, JSON.stringify({ llm: { mode: 'llama.cpp' } }));
+    assert.throws(() => loadConfig(path), /invalid_config: \/llm\/provider/);
+    for (const [llm, mode, provider] of [
+      [{}, 'mock', 'ollama'],
+      [{ mode: 'ollama' }, 'ollama', 'ollama'],
+      [{ mode: 'mock' }, 'mock', 'ollama'],
+      [{ provider: 'llama.cpp' }, 'mock', 'llama.cpp'],
+      [{ provider: 'ollama' }, 'mock', 'ollama'],
+    ] as const) {
+      writeFileSync(path, JSON.stringify({ llm }));
+      const config = loadConfig(path);
+      assert.equal(config.llm.mode, mode);
+      assert.equal(config.llm.provider, provider);
+    }
+  } finally {
+    rmSync(directory, { recursive: true });
+  }
+});

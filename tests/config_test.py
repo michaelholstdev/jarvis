@@ -56,6 +56,30 @@ class AudioConfigurationTest(unittest.TestCase):
                         with self.assertRaises(Diagnostic):
                             load_config()
 
+    def test_omitted_inference_selection_fields_match_core(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'config.yaml'
+            for selection, valid in (
+                ({'mode': 'llama.cpp'}, False), ({}, True),
+                ({'mode': 'ollama'}, True), ({'mode': 'mock'}, True),
+                ({'provider': 'llama.cpp'}, True), ({'provider': 'ollama'}, True),
+            ):
+                with self.subTest(selection=selection):
+                    path.write_text(json.dumps({'llm': selection}))
+                    with patch.dict(os.environ, {'JARVIS_CONFIG': str(path)}):
+                        result = subprocess.run(
+                            ['node', 'dist/apps/core/main.js', 'config'],
+                            capture_output=True, text=True,
+                        )
+                        if valid:
+                            self.assertEqual(result.returncode, 0)
+                            self.assertEqual(load_config(), json.loads(result.stdout))
+                        else:
+                            self.assertNotEqual(result.returncode, 0)
+                            self.assertIn('invalid_config: /llm/provider', result.stderr)
+                            with self.assertRaises(Diagnostic):
+                                load_config()
+
     def test_unknown_recognizer_is_rejected_by_both_services(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'config.yaml'

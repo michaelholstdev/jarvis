@@ -4,6 +4,8 @@ import { diagnostic } from './diagnostics.js';
 import * as llamaCpp from './llama-cpp.js';
 import * as ollama from './ollama.js';
 
+const readiness = new WeakMap<Config, llamaCpp.InferenceReadiness>();
+
 /** Backend selection stays outside the conversation state machine. */
 export function generateAnswer(
   config: Config,
@@ -18,6 +20,9 @@ export function generateAnswer(
 export async function probeInference(config: Config): Promise<boolean> {
   if (config.llm.provider !== 'llama.cpp') return ollama.probeInference(config);
   const status = await llamaCpp.probeInferenceStatus(config);
-  diagnostic({ event: 'inference_readiness', status });
+  if (readiness.get(config) !== status) {
+    readiness.set(config, status);
+    diagnostic({ event: 'inference_readiness', status });
+  }
   return status === 'ready';
 }

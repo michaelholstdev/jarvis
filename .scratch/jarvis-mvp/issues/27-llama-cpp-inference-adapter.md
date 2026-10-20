@@ -106,3 +106,19 @@ Code-review: Standards and Spec clear after resolving shared-transport duplicati
 quality assessment, not missing adapter implementation.
 
 Final repository checks passed: `npm run check`; `npm test` (253 Node, 66 Python).
+
+### Review corrections
+
+The subsequent user-requested review found two P2 issues: Node accepted a
+llama.cpp mode with an omitted provider and defaulted it to Ollama, while Python
+rejected it; inference health diagnostics also repeated unchanged probe results.
+Both are corrected: Node separately validates the completed config after default
+application, and readiness diagnostics track initial state and transitions per
+configuration. Public-loader Node/Python tests cover omitted selection fields;
+the HTTP-fixture adapter test covers repeated states, recovery, configuration
+isolation and content-free diagnostics. Both tests reproduced their finding
+before the fix. Independent reviewers confirmed both findings resolved.
+
+Validation after review corrections: `npm run check` passed; `npm test` passed
+255 Node tests and 67 Python tests. No hardware trial or service reconfiguration
+was needed for these configuration/diagnostic fixes.

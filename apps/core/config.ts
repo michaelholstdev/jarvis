@@ -19,7 +19,8 @@ const schema = JSON.parse(
     'utf8',
   ),
 );
-const validate = new Ajv({ useDefaults: true }).compile<Config>(schema);
+const applyDefaults = new Ajv({ useDefaults: true }).compile(schema);
+const validate = new Ajv().compile<Config>(schema);
 
 export function configPath(): string {
   return (
@@ -44,8 +45,10 @@ export function loadConfig(path?: string): Config {
       );
     }
   }
-  if (!validate(input)) {
-    const error = validate.errors?.[0];
+  // AJV may check allOf before inserting sibling defaults. Validate the completed
+  // object separately, matching the audio service's defaults-then-validation order.
+  if (!applyDefaults(input) || !validate(input)) {
+    const error = applyDefaults.errors?.[0] ?? validate.errors?.[0];
     throw new Error(
       `invalid_config: ${error?.instancePath || '/'} ${error?.keyword ?? 'schema'}`,
     );
