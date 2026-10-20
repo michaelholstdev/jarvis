@@ -70,3 +70,31 @@ Review summary: Standards 0 findings; Spec 0 actionable defects, with the above
 acceptance gaps still open. No release sign-off is granted by either review.
 
 Map: [MVP implementation map](../map.md).
+
+
+### Runbook and release review follow-up — 2026-10-20
+
+Claimed by Codex; user-confirmed scope: update the runbook and record the blocked
+release decision. Review baseline: `0207ee5e6552755e7a64a5bd67eb6cfa8b8be30b`.
+No fresh-account or hardware trial is included. Status remains ready-for-human.
+
+The [runbook](../../../docs/installation.md) now leads with #20's pinned Parakeet
+installation and optional Whisper alternative, makes provisional LLM/default
+settings explicit, corrects the synthetic-check model directory, and provides
+a content-free fresh-account lifecycle record format. No final #17 model selection
+is invented.
+
+The [dated release review](../../../docs/release-checklist.md#release-review--2026-10-20)
+imports #12's scoped desktop observations, #23/#25 corrected reruns, #24's failed/
+unsupported Jieli hardware mute, and #18's scoped bounds/audit follow-up. It reviews
+#13/#14/#21 separately: wake and speaker success remain optional for a limited
+manual headset release, and unvalidated spoken stop remains an explicit FR-09 gap.
+
+**Release blocked; no approval.** Mandatory privacy and remaining locality/bounds/
+cancellation acceptance, final #17 configuration, #12/#18 acceptance and the fresh
+account lifecycle remain open. The human release owner and exact fresh-account
+candidate are not selected. The waived two-hour idle duration remains waived,
+without turning the partial observation into a full-duration or CPU pass. Original
+unchecked criteria remain unchecked.
+
+Map pointer: [MVP implementation map](../map.md).

@@ -1,7 +1,7 @@
 # Manual-only CachyOS installation
 
 This is the installation runbook for ticket #19. The supported implementation
-path is manual activation, selected endpointed Parakeet/Whisper + Silero on CPU, Piper
+path is manual activation, endpointed Parakeet TDT v3 INT8 + Silero on CPU, Piper
 Thorsten medium on CPU, and independently managed local Ollama. It is an
 **experimental setup, not a validated hardware release**. Read the
 [release checklist](release-checklist.md) before accepting it. Production Whisper
@@ -71,16 +71,21 @@ login for desktop deployment, not a shared temporary runtime directory.
 
 ## 3. Acquire and verify speech models
 
-Run the exact pinned download/checksum blocks in
-[output installation](audio-output.md#install-and-verify) and then
-[input installation](audio-input.md#installation-and-model-verification).
-They install these files under the checkout (not bundled with source):
+For the Parakeet setup, run the pinned download/checksum blocks in
+[output installation](audio-output.md#install-and-verify), then the
+[production Parakeet installation](parakeet-production.md#install-and-select).
+Select Parakeet and verify all extracted input files with the command in step 5
+before starting services. Whisper acquisition in
+[input installation](audio-input.md#installation-and-model-verification) is needed
+only when explicitly testing that alternative; Parakeet does not use Whisper files.
+Artifacts live under the checkout and are not bundled with source:
 
 | Artifact | Local path | Identity / terms |
 | --- | --- | --- |
 | Thorsten medium voice + config | `models/de_DE-thorsten-medium.onnx` and `.onnx.json` | Revision `c10ece1aade47bb51c153c893d14e5bf8e5b7117`; SHA-256 for both in `config/models.json`; CC0 dataset, lessac fine-tuning ancestry; weights terms need review before redistribution |
-| Whisper tiny INT8 encoder/decoder/tokens | `models/input/tiny-encoder.int8.onnx`, `tiny-decoder.int8.onnx`, `tiny-tokens.txt` | Release asset 179373699 (2024-07-13); archive SHA-256 `c46116994e539aa165266d96b325252728429c12535eb9d8b6a2b10f129e66b1`; MIT |
-| Silero VAD | `models/input/silero_vad.onnx` | Release asset 271935959 (2025-07-11); file SHA-256 in `config/models.json`; MIT |
+| Parakeet TDT v3 INT8 encoder/decoder/joiner/tokens | `models/parakeet/encoder.int8.onnx`, `decoder.int8.onnx`, `joiner.int8.onnx`, `tokens.txt` | Release asset 283097583 (2025-08-16); archive SHA-256 `5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf`; extracted hashes in `config/models.json`; CC-BY-4.0, preserve NVIDIA attribution |
+| Whisper tiny INT8 encoder/decoder/tokens (alternative only) | `models/input/tiny-encoder.int8.onnx`, `tiny-decoder.int8.onnx`, `tiny-tokens.txt` | Release asset 179373699 (2024-07-13); archive SHA-256 `c46116994e539aa165266d96b325252728429c12535eb9d8b6a2b10f129e66b1`; MIT |
+| Silero VAD | `models/parakeet/silero_vad.onnx` (Whisper: `models/input/silero_vad.onnx`) | Release asset 271935959 (2025-07-11); file SHA-256 in `config/models.json`; MIT |
 
 The linked blocks specify artifact URLs and independently expected hashes.
 Upstream release assets can change: a mismatch is a failure, not permission to
@@ -163,7 +168,12 @@ tts:
 llm:
   mode: ollama
   base_url: http://127.0.0.1:11434
-  model: qwen3:4b
+  model: qwen3:4b # Example only; replace with the model accepted under #17.
+  max_context_tokens: 8192
+  num_predict: 512
+  temperature: 0.3
+  seed: 0
+  timeout_ms: 120000
 wake_word:
   model_path: null
   threshold: null
@@ -184,6 +194,13 @@ unset JARVIS_CONFIG
 node dist/apps/core/main.js config
 .venv/bin/python -c 'from apps.audio.main import load_config; from apps.audio.input import verify_input; verify_input(load_config()); print("input checksums verified")'
 ```
+
+These generation values are shipped defaults, not an accepted #17 selection.
+The existing desktop trial used `llama3:latest`; that mutable tag and its partial
+trial do not settle the release model. Before a fresh-account acceptance run,
+record #17's chosen model digest, quantization, generation/context settings and
+reviewed candidate SHA; replace the example and retain the exact verified blobs.
+Until that selection exists, this is a development installation procedure.
 
 Both services must read the same config. This runbook uses the XDG default;
 `JARVIS_CONFIG` overrides need the same value in both unit environments and CLI.
@@ -265,8 +282,9 @@ npm test
 # Focused checks after build:
 node --test dist/tests/config.test.js dist/tests/desktop-runtime.test.js
 .venv/bin/python -m unittest tests.config_test
-# Optional real path with private silent sinks, not acoustic acceptance:
-.venv/bin/python scripts/verify-input.py models/de_DE-thorsten-medium.onnx models/input qwen3:4b
+# Optional scripted real speech path; config must select Parakeet.
+# Uses private silent sinks, not acoustic acceptance:
+.venv/bin/python scripts/verify-input.py models/de_DE-thorsten-medium.onnx models/parakeet
 ```
 
 Run [desktop acceptance](desktop-acceptance.md),
@@ -313,7 +331,13 @@ Jarvis uninstall does not delete them. No conversation archive needs deletion.
 
 ## Fresh-account acceptance record
 
-**2026-10-19: unvalidated.** Commands were checked against repository entrypoints,
+**2026-10-20: unvalidated; fresh-account trial not performed.**
+User-confirmed #19 scope is runbook updates and the blocked release decision.
+The [release review](release-checklist.md#release-review--2026-10-20) records
+prerequisites before scheduling this trial.
+
+Historical documentation check, 2026-10-19: commands were checked against
+repository entrypoints,
 units, schemas and model manifests on the existing development checkout. No fresh
 CachyOS account was provisioned, no KDE shortcut/login was exercised and no
 physical headset/speaker run was performed for #19. Unit tests and existing
@@ -331,3 +355,19 @@ re-login to confirm no Jarvis service/shortcut remains. Repeat acoustic results
 separately for headset and speakers. Failed commands are failed for that setup;
 unattempted steps remain unvalidated. Attach the content-free record to #19 and
 update the release matrix only from those observations.
+
+For each fresh-account step, retain a content-free record with these fields:
+
+| Field | Required record |
+| --- | --- |
+| Owner, date, candidate | Human acceptance owner, UTC date, exact tested SHA; do not use a moving branch name |
+| Setup | OS/kernel/desktop/audio versions, CPU/GPU/RAM, device names, Ollama backend/version |
+| Inventory | Config/lockfile/manifest hashes; verified speech artifacts; LLM full digest, terms and settings |
+| Steps 1–7 | Command/check, exit status, observed result, deviation and evidence link; secrets and conversation content excluded |
+| Lifecycle | Fresh login/shortcut, permissions/health, offline, update, rollback, uninstall and post-uninstall login verdicts |
+| Decision | Passed/failed/unvalidated per requirement and per device, remaining gaps, release owner's explicit decision |
+
+Do not copy another account's config, venv or model cache as fresh-acquisition
+evidence. A failure blocks the affected criterion; record a focused ticket and
+repeat affected checks at the corrected SHA. Keep original failures alongside
+reruns. An incomplete trial stays unvalidated and cannot grant release approval.

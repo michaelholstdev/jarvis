@@ -1,4 +1,4 @@
-# Release checklist — manual-only candidate, 2026-10-19
+# Release checklist — manual-only candidate, reviewed 2026-10-20
 
 **No validated MVP release is claimed.** Ticket #19 consolidates an
 [installation runbook](installation.md) and existing evidence. Fresh-account
@@ -11,7 +11,8 @@ The production configuration accepts explicit Parakeet TDT v3 INT8 or Whisper ti
 medium CPU speech; wake and spoken stop default off. Real voice requires explicit
 Ollama/device/model configuration; shipped defaults are mocks. Existing reports
 identify their own measured commits/configurations, which take precedence over
-this consolidation date. No new acoustic measurements were made for #19.
+this consolidation date. No new acoustic measurements were made for #19. The
+review below imports later observations only within their recorded scope.
 
 ## Verdict rules and mandatory gates
 
@@ -24,9 +25,9 @@ The PRD remains authoritative; no target revision is approved by this document.
 | Mandatory release gate | Existing evidence | Target manual setup | Release decision |
 | --- | --- | --- | --- |
 | Local inference, no cloud fallback | Passed for disconnected synthetic voice: loopback-only namespace, initial + 30 turns; no external routes | Unvalidated fresh installation; external request-attempt audit also unvalidated | Keep gate open; verify local-only Ollama and offline functionality on installed setup |
-| Idle privacy, no STT/LLM or persistent ambient recording | Passed software/manual-idle and privacy regressions; manual idle opens no microphone | Unvalidated physical lock/mute, actual idle capture inspection and fresh login | Keep gate open; any inhibited capture is a failure |
-| Bounded capture and transient buffers | Passed software deadlines/pre-roll bounds/noise tests | Unvalidated physical capture cessation and internal queue/buffer occupancy acceptance | Keep gate open; any unbounded capture is a failure |
-| Cancellation and no late/replayed work | Passed socket/core cancellation, real silent-sink interruption and delivered-prefix checks | Unvalidated actual device tail, lock/mute timing and desktop recovery | Keep gate open; replay or cancellation failure blocks release |
+| Idle privacy, no STT/LLM or persistent ambient recording | Passed software/manual-idle and privacy regressions; manual idle opens no microphone | Passed scoped existing-account idle/source/CLI mute and lock observations; Jieli hardware mute failed/unsupported, remaining phases/fresh account unvalidated | Keep gate open; any inhibited capture is a failure |
+| Bounded capture and transient buffers | Passed software deadlines/pre-roll bounds/noise tests | Passed scoped admission/frame/worker regressions under #18; native occupancy and physical cessation unvalidated | Keep gate open; any unbounded capture is a failure |
+| Cancellation and no late/replayed work | Passed socket/core cancellation, real silent-sink interruption and delivered-prefix checks | Passed named desktop recovery/cancellation trials and corrected #25 rerun; exact physical cessation and remaining permutations unvalidated | Keep gate open; replay or cancellation failure blocks release |
 
 A failure in any mandatory gate prevents a release claim. Missing evidence also
 prevents claiming the gate passed. Manual activation can satisfy the activation
@@ -44,7 +45,7 @@ acceptance claim. Source links contain reproduction commands and limitations.
 
 | Requirement | Software / existing evaluation | Headset | Speakers | Evidence and remaining work |
 | --- | --- | --- | --- | --- |
-| FR-01 Login startup | Unvalidated actual login; unit/lifecycle tests passed | Unvalidated | Unvalidated | [User units](../systemd/README.md); fresh login without terminal required |
+| FR-01 Login startup | Passed existing-account login/shortcut with local Node override; unit/lifecycle tests passed | Unvalidated | Unvalidated | [User units](../systemd/README.md); [Existing-account observation](../.scratch/jarvis-mvp/desktop-acceptance-2026-10-19.md) does not pass fresh-account login |
 | FR-02 Idle privacy | Passed manual-only software scope; no idle microphone/STT/LLM | Unvalidated | Unvalidated | [Privacy/stability](stability-acceptance.md); inspect physical capture and idle; wake disabled |
 | FR-03 Activation + utterance | Passed synthetic manual path; wake unvalidated | Unvalidated | Unvalidated | [Input check](audio-input.md); single-press cue/capture and clipping acceptance required |
 | FR-04 German STT | **Failed** Whisper synthetic quality screen; Parakeet passed synthetic screening and production service integration | Unvalidated | Unvalidated | [30-utterance comparison](recognition-comparison.md); [production setup](parakeet-production.md); accept selected recognizer with human speech |
@@ -53,7 +54,7 @@ acceptance claim. Source links contain reproduction commands and limitations.
 | FR-07 Timeout | Passed fake-clock/socket noise, empty result and completion-bound tests | Unvalidated | Unvalidated | [Timing rules](../README.md#contextual-follow-ups-and-ending-03); validate physical silence/noise |
 | FR-08 Explicit end | Passed deterministic/socket phrase matching and cleanup | Unvalidated | Unvalidated | [Stability](stability-acceptance.md); real spoken phrase/cleared access required |
 | FR-09 Stop playback | Unvalidated acoustic voice stop; manual stop and deterministic control tests passed | Unvalidated | Unvalidated | [Spoken stop](spoken-stop.md); opt-in feature off, manual cancel does not pass FR-09 |
-| FR-10 Resilience | Passed simulated desktop/recovery cases | Unvalidated | Unvalidated | [Desktop steps 7–9](desktop-acceptance.md); actual unplug/replug/backend/restart/suspend needed |
+| FR-10 Resilience | Passed simulated cases and named existing-account device/backend/restart/suspend trials | Unvalidated | Unvalidated | [Desktop steps 7–9](desktop-acceptance.md); [Shared session](../.scratch/jarvis-mvp/desktop-acceptance-2026-10-19.md) records phases and corrected #25 rerun; remaining permutations open |
 | FR-11 CPU speech / no dedicated speech VRAM | Passed sampled idle/concurrent CPU workload; full active-path coverage unvalidated | Unvalidated | Unvalidated | [Resources](latency-benchmarks.md); unknown samples prevent whole-run VRAM pass |
 | FR-12 Configuration | Passed schema/defaults/loader tests | Unvalidated installed setup | Unvalidated installed setup | [Configuration](configuration.md), [installation](installation.md); verify both processes share config |
 | FR-13 Logging/privacy | Passed content-free software regression scope; narrow soak screen only | Unvalidated | Unvalidated | [Stability](stability-acceptance.md); no raw audio/transcripts/prompts; complete hardware/log inspection |
@@ -77,7 +78,7 @@ acceptance claim. Source links contain reproduction commands and limitations.
 | M0 Foundation | Passed local hardware-free scope | Locked environments, schemas, typed mock socket exchanges, checks/tests; no claim of a new CI run |
 | M1 Audio loop without LLM | Passed synthetic selected silent-sink scope; physical replay unvalidated | Real Whisper/Silero/Piper input/output verification; physical headset/speaker intelligibility still open |
 | M2 Conversation core | Passed scripted/fake-clock/socket scope | Follow-up/timeout/expiry/extension/privacy/failure/late cancellation and delivered context; acoustic FR-09 separate |
-| M3 Manual daemon | Unvalidated | Actual KDE login/shortcut/lock/mute/device recovery missing; manual mode is permitted, wake is optional and disabled |
+| M3 Manual daemon | Unvalidated | Existing-account login/shortcut and selected privacy/recovery trials observed; Jieli hardware mute failed/unsupported, remaining permutations/fresh account open; wake optional and disabled |
 | M3 Hands-free | Unvalidated | No detector/model/handoff, no headset/speaker calibration; linked #13 remains open |
 | M4 Benchmark/stability release | Unvalidated | Published measurements and reproduction exist; two-hour soak waived by user 2026-10-19; resource/privacy, acoustic/load/quality/fresh-install gaps remain |
 
@@ -91,7 +92,9 @@ used a 5600X rather than the architecture's nominal 5600.
   German/technical utterances, three measured passes. Standard/technical WER:
   Whisper **24.1%/39.3% (failed)**, Parakeet **0.7%/16.7% (passed)**, Vosk
   **5.7%/41.7% (failed)** against ≤15%/≤25% screens. No human/acoustic acceptance;
-  Parakeet remains benchmark-only. Corpus, original sentence provenance, hashes,
+  Parakeet is production-selectable under #20; the original comparison remains
+  historical synthetic evidence, not a human acceptance run. Corpus, original
+  sentence provenance, hashes,
   complete model artifacts/terms and runtime identities accompany reports.
 - [Latency, 2026-10-17](latency-benchmarks.md): 30 warm real-path synthetic queries
   per model, silent monitor signal proxy p50/p95 **770/1007 ms** (Gemma 3 270M
@@ -152,7 +155,7 @@ are promised. Acquisition/licensing/provenance is listed in the
 linked immutable manifests; redistribution needs review, especially voice ancestry,
 Piper GPL runtime and the actual LLM terms.
 
-## Documentation revision validation
+## Historical documentation validation — 2026-10-19
 
 On the existing checkout, `npm run check` passed TypeScript, Biome, Ruff and both
 mypy checks; focused configuration/desktop-runtime tests passed 6/6; full
@@ -166,8 +169,9 @@ physical devices or release acceptance.
 - [ ] Execute the [fresh-account procedure](installation.md#fresh-account-acceptance-record)
   on the actual target KDE desktop, including download/hash verification,
   login, shortcut, private permissions, update/rollback and uninstall.
-- [ ] Complete [desktop acceptance](desktop-acceptance.md) separately on headset
-  and speakers: lock/mute during each active phase, independent inhibitions,
+- [ ] Complete [desktop acceptance](desktop-acceptance.md) on the chosen headset
+  setup; record speaker support independently under #21 (optional for a limited
+  manual headset release): lock/mute during each active phase, independent inhibitions,
   unplug/replug, backend outage, systemd restart and suspend/resume. Record actual
   capture/output cessation, recovery, text clearing and absence of replay.
 - [ ] Complete human German quality/recognizer integration/model selection and
@@ -191,3 +195,44 @@ physical devices or release acceptance.
 **Current sign-off: withheld.** Documentation can be delivered while hardware
 acceptance remains open. Tickets #14/#17/#18 physical evidence, #19 fresh-account
 validation and the separate optional #13 follow-up retain their unresolved work.
+
+## Release review — 2026-10-20
+
+Recorded by Codex for #19; scope confirmed by the user: update the runbook and
+record the blocked release decision. Reviewed checkout:
+`0207ee5e6552755e7a64a5bd67eb6cfa8b8be30b` (before this documentation change).
+Human release owner: **not assigned**. Fresh-account candidate: **not selected**.
+Decision: **release blocked; no release approval**. No installation, hardware
+trial or new model acceptance was performed in this review.
+
+Provisional development setup: manual activation, Jieli USB microphone and analog
+headphones, production Parakeet TDT v3 INT8, Silero, Thorsten medium, CPU speech
+and loopback Ollama. The shared desktop trial used `llama3:latest`; #17 has not
+accepted a final LLM/digest/settings. This is not an approved supported setup.
+The runbook now leads with #20's exact Parakeet acquisition/runtime and explicitly
+marks its LLM example/settings as provisional.
+
+| Dependency / evidence reviewed | Current result | Release consequence |
+| --- | --- | --- |
+| [#12 desktop session](../.scratch/jarvis-mvp/desktop-acceptance-2026-10-19.md) and [#24 switch investigation](../.scratch/jarvis-mvp/hardware-mute-2026-10-20.md) | Existing-account login/shortcut, scoped lock/source/CLI mute, device/backend/suspend and corrected core/audio restart trials observed; exact coverage and per-trial SHAs retained at source. Jieli physical-switch detection **failed/unsupported** | Mandatory hardware privacy gate blocks this setup; source/CLI mute does not waive it. Use a setup with a supported signal and validate all required phases before release |
+| [#17 quality/latency](latency-benchmarks.md), [#20 production recognizer](parakeet-production.md) | Parakeet production synthetic checks passed. Final human German model selection, physical audible percentiles and scenario matrix remain **unvalidated** | Settle LLM/digest/settings and acceptance configuration before the fresh-account trial; historical Whisper proxy results cannot become Parakeet measurements |
+| [#18 follow-up](stability-follow-up.md) | Socket/frame/worker bounds checks passed within documented scope; native buffer occupancy **unvalidated**. Actual connection audit failed to execute because `strace` is absent; external-attempt coverage **unvalidated** | Keep bounds/privacy/locality gates open. Reproduce chosen-setup offline and physical conversation checks; install tracer for the narrow audit, and retain its explicit coverage limits |
+| [#13 wake revisit](wake-activation.md#release-feasibility-revisit--2026-10-19) | Historical source-level revisit only; stable-manual-operation model feasibility/trials **unvalidated** | Review concrete candidate/artifact/runtime/German gaps again before sign-off; wake stays disabled. Successful optional wake is not a headset-release prerequisite |
+| [#14 spoken stop](spoken-stop.md) | Physical FR-09 acoustics **unvalidated**, feature off | Explicit FR-09 gap; manual cancellation may support a limited release once mandatory gates pass, never an all-P0-pass claim |
+| [#21 speaker acceptance](../.scratch/jarvis-mvp/issues/21-speaker-acceptance.md) | Separate speaker verdict **unvalidated** | No speaker support claim; successful speaker acceptance is optional for a limited headset-only release |
+| [#19 fresh-account procedure](installation.md#fresh-account-acceptance-record) | **Unvalidated**, not attempted; no update/rollback/uninstall trial | Remains open until a fresh KDE account completes the settled candidate procedure and records failures/reruns |
+
+The user-waived two-hour idle duration remains waived. Preserve the 44.02-minute
+partial record without inferring a full-duration or CPU pass. #23's bounded-answer
+headset rerun and #25's corrected playback/audio-crash rerun are recorded in the
+shared desktop session; they resolve those specific failures without certifying
+all requirements on this checkout. Re-run affected checks after intervening
+code/model/config/device changes; no earlier result is automatically promoted to
+a pass at the reviewed SHA.
+
+Before reconsidering release, assign a human release owner, select the exact
+candidate and supported device/configuration, close mandatory privacy/locality/
+bounds/cancellation gaps, complete #17/#12/#18 acceptance on that setup, then run
+the fresh-account lifecycle procedure. Record per-requirement verdicts, optional
+mode gaps and an explicit owner/date/SHA decision. Documentation delivery and
+automated check success do not supply that decision.
