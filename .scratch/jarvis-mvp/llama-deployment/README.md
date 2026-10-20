@@ -47,3 +47,13 @@ Wake remains explicitly disabled after the trial. An actual logout/login test
 of automatic startup remains pending. Enabled unit/dependency checks alone do
 not validate that login lifecycle. #17's full quality/model/latency matrix remains
 separate.
+
+## Subsequent wake selection
+
+After the manual trial, the user requested wake reactivation and a direct-question
+test. `wake_word.enabled` is now `true`; threshold remains effectively 0.2 and
+pre-roll 1000 ms. Both Jarvis services restarted and report wake ready. One direct
+wake-plus-question headset attempt succeeded, confirmed by the user without an
+extra pause or repetition. See the [wake check](../llama-cpp-acceptance-2026-10-20.md#wake-re-enabled-and-direct-question-check--2026-10-20).
+This supersedes the manual-only runtime mode above. Wake remains experimental;
+#26's general regression/acceptance and the full wake matrix remain open.

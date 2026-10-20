@@ -127,3 +127,34 @@ latency. No #17 model/quality/latency matrix, actual login lifecycle, wake accur
 speaker, acoustic spoken-stop or general barge-in gate is passed by this trial.
 Persistent services remain active; future microphone turns require explicit
 manual activation while wake stays disabled.
+
+## Wake re-enabled and direct-question check — 2026-10-20
+
+After the manual acceptance, the user explicitly requested re-enabling wake and
+performing a direct wake-plus-question check. Both Jarvis units were restarted
+with `wake_word.enabled: true`; effective threshold remains 0.2, local pre-roll
+1000 ms, and the prior CPU wake assets/model unchanged. llama.cpp remained active
+with the same model and settings. This supersedes the manual-only operating mode
+stated above; the earlier trial itself was manual-only.
+
+Private pre-change config backup:
+`~/.local/state/jarvis/deployment-backups/wake-20261020T121307Z/config.yaml`.
+Both public config loaders validated the proposed change before installation.
+Core invocation `8ccff3f1d3e8406cbbe96836ecfe8879`, audio invocation
+`863cc564c36d4ebe9ad45cb0bf715b91`; application source still `9e569de`.
+Health reports wake enabled and ready at threshold 0.2, with STT/TTS/inference
+ready and all capture inhibitions false.
+
+One cued physical headset attempt: wake detection 6 at monotonic
+18738516.097660 ms, endpoint 18741081.198494 ms, inference 8, synthesis 9,
+playback 10 completed with 42 delivered chars. The user confirmed the directly
+attached German question was answered correctly without an extra pause after
+the name or a repeated question. No transcript/audio is retained in this record.
+
+Verdict: one successful direct wake-plus-question trial on the selected headset
+and llama.cpp setup. This supports present operation and the local 1000 ms
+pre-roll experiment from #26; it does not establish a general handoff fix, new
+recall/false-accept rate, speaker support or full wake acceptance. The prior
+23/30 held-out recall and experimental quality designation remain unchanged.
+Wake stays enabled at the user's request, including bounded idle capture while
+the desktop is unlocked and unmuted. Manual activation remains available.
