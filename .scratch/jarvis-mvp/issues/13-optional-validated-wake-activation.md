@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-**Claimed by:** Unclaimed for remaining wake implementation; Codex completed the manual-only fallback.
+**Claimed by:** Codex — 2026-10-20; user requested #13 implementation. Candidate/runtime feasibility first; physical #17 prerequisite and acoustic validation remain open.
 
 ## Comments
 
@@ -76,5 +76,44 @@ Review of implementation commit `4422cdf` against the baseline above:
 - **Spec:** no findings against the explicitly permitted manual-only fallback;
   missing wake implementation and hardware measurements remain disclosed and
   unchecked. This review does not establish hands-free acceptance.
+
+Map: [MVP implementation map](../map.md).
+
+
+### Candidate implementation follow-up — 2026-10-20
+
+User requested #13 implementation and confirmed config/CLI, daemon/audio socket,
+and recording-evaluation CLI test seams. Review baseline:
+`782c87001fa3e563561209403beac17599c08512`. Claimed for candidate/runtime
+feasibility and implementation conditional on a promising candidate. The existing
+#17 physical/manual prerequisite remains open; no physical acceptance is bypassed.
+
+Implemented offline candidate preparation/evaluation and an explicitly started
+headset calibration recorder in `benchmarks/wake`. Optional openWakeWord 0.6.0
+and CPU ONNX Runtime dependencies are locked. Official v0.5.1 classifier, mel
+and embedding assets are recorded with IDs, update times, terms and observed
+SHA-256 values; upstream provides no independent digest, so provenance approval
+is incomplete. Real inference ran on Python 3.11 / ONNX Runtime 1.31.0 CPU.
+
+The reproducible German single-speaker screen has 30 immediate-question
+positives and 90 ordinary/near-miss negatives. At threshold 0.5: 0/30 detections,
+9 false activations over 380.66 negative seconds. Exploratory threshold 0.01 on
+the same calibration corpus: 30/30 detections but 29 false activations. Neither
+setting passes the screen; these results do not establish human performance or
+prove that a different model/threshold cannot work. See the [current report and
+commands](../../../docs/wake-activation.md#offline-candidate-evaluation--2026-10-20).
+
+The user agreed to preparation of a short headset trial. A 20-clip, eight-second
+per-clip recorder waits for Enter before each capture, writes only local private
+files, checks software mute/KDE lock/sleep/source state, and marks interrupted
+sessions incomplete. It has not been run on the physical microphone. Its polling
+checks are not measured production privacy acceptance.
+
+**#13 remains open; wake remains unavailable in the service.** Human calibration
+and separate held-out recordings, a promising German-capable candidate, independent
+artifact verification, resident bounded pre-roll/continuous handoff and socket
+privacy/cancellation tests remain. No service configuration or default was changed.
+The candidate evidence does not justify implementing/enabling the production
+detector/handoff yet. Manual activation remains available.
 
 Map: [MVP implementation map](../map.md).

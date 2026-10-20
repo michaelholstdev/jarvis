@@ -1,9 +1,11 @@
-# Optional wake activation: manual-only decision (#13)
+# Optional wake activation (#13)
 
 Decision recorded 2026-10-16: **wake unavailable; manual activation retained**.
 This is the fallback allowed by ticket #13, not a hands-free implementation or
 acceptance pass. No wake detector, idle microphone loop, wake acknowledgment,
-prefix splitter, or wake-to-recognizer audio handoff is implemented. Ticket #12's
+prefix splitter, or wake-to-recognizer audio handoff is implemented in the service.
+The 2026-10-20 offline candidate evaluator and explicit calibration recorder are
+available below; they do not enable service wake detection. Ticket #12's
 target KDE/device acceptance also remains open. Manual operation setup is in
 [desktop acceptance](desktop-acceptance.md) and [microphone input](audio-input.md).
 
@@ -23,10 +25,10 @@ date; links to `main` are evidence references, not artifact revision pins.
 
 | Required evidence | Current record |
 | --- | --- |
-| Model artifact, original source, license/terms, training provenance | Candidate above only; no artifact acquired or approved |
-| Exact artifact revision and independently verified SHA-256 | Missing; no wake entry in `config/models.json` |
-| Feature extractor/embedding/verifier artifacts and their licenses/checksums | Not acquired or verified |
-| Supported ONNX runtime/provider and complete dependency lock | Not selected or tested; no wake engine in `pyproject.toml`/`uv.lock` |
+| Model artifact, original source, license/terms, training provenance | Official v0.5.1 candidate acquired for offline screening; not approved for activation |
+| Exact artifact revision and independently verified SHA-256 | Asset IDs/update times and observed hashes in `benchmarks/wake/artifacts.json`; upstream supplies no independent digest; no production wake manifest entry |
+| Feature extractor/embedding/verifier artifacts and their licenses/checksums | Mel and embedding artifacts acquired and hash-pinned for screening; verifier is integrated in classifier; independent checksums remain missing |
+| Supported ONNX runtime/provider and complete dependency lock | Offline CPU probe passes with openWakeWord 0.6.0 / ONNX Runtime 1.31.0 on Python 3.11; optional dependencies locked |
 | German capability and calibrated threshold | Unvalidated; English evidence cannot establish it |
 | Bounded pre-roll, immediate trailing command, acknowledgment safety | Wake handoff not implemented or tested |
 | Target microphone measurements | Not performed |
@@ -38,8 +40,106 @@ against independently supplied expected checksums. A locally computed digest
 alone establishes identity, not trusted provenance. Record exact CPU ONNX
 runtime version/provider, engine version and lockfile, sample format and model
 input/output requirements; run an offline load/inference compatibility check.
-There is no approved model download or wake installation command in this release.
+There is no approved production wake installation command in this release.
 Setting a manifest `validated` flag cannot enable wake detection.
+
+## Offline candidate evaluation — 2026-10-20
+
+`benchmarks/wake` implements the first feasibility step of #13. It downloads only
+when explicitly requested, checks pinned artifact hashes before inference, runs
+the real three-model pipeline on CPU, and streams consented 16 kHz mono signed
+16-bit WAV files in 80 ms frames. There is no microphone access in the evaluator,
+ambient transcription, LLM call or service configuration change. Model binaries
+and generated audio stay under ignored `models/`.
+
+```sh
+uv sync --frozen --extra wake-benchmark --extra output --extra input
+uv run --frozen python -m benchmarks.wake.prepare --download
+uv run --frozen python -m benchmarks.wake.prepare --corpus models/wake/corpus
+uv run --frozen python -m benchmarks.wake.evaluate \
+  --corpus models/wake/corpus/manifest.json --models models/wake \
+  --threshold 0.5 --output benchmarks/wake/synthetic-quiet.json
+```
+
+The generator uses the existing hash-verified Thorsten voice and ten German
+immediate-question phrases at three speaking rates. Negatives contain the same
+questions without a wake phrase and with “Hey Jasper” / “Hey Travis”. This is one
+synthetic speaker, not independent human acoustic evidence. It deliberately uses
+a generous whole-speech detection window; it cannot establish wake timing,
+command onset preservation or clipping. The optional runtime was exercised on
+Linux x86-64 / Python 3.11. The Python 3.10 dependency branch pins ONNX Runtime
+1.23.2 but is untested; upstream's mandatory TFLite wheel dependency may prevent
+installation on newer Python versions despite using ONNX here. Use Python 3.11
+for this experiment. Production speech dependencies remain available separately.
+
+At threshold **0.5**, the [real inference report](../benchmarks/wake/synthetic-quiet.json)
+records **0/30** positive detections and **9 false activations** over 90 negative
+clips (380.66 seconds). The [exploratory 0.01 run](../benchmarks/wake/calibration-low-threshold.json)
+uses the same corpus for calibration, so it is not a held-out result. Lowering
+the threshold must be judged against near misses, not recall alone. Neither run
+passes the screen; neither proves this candidate cannot work for a human speaker.
+There is no approved threshold or German-capable production candidate yet.
+
+Reports contain trial IDs, hashes, durations, scores, counts, audio-relative
+detection timestamps, runtime/provider and dependency-lock identity. They omit
+transcripts, raw audio and file paths. Invalid input replaces previous output with
+an incomplete failed report; truncated WAVs, duplicate trial IDs and interrupted
+recording manifests are rejected. Exit 0 means measurements completed, **not**
+screen or acoustic acceptance. Exit 2 means invalid input or failed evaluation.
+The preliminary screen requires at least 30 positive and 30 negative clips in
+each supplied condition, recall >=95% and zero false activations. Physical
+acceptance always remains false in this detector-only tool; production handoff
+latency and clipping are null, not invented zeroes.
+
+To evaluate existing consented recordings, provide a JSON object with `trials`:
+
+```json
+{"trials": [{"id": "positive-01", "condition": "headset-quiet",
+  "intended_wake": true, "path": "positive-01.wav", "sha256": "<WAV SHA-256>",
+  "wake_window_ms": [1000, 3000]}]}
+```
+
+Paths are relative to the manifest. Label a detection window for each intentional
+wake; negative trials omit `wake_window_ms`. One intended wake permits one
+detection; extras count as false activations, with a two-second refractory period.
+Annotate windows independently from detector scores. Keep calibration recordings
+separate from held-out acceptance recordings, and do not combine headset and
+speaker verdicts.
+
+### Prepared headset calibration session
+
+The user requested this preparation on 2026-10-20; **no physical recording has
+been started by the agent**. List available sources with
+`pactl --format=json list sources`, select the headset's stable physical source
+name, and run from a terminal in the checkout:
+
+```sh
+uv run --frozen python -m benchmarks.wake.record \
+  --source '<stable physical headset source name>' \
+  --directory models/wake/headset-calibration-01
+```
+
+The directory must be new and is created private to the user. The recorder shows
+each phrase and waits for Enter before opening capture. Speak one second after
+“RECORDING”; each clip lasts eight seconds and capture then stops. It collects
+ten positive immediate questions and ten near misses. Ctrl-C stops the session;
+partial sessions are marked incomplete. These 20 clips are for calibration and
+cannot satisfy the 30-trial screen or the complete acoustic protocol below.
+
+The recorder checks the selected source, software mute, KDE lock and logind sleep
+state before capture, periodically during capture, and before saving. Unknown or
+inhibited state aborts and discards the current clip. This polling experiment is
+not a measured production privacy-latency pass. The Jieli hardware switch remains
+unsupported; use the exposed software mute control. No service is started or
+reconfigured. Recordings remain in the chosen directory until you delete them;
+share only the generated reports for review.
+
+After recording, evaluate `models/wake/headset-calibration-01/manifest.json` with
+the evaluator command above and a separate report path under `models/wake/`.
+Compare thresholds on calibration data, freeze one, then collect fresh held-out
+trials using the acceptance protocol. A promising human candidate still needs
+bounded resident pre-roll, continuous handoff, privacy/cancellation socket tests,
+and separate physical acceptance before service enablement.
 
 ## Configuration and fallback troubleshooting
 

@@ -23,3 +23,14 @@
 - [23: Long spoken answers fail at the duration limit](issues/23-long-speech-duration-overflow.md#answer) — resolved; bounded prefix/notice speech, full temporary text and delivered-only context; 208 Node/43 Python tests, both review axes, real Piper PCM-boundary probe and actual headset rerun pass.
 - Remaining tickets are in [issues/](issues/); other M1–M4 gates remain open.
 - [24: Jieli hardware-mute detection](issues/24-jieli-hardware-mute-detection.md#answer) — resolved as unsupported/wontfix for this device/configuration; actual held-switch checks found unchanged ALSA/source mute and no HID/event interface. Development use only; #12/FR-19 hardware privacy release gate stays open. [Evidence](hardware-mute-2026-10-20.md).
+
+
+## Wake candidate follow-up — 2026-10-20
+
+#13 now has a reproducible offline CPU candidate evaluator and an explicitly
+started headset calibration recorder. The default synthetic screen yields 0/30
+wakes and 9 false activations; exploratory threshold 0.01 yields 30/30 but 29
+false activations. No approved threshold or production handoff is delivered.
+User-requested physical calibration is prepared, not executed; #13 and its #17
+prerequisite remain open. See [#13 follow-up](issues/13-optional-validated-wake-activation.md)
+and [evaluation procedure](../../docs/wake-activation.md#offline-candidate-evaluation--2026-10-20).
