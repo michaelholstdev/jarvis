@@ -87,15 +87,27 @@ async def audit(command: list[str], seconds: float) -> dict[str, Any]:
 
 
 def main() -> None:
+    report: dict[str, Any] = {
+        'run_completed': False, 'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+        'checks': {'execution': 'failed', 'all_external_request_attempts': 'unvalidated'}}
+    # Locate the report before full parsing can reject a malformed option. Ignore
+    # command arguments after --: they can have their own unrelated --output.
+    arguments = sys.argv[1:]
+    options = arguments[:arguments.index('--')] if '--' in arguments else arguments
+    output_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+    output_parser.add_argument('--output', type=Path)
+    output_parser.add_argument('--seconds', nargs='?')
+    output_parser.add_argument('command', nargs=argparse.REMAINDER)
+    destination, _ = output_parser.parse_known_args(options)
+    if destination.output is not None:
+        destination.output.parent.mkdir(parents=True, exist_ok=True)
+        destination.output.write_text(json.dumps(report, indent=2) + '\n')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--seconds', type=float, default=900)
     parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    report: dict[str, Any] = {
-        'run_completed': False, 'timestamp_utc': datetime.now(timezone.utc).isoformat(),
-        'checks': {'execution': 'failed', 'all_external_request_attempts': 'unvalidated'}}
     args.output.write_text(json.dumps(report, indent=2) + '\n')
     command = args.command[1:] if args.command[:1] == ['--'] else args.command
     try:
