@@ -149,7 +149,7 @@ export async function runTurn(
                 return;
               }
               if (
-                operation.type !== 'recognize' ||
+                !['recognize', 'wake'].includes(operation.type) ||
                 progress.operation_id !== operation.operation_id
               )
                 throw new ProtocolError('invalid_message');
@@ -198,6 +198,7 @@ export async function runTurn(
           operation_id: response.operation_id,
         });
         break;
+      case 'wake':
       case 'recognize':
         if (response.text === undefined)
           throw new ProtocolError('invalid_message');
@@ -241,6 +242,11 @@ export async function runTurn(
         });
         break;
     }
+    if (
+      ['wake', 'privacy', 'close-conversation'].includes(operation.type) &&
+      core.status().state === 'idle'
+    )
+      return;
     if (
       (operation.type === 'play' || operation.type === 'indicate-failure') &&
       core.operations()[0]?.type === 'recognize'

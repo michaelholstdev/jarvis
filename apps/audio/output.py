@@ -50,6 +50,7 @@ class Output:
     def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
         self.process: asyncio.subprocess.Process | None = None
+        self.wake_ready = False
         self.busy = False
         self.idle = asyncio.Event()
         self.idle.set()
@@ -83,6 +84,9 @@ class Output:
                 if isinstance(ready, dict):
                     report_diagnostic(ready)
                 raise OutputError('output_runtime_unavailable')
+            self.wake_ready = ready.get('wake_ready') is True
+            if ready.get('wake_diagnostic'):
+                report_diagnostic({'diagnostic': ready['wake_diagnostic']})
         except (OSError, asyncio.TimeoutError, OutputError):
             if process is not None:
                 await self.destroy(process)
@@ -102,6 +106,7 @@ class Output:
         await process.wait()
 
     async def stop(self, *, preserve_delivery_for: str | None = None) -> None:
+        self.wake_ready = False
         self.generation += 1
         process, self.process = self.process, None
         spawning = self.spawning
@@ -158,6 +163,8 @@ class Output:
                 self.config['session']['recognition_completion_seconds']
                 if kind == 'recognize' else self.config['recovery']['playback_timeout_ms'] / 1000
             )
+            if kind == 'wake':
+                timeout = 24 * 3600
             loop = asyncio.get_running_loop()
             deadline = loop.time() + timeout
             while True:
@@ -172,6 +179,8 @@ class Output:
                     return {'completed': False, 'delivered_chars': 0}
                 event = json.loads(line)
                 if event['event'] == 'speech_started' and on_speech is not None:
+                    if kind == 'wake':
+                        deadline = loop.time() + self.config['vad']['max_utterance_seconds'] + self.config['session']['recognition_completion_seconds']
                     on_speech()
                     on_speech = None
                 if event['event'] == 'playback_delivered' and kind == 'play':

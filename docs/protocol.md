@@ -304,3 +304,19 @@ adapter validated standalone spoken stop. It does not complete playback. Core
 cancels the operation and awaits a cancellation result before follow-up. Like
 `speech-started`, it cannot renew the request deadline; duplicates, mismatched IDs
 and progress on the wrong operation are rejected.
+
+
+## Experimental wake operation (#13)
+
+Real voice core arms `audio-operation` type `wake` only in permitted idle with
+operational wake capability. The request owns the capture lifetime. A single
+`speech-started` progress frame with the same operation ID marks detection; the
+core starts its bounded listening deadline and retains that identity. Audio
+continues on the same stream into VAD/STT and returns `audio-result.text` for the
+immediate question. There is no intervening cue or `recognize` request. Pre-wake
+idle has a one-day lease; after detection the normal utterance/recognition limit
+applies. Socket close cancels and destroys the capture worker. Privacy and manual
+cancellation use the existing generation barriers; late events cannot match a
+new operation. Health adds `wake_word` with configured `enabled`, permitted
+`ready`, `quality: experimental` and `threshold`; `capabilities.wake` remains the
+audio-reported capability. Mock stays hardware-free.

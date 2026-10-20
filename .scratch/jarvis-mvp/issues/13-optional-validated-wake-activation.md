@@ -4,9 +4,9 @@
 
 **Blocked by:** 12: Login startup, KDE activation, and device recovery — M3.
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
-**Claimed by:** Codex — 2026-10-20; user requested #13 implementation. Candidate/runtime feasibility first; physical #17 prerequisite and acoustic validation remain open.
+**Claimed by:** Codex — 2026-10-20; implementing the user-approved experimental default-on scope. Review baseline: `6b7c11113d7497dc479215d5bbbe861c6a0cd937`. Physical acceptance remains separate.
 
 ## Comments
 
@@ -47,7 +47,7 @@
 - [x] Document model acquisition/verification, installation/configuration, threshold calibration, validation commands, enable/disable, and fallback troubleshooting. Current unsupported installation/enablement and future runner gaps are explicit.
 - [x] This ticket does not block the manual-only release; if validation cannot pass, publish the evidence and remaining gaps, keep wake disabled, and make no hands-free acceptance claim.
 
-## Answer
+## Historical answer — manual-only fallback
 
 Completed the ticket's **manual-only fallback**. No German-validated model has
 been selected, and no wake detector/handoff has been implemented. Wake stays
@@ -143,3 +143,38 @@ Independent review of `7e6308a` against
 Worst issue within either review axis: none. These reviews do not close #13 or
 establish acoustic/privacy acceptance. The user's preexisting tracker edits
 were preserved outside the implementation commits.
+
+
+## Answer — experimental default-on implementation, 2026-10-20
+
+Implemented the user-approved current scope: real voice wake defaults enabled at
+0.2, explicit disable selects manual-only idle, mock stays hardware-free. The
+pinned CPU candidate verifies classifier/feature hashes, runtime/provider and
+reports missing capabilities with manual fallback. Startup never downloads.
+Health separates configured enablement, operational readiness and experimental
+quality. Measured headset recall remains 23/30 (76.7%), accepted as a limitation,
+not a >=95% pass; zero false activations cover only 240 negative seconds.
+
+One owned audio socket request runs resident wake inference and uninterrupted
+capture through VAD/STT. Bounded overwritten pre-roll preserves immediate question
+onset without a cue/reopen. Manual activation cancels the wake worker before its
+normal cue. Independent lock/mute barriers, disconnect and process-group teardown
+clear temporary buffers and reject stale IDs. Recovery restores only permitted
+readiness, without replay. The existing unsupported Jieli hardware-mute limitation
+remains explicit under #12/#24.
+
+ADR-0001 §6, PRD M3, the spec, configuration/installation/protocol and wake docs
+record the experimental default exception while retaining full-validation gates.
+Everyday-use guidance records content-free miss/false-activation tallies and
+requires fresh held-out validation after calibration/model changes. Historical
+manual benchmark configuration now explicitly disables wake for reproducibility.
+
+Focused config/CLI, daemon and actual audio socket/worker tests pass, including
+continuous marked PCM, bounded overwritten pre-roll, manual interaction,
+independent inhibitions, disconnect destruction, readiness recovery and stale
+detections. The pinned real CPU model loads and executes a zero-PCM inference
+without microphone access. `npm run check` passes. Fixture evidence is separate
+from physical acceptance; no new acoustic/privacy/release pass is claimed.
+
+Map: [MVP implementation map](../map.md). Physical acceptance remains with
+#12/#17/#18/#19/#21; implementation is complete for this experimental decision.

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
+import math
 import os
 import re
 from pathlib import Path
@@ -99,12 +100,11 @@ def load_config() -> dict[str, Any]:
     error = next(jsonschema.Draft7Validator(CONFIG_SCHEMA).iter_errors(value), None)
     if error:
         location = "/" + "/".join(str(item) for item in error.absolute_path)
-        if location in {"/wake_word/model_path", "/wake_word/threshold"}:
-            raise Diagnostic(
-                "invalid_config: /wake_word wake unavailable; set model_path and threshold "
-                "to null for manual activation; see docs/wake-activation.md"
-            )
         raise Diagnostic(f"invalid_config: {location} {error.validator}")
+    if value["wake_word"]["threshold"] is None:
+        value["wake_word"]["threshold"] = .2
+    if not math.isfinite(value["wake_word"]["threshold"]):
+        raise Diagnostic("invalid_config: /wake_word/threshold finite_number")
     from urllib.parse import urlsplit
     try:
         port = urlsplit(value["llm"]["base_url"]).port
@@ -177,8 +177,17 @@ async def serve() -> None:
                     message = parse_message(frame)
                     response: dict[str, Any]
                     if message["type"] == "hello" and message["role"] == "core":
+                        if output and output.process is None and not output.busy and output.spawning is None:
+                            await output.start()
+                        wake_ready = bool(output and output.wake_ready and config["wake_word"]["enabled"])
+                        if wake_ready:
+                            try:
+                                from importlib import import_module
+                                await asyncio.to_thread(import_module("apps.audio.input" if __package__ else "input").selected_source, config)
+                            except Exception:
+                                wake_ready = False
                         response = {"version": 1, "type": "ready", "service": "audio", "mode": config["audio"]["mode"],
-                                    "capabilities": {"wake": "unavailable", "stt": "ready" if config["audio"]["mode"] == "voice" else "mock", "tts": "ready" if output else "mock"}}
+                                    "capabilities": {"wake": "ready" if wake_ready else "unavailable", "stt": "ready" if config["audio"]["mode"] == "voice" else "mock", "tts": "ready" if output else "mock"}}
                     elif message["type"] == "audio-operation":
                         operation = message["operation"]
                         kind = operation["type"]
@@ -203,7 +212,7 @@ async def serve() -> None:
                                     writer.write((json.dumps({"version": 1, "type": "control-stopped",
                                                               "operation_id": operation["operation_id"]}) + "\n").encode())
                                 work_generation = output.generation
-                                work = asyncio.create_task(output.run(operation, speech_started if kind == "recognize" else None, control_stopped if kind == "play" else None))
+                                work = asyncio.create_task(output.run(operation, speech_started if kind in {"recognize", "wake"} else None, control_stopped if kind == "play" else None))
                                 disconnected = asyncio.create_task(reader.read(1))
                                 try:
                                     done, _ = await asyncio.wait({work, disconnected}, return_when=asyncio.FIRST_COMPLETED)

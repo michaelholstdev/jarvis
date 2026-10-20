@@ -11,7 +11,8 @@
   "wake_word": {
     "phrase": "Hey Jarvis",
     "model_path": null,
-    "threshold": null
+    "threshold": null,
+    "enabled": false
   },
   "vad": {
     "engine": "silero",

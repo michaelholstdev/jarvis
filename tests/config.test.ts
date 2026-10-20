@@ -16,27 +16,6 @@ test('empty configuration gives private German CPU defaults', () => {
   assert.equal(config.features.external_tools, false);
 });
 
-test('unsupported wake settings explain manual fallback without exposing model values', () => {
-  const directory = mkdtempSync(join(tmpdir(), 'jarvis-wake-'));
-  try {
-    const path = join(directory, 'config.yaml');
-    for (const wake_word of [
-      { model_path: '/private/unverified.onnx' },
-      { threshold: 0.5 },
-    ]) {
-      writeFileSync(path, JSON.stringify({ wake_word }));
-      assert.throws(() => loadConfig(path), {
-        message:
-          'invalid_config: /wake_word wake unavailable; set model_path and threshold to null for manual activation; see docs/wake-activation.md',
-      });
-    }
-    writeFileSync(path, 'wake_word:\n  model_path: null\n  threshold: null');
-    assert.equal(loadConfig(path).wake_word.model_path, null);
-  } finally {
-    rmSync(directory, { recursive: true });
-  }
-});
-
 test('configuration rejects remote endpoints, unsafe features, typos and timer bounds without echoing values', () => {
   const directory = mkdtempSync(join(tmpdir(), 'jarvis-config-'));
   try {
@@ -53,7 +32,8 @@ test('configuration rejects remote endpoints, unsafe features, typos and timer b
       'logging:\n  content_logging: off',
       'audio:\n  1: secret',
       'unknown: secret',
-      'wake_word:\n  model_path: unverified-model',
+      'wake_word:\n  threshold: 1',
+      'wake_word:\n  threshold: .nan',
       'llm:\n  base_url: http://127.0.0.1:65536',
       'session:\n  follow_up_seconds: 5\n  follow_up_seconds: 60',
     ]) {

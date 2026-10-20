@@ -146,21 +146,22 @@ def main() -> None:
 
     cached_text = ''
     segments: list[tuple[bytes, int]] = []
-    emit('ready')
+    emit('ready', wake_ready=bool(microphone and microphone.wake_detector),
+         wake_diagnostic=microphone.wake_diagnostic if microphone else 'wake_disabled')
     for line in sys.stdin:
         operation = json.loads(line)
         kind = operation['type']
-        if kind != 'recognize':
+        if kind not in {'recognize', 'wake'}:
             current = json.loads(subprocess.check_output(['pactl', '--format=json', 'list', 'sinks'], timeout=2))
             selected = next((s for s in current if s['name'] == sink['name']), None)
             if selected is None:
                 raise RuntimeError('output_device_missing')
             if selected['mute']:
                 raise RuntimeError('output_device_muted')
-        if kind == 'recognize':
+        if kind in {'recognize', 'wake'}:
             if microphone is None or 'text' in operation:
                 raise RuntimeError('invalid_recognition')
-            emit('result', result=microphone.recognize(emit))
+            emit('result', result=microphone.recognize(emit, wake=kind == 'wake'))
         elif kind == 'synthesize':
             cached_text = ''
             segments.clear()

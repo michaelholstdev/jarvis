@@ -1,13 +1,116 @@
-# Optional wake activation (#13)
+# Experimental wake activation (#13)
 
-Decision recorded 2026-10-16: **wake unavailable; manual activation retained**.
-This is the fallback allowed by ticket #13, not a hands-free implementation or
-acceptance pass. No wake detector, idle microphone loop, wake acknowledgment,
-prefix splitter, or wake-to-recognizer audio handoff is implemented in the service.
-The 2026-10-20 offline candidate evaluator and explicit calibration recorder are
-available below; they do not enable service wake detection. Ticket #12's
-target KDE/device acceptance also remains open. Manual operation setup is in
-[desktop acceptance](desktop-acceptance.md) and [microphone input](audio-input.md).
+## Current implementation — user decision, 2026-10-20
+
+Real `audio.mode: voice` now enables local wake detection by default, at **0.2**.
+This is a user-approved experimental exception to the former validation-before-
+enablement rule. Held-out headset recall was **23/30 (76.7%)**; zero false
+activations cover only **240 negative seconds**. The >=95% recall target failed.
+Speaker/noise/media, physical handoff/clipping, desktop privacy and release
+acceptance remain open under #12/#17/#18/#19/#21. The Jieli physical mute switch
+is unsupported (#24); use exposed source mute or CLI mute. No fully validated
+hands-free or hardware privacy claim is made.
+
+### Install and configure
+
+Use Python 3.11 and the normal [voice installation](installation.md), then
+explicitly install the locked optional runtime and acquire the pinned artifacts:
+
+```sh
+uv sync --frozen --python 3.11 --extra input --extra output --extra wake-benchmark
+uv run --frozen python -m benchmarks.wake.prepare --download
+```
+
+Startup never downloads. The service verifies all three hashes in
+[`benchmarks/wake/artifacts.json`](../benchmarks/wake/artifacts.json), classifier
+filename, openWakeWord **0.6.0**, ONNX Runtime **1.31.0** on Python 3.11 (1.23.2
+on the unvalidated Python 3.10 branch), and CPU-only providers before readiness.
+The classifier is the official v0.5.1 `hey_jarvis_v0.1.onnx` asset **129656242**
+(updated 2023-10-09), SHA-256
+`94a13cfe60075b132f6a472e7e462e8123ee70861bc3fb58434a73712ee0d2cb`.
+The inventory pins mel/embedding asset IDs, hashes and dates too. Code and
+feature assets use Apache-2.0; pretrained classifier terms are **CC BY-NC-SA 4.0**
+(noncommercial, attribution, share-alike). This experiment does not grant
+commercial/redistribution rights. Hashes are locally observed, with no independent
+upstream digest; that provenance limitation remains disclosed. English training
+and the German measurements below establish only the recorded experimental scope.
+
+```yaml
+wake_word:
+  enabled: true                  # omission means enabled
+  model_path: null               # models/wake/hey_jarvis_v0.1.onnx relative to checkout
+  threshold: 0.2
+```
+
+An absolute classifier path is supported; verified mel and embedding files must
+be beside it. Legacy `threshold: null` selects 0.2. Set `enabled: false` for
+manual-only idle. After changing configuration, restart both services so each
+reads the same setting:
+
+```sh
+systemctl --user stop jarvis-core.service jarvis-audio.service
+systemctl --user start jarvis-audio.service jarvis-core.service
+node dist/apps/core/main.js health
+```
+
+Stopping services cancels capture and clears worker memory; restart restores only
+permitted readiness. Mock and Piper-only modes never open idle wake capture.
+A missing/corrupt model, runtime or input device leaves manual fallback available
+when capture is permitted. Health separates `wake_word.enabled`, operational
+`wake_word.ready`, `wake_word.quality: experimental`, the configured threshold,
+and `capabilities.wake`; inspect `manual_activation`, voice capabilities and
+inhibitions separately. Allowlisted `audio_diagnostic` codes include
+`missing_wake_model`, `wake_checksum_mismatch`, `unsupported_wake_runtime`,
+`wake_runtime_unavailable` and device failures. Install locally and restart after
+repair; do not change pinned hashes to hide a mismatch.
+
+### Capture, cancellation and everyday use
+
+Say “Hey Jarvis, [question]” as one utterance. Wake inference and subsequent
+VAD/STT share one capture process, resampler and pending PCM frames. Wake uses
+no acknowledgment tone, avoiding capture reset or question loss during a cue.
+The detector sees 1280-sample (80 ms) signed 16-bit mono CPU frames. Before wake,
+only detection runs: no ambient STT/LLM or persistent audio. A continuously
+overwritten in-memory pre-roll retains at most the configured 500–1000 ms
+(512-sample frames rounded down; default 736 ms). The pinned library additionally
+retains bounded feature/inference state, including up to ten seconds of raw PCM
+internally; this is overwritten, never archived, and reset after each capture.
+Post-wake utterances are bounded by `vad.max_utterance_seconds` plus the existing
+recognition completion allowance. Idle wake requests renew after at most one day;
+normal operation uses a resident detector with no per-frame model loading.
+
+Manual shortcut/`activate` remains usable: cancel the pending wake request and
+clear its worker buffers, then use normal acknowledgment-before-listening.
+Lock, exposed software mute, service shutdown and the owning core socket closing
+kill the worker process group, including its capture child. Privacy barriers
+invalidate old operation IDs and erase temporary audio/context. Clearing one
+inhibition cannot override another. Recovery arms a fresh permitted idle detector;
+it never replays a canceled question or answer. Use `start-desktop`/installed units
+for KDE lock/source monitoring; plain `start` has only explicit CLI inhibitions.
+Physical cancellation latency still requires hardware measurement.
+
+Keep a content-free daily tally: setup/config/model identity, intended wake
+attempts, observed misses, unintended activations, duration, and condition
+(headset/quiet/noise/media). Count the `wake_detected` timing events for observed
+activations; classify false activations yourself. Misses cannot be inferred from
+detector logs alone. Record counts and onset-clipping yes/no, never ambient
+recordings, transcripts, question text or routine diagnostic audio. Use manual
+activation after a miss. If a concrete failure recurs, attach its counts and
+setup to #13; change calibration/model only on development data and repeat fresh
+held-out validation. Existing calibration and validation files remain separate.
+Deliberate consented recording/evaluation below is optional evidence collection,
+not routine operation. No new physical acceptance was performed for this change.
+
+Socket/fixture tests exercise continuous marked PCM, overwritten bounded pre-roll,
+manual interaction, independent inhibitions, disconnect cancellation, fresh
+readiness and stale-event rejection. They establish software behavior only.
+
+## Historical candidate evidence and original full-validation gate
+
+The following dated investigations describe the earlier default-disabled stage.
+Their original >=95% recall, false-activation, clipping and privacy acceptance
+criteria remain the full-validation gate. They do not override the experimental
+configuration above.
 
 ## Evidence and model gate
 
@@ -143,42 +246,10 @@ and separate physical acceptance before service enablement.
 
 ## Configuration and fallback troubleshooting
 
-Keep these settings, or omit the entire group to use their defaults:
-
-```yaml
-wake_word:
-  phrase: Hey Jarvis
-  model_path: null
-  threshold: null
-```
-
-Both services reject any non-null model path or threshold before starting. They
-explain how to restore manual activation without echoing the configured value.
-An invalid wake setting stops startup; it is not silently ignored. Restore both
-values to null and restart the services using the desktop guide. There is no
-supported wake enable switch or threshold calibration setting yet. Copying an
-English ONNX file into `models/` does not change this. Wake remains disabled in
-mock, Piper, and voice modes.
-
-From the checkout, after the normal locked installation:
-
-```sh
-npm run build
-node dist/apps/core/main.js config
-node --test dist/tests/config.test.js dist/tests/core.test.js dist/tests/recovery.test.js
-uv run --frozen python -m unittest tests.config_test
-# With audio/core running in the user's private runtime directory:
-node dist/apps/core/main.js health
-node dist/apps/core/main.js activate
-```
-
-Health reports `capabilities.wake: unavailable`. `manual_activation: ready`
-requires real speech capabilities and cleared privacy/device barriers; `mock`
-only establishes the scripted path. Missing STT/TTS/Ollama is a separate voice
-readiness problem: follow the input/output/Ollama setup guides. Manual activation
-listens after its acknowledgment. In manual-only idle there is no ambient
-capture, pre-roll, STT, or LLM work. These automated checks establish fallback
-behavior, not acoustic performance.
+Use the current installation/configuration section above. `enabled: false`
+disables idle wake capture; `activate` remains the manual shortcut/CLI fallback.
+The historical null-only schema restriction has been removed. Inspect health
+and content-free audio diagnostic codes before repeating an activation.
 
 ## Defined future German microphone acceptance protocol
 

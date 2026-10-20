@@ -5,7 +5,11 @@ import { Ajv } from 'ajv';
 import { parse } from 'yaml';
 import type defaults from '../../config/defaults.json';
 
-export type Config = typeof defaults;
+export type Config = Omit<typeof defaults, 'wake_word'> & {
+  wake_word: Omit<typeof defaults.wake_word, 'model_path'> & {
+    model_path: string | null;
+  };
+};
 const schema = JSON.parse(
   readFileSync(
     new URL(
@@ -42,17 +46,11 @@ export function loadConfig(path?: string): Config {
   }
   if (!validate(input)) {
     const error = validate.errors?.[0];
-    if (
-      error?.instancePath === '/wake_word/model_path' ||
-      error?.instancePath === '/wake_word/threshold'
-    )
-      throw new Error(
-        'invalid_config: /wake_word wake unavailable; set model_path and threshold to null for manual activation; see docs/wake-activation.md',
-      );
     throw new Error(
       `invalid_config: ${error?.instancePath || '/'} ${error?.keyword ?? 'schema'}`,
     );
   }
+  input.wake_word.threshold ??= 0.2;
   try {
     const port = new URL(input.llm.base_url).port;
     if (Number(port || 80) < 1) throw new Error('port');

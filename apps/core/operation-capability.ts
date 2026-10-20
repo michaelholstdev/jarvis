@@ -5,6 +5,8 @@ export function operationCapability(
   type: Operation['type'],
 ): Capability | undefined {
   switch (type) {
+    case 'wake':
+      return 'wake';
     case 'infer':
       return 'inference';
     case 'recognize':

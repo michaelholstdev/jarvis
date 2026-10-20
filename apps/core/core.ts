@@ -106,6 +106,19 @@ export function createCore(
                 : 0)) *
             1000
           : audioDeadlineMs(config, type));
+    if (next === 'idle' && !type) armWake();
+  };
+  const wakeReady = () =>
+    config.wake_word.enabled &&
+    config.audio.mode === 'voice' &&
+    ready &&
+    !inhibited() &&
+    !privacyPending &&
+    !cleanupPending &&
+    capabilities.wake === 'ready';
+  const armWake = () => {
+    if (!operation && state === 'idle' && wakeReady())
+      transition('idle', 'wake');
   };
   const reset = () => {
     cancellation = null;
@@ -191,6 +204,9 @@ export function createCore(
   const cancel = (replacement: boolean) => {
     const previous = operation;
     if (!previous) return;
+    if (previous.type === 'wake' && conversationDeadline === null)
+      conversationDeadline =
+        clock.now() + config.session.max_duration_seconds * 1000;
     cancellation = { replacement, playback: previous.type === 'play' };
     followUpDeadline = null;
     transition('cancelling', 'cancel');
@@ -226,6 +242,7 @@ export function createCore(
         throw new ProtocolError('unavailable');
       if (
         ['thinking', 'synthesizing', 'speaking'].includes(state) ||
+        operation?.type === 'wake' ||
         (state === 'follow-up' &&
           config.audio.mode === 'voice' &&
           config.llm.mode === 'ollama' &&
@@ -290,6 +307,7 @@ export function createCore(
         }
         if (privacyPending && operation?.type !== 'privacy')
           synchronizePrivacy();
+        armWake();
         return;
       }
       if (event.type === 'audio-lost') {
@@ -391,13 +409,17 @@ export function createCore(
         if (state === 'indicating-failure' || state === 'cancelling') {
           // Failed cleanup cannot authorize further audio work.
           this.dispatch({ type: 'audio-lost', diagnostic: event.code });
+        } else if (operation?.type === 'wake' && state === 'idle') {
+          capabilities.wake = 'unavailable';
+          lastFailure = { code: event.code, capability: 'wake' };
+          transition('idle');
         } else if (state !== 'idle') fail(event.code, event.capability);
         return;
       }
       // A current explicit end command wins over simultaneous timer expiry.
       if (
         event.type === 'recognized' &&
-        operation?.type === 'recognize' &&
+        (operation?.type === 'recognize' || operation?.type === 'wake') &&
         isEndPhrase(event.text)
       ) {
         close();
@@ -463,7 +485,27 @@ export function createCore(
         }
         return;
       }
-      if (event.type === 'control-recognized' && state === 'speaking') {
+      if (
+        event.type === 'speech-started' &&
+        operation.type === 'wake' &&
+        state === 'idle'
+      ) {
+        conversationDeadline =
+          clock.now() + config.session.max_duration_seconds * 1000;
+        transition('listening', 'wake');
+        operation.operation_id = event.operation_id;
+        deadline =
+          clock.now() +
+          (config.vad.max_utterance_seconds +
+            config.session.recognition_completion_seconds) *
+            1000;
+      } else if (
+        event.type === 'recognized' &&
+        operation.type === 'wake' &&
+        state === 'idle'
+      ) {
+        transition('idle');
+      } else if (event.type === 'control-recognized' && state === 'speaking') {
         if (normalizePhrase(event.text) === 'stopp') cancel(false);
       } else if (
         event.type === 'playback-completed' &&
@@ -594,6 +636,12 @@ export function createCore(
     status(): HealthStatus {
       return {
         ready,
+        wake_word: {
+          enabled: config.wake_word.enabled,
+          ready: wakeReady(),
+          quality: 'experimental',
+          threshold: config.wake_word.threshold,
+        },
         capabilities: { ...capabilities },
         retry_available: !!retryQuestion,
         last_failure: lastFailure ? { ...lastFailure } : null,

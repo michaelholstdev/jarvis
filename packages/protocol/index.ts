@@ -17,6 +17,12 @@ export type InhibitionSource = keyof Inhibitions;
 export type Capability = 'wake' | 'stt' | 'tts' | 'inference';
 export type Capabilities = Record<Capability, 'mock' | 'ready' | 'unavailable'>;
 export type HealthStatus = {
+  wake_word: {
+    enabled: boolean;
+    ready: boolean;
+    quality: 'experimental';
+    threshold: number;
+  };
   capabilities: Capabilities;
   retry_available: boolean;
   last_failure: { code: Diagnostic; capability: Capability | 'audio' } | null;
@@ -47,6 +53,7 @@ export type TextAnswer = { answer_id: string; text: string };
 export type ConversationExchange = { question: string; reply: string };
 export type Operation = {
   type:
+    | 'wake'
     | 'privacy'
     | 'indicate-failure'
     | 'cancel'

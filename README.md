@@ -1,6 +1,6 @@
 # Jarvis — local German voice conversations
 
-For the experimental manual voice setup, start with the
+For the experimental voice setup, start with the
 [CachyOS installation runbook](docs/installation.md) and
 [requirement-level release checklist](docs/release-checklist.md).
 Fresh-account and physical headset/speaker acceptance remain unvalidated; no
@@ -134,10 +134,10 @@ headset/speaker behavior, spoken stop, desktop lock/mute, device recovery,
 recognition allowance, latency, resource use and offline model-backed operation.
 No performance or voice capability measurements are claimed by M0.
 
-Ticket #13 retains **manual-only activation**: no German-validated wake model is
-selected, and non-null wake model/threshold settings are rejected with fallback
-instructions. See [wake evidence, configuration and German acceptance protocol](docs/wake-activation.md)
-for separate unvalidated headset/speaker results and the remaining hands-free gate.
+Ticket #13 enables **experimental wake activation by default** in real voice mode,
+threshold **0.2**, with manual fallback and explicit `wake_word.enabled: false`.
+Measured held-out headset recall is **76.7% (23/30)**; the full hands-free gate
+remains failed/unvalidated. See [installation, privacy behavior and limits](docs/wake-activation.md).
 
 ## Scripted manual turn (#02)
 
@@ -318,7 +318,7 @@ restore content, even after unlocking/unmuting or starting a fresh conversation.
 Health retains the conversation `state:idle` and reports separate `inhibitions`
 (`locked`, `muted`, `hardware_muted`) plus `privacy_pending`. Inhibited idle
 has `manual_activation:unavailable`; ordinary idle permits activation and, with
-a future validated wake adapter, bounded wake processing/pre-roll. `ready`
+the experimental wake adapter, bounded wake processing/pre-roll. `ready`
 continues to describe service availability, so a healthy muted service can
 return exit code 0. Check `manual_activation` to determine activation readiness.
 
@@ -373,7 +373,7 @@ Concise German speech and deliberate temporary CLI text access: [text answers](d
 Install the two systemd user units and configure a single-press KDE shortcut using
 [the deployment guide](systemd/README.md). It includes exact startup, health, log,
 device, recovery, update and uninstall commands. Manual activation is the supported
-mode; wake detection remains unavailable.
+mode; experimental wake is enabled by default with separate readiness/quality reporting.
 
 ## Experimental spoken stop (#14)
 

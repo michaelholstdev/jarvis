@@ -179,6 +179,27 @@
             },
             "audio_cleanup_pending": {
               "type": "boolean"
+            },
+            "wake_word": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["enabled", "ready", "quality", "threshold"],
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "ready": {
+                  "type": "boolean"
+                },
+                "quality": {
+                  "const": "experimental"
+                },
+                "threshold": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "exclusiveMaximum": 1
+                }
+              }
             }
           }
         }
@@ -262,7 +283,8 @@
                 "close-conversation",
                 "cancel",
                 "privacy",
-                "indicate-failure"
+                "indicate-failure",
+                "wake"
               ]
             },
             "operation_id": {

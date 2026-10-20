@@ -166,8 +166,9 @@ audio:
   echo_cancellation: false # opt-in until speaker calibration
 wake_word:
   phrase: "Hey Jarvis"
-  model_path: null # no unverified model bundled; manual activation fallback
-  threshold: null # calibrate per model and microphone
+  enabled: true # user-approved experimental default, #13, 2026-10-20
+  model_path: null # pinned candidate in models/wake; missing artifacts use manual fallback
+  threshold: 0.2 # measured headset recall 23/30 (76.7%), below full-validation target
 vad:
   engine: silero
   end_silence_ms: 350
@@ -226,7 +227,7 @@ The configuration must undergo schema validation; all model choices and threshol
 ### Milestone M3 — Wake word + daemon
 
 - Single-press KDE shortcut/CLI activation, acknowledgment timing, optional validated wake-word model and prefix/command split; systemd user units, lock/mute inhibition, capability health, device recovery.
-- **Exit gate:** login starts services; manual activation works on target hardware; no transcription while idle and no capture while locked/muted. Manual-only mode can pass this gate. Hands-free mode has a separate gate for “Hey Jarvis, [question]”, clipping, recall and false accepts; unvalidated wake mode is not enabled by default.
+- **Exit gate:** login starts services; manual activation works on target hardware; no transcription while idle and no capture while locked/muted. Manual-only mode can pass this gate. Hands-free mode has a separate gate for “Hey Jarvis, [question]”, clipping, recall and false accepts; the user-approved #13 experiment enables the pinned wake candidate by default at 0.2 despite 76.7% recall. This exception does not pass the hands-free gate; full-validation criteria and mandatory privacy/cancellation remain unchanged. Explicit disable selects manual-only idle.
 
 ### Milestone M4 — Benchmark and stability release
 

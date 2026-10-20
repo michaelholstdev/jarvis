@@ -1,7 +1,7 @@
-# Manual-only CachyOS installation
+# Experimental CachyOS voice installation
 
 This is the installation runbook for ticket #19. The supported implementation
-path is manual activation, endpointed Parakeet TDT v3 INT8 + Silero on CPU, Piper
+path is experimental default-on wake with manual fallback, endpointed Parakeet TDT v3 INT8 + Silero on CPU, Piper
 Thorsten medium on CPU, and independently managed local Ollama. It is an
 **experimental setup, not a validated hardware release**. Read the
 [release checklist](release-checklist.md) before accepting it. Production Whisper
@@ -55,7 +55,7 @@ npm --version
 uv --version
 uv python find 3.11
 npm ci
-uv sync --frozen --python 3.11 --extra input --extra output
+uv sync --frozen --python 3.11 --extra input --extra output --extra wake-benchmark
 npm run build
 npm run doctor
 ```
@@ -96,7 +96,7 @@ GPL-3.0, sherpa-onnx Apache-2.0; preserve relevant notices and review the
 Parakeet (CC-BY-4.0) uses the [production acquisition block](parakeet-production.md#install-and-select),
 installing encoder/decoder/joiner INT8, tokens and Silero in `models/parakeet`.
 Vosk small German (Apache-2.0) remains benchmark-only. Both have
-[artifact records](../benchmarks/recognition/artifacts.json). Wake has no approved artifact/runtime pin.
+[artifact records](../benchmarks/recognition/artifacts.json). Experimental wake uses the [pinned candidate and explicit acquisition procedure](wake-activation.md#install-and-configure); 76.7% headset recall is accepted only for experimental use. Acquire its three assets before starting; startup never downloads.
 
 ## 4. Local Ollama and model inventory
 
@@ -175,19 +175,21 @@ llm:
   seed: 0
   timeout_ms: 120000
 wake_word:
-  model_path: null
-  threshold: null
+  enabled: true # false selects manual-only idle
+  model_path: null # pinned models/wake/hey_jarvis_v0.1.onnx
+  threshold: 0.2
 features:
   voice_stop: false
 ```
 
 Keep other defaults from [configuration](configuration.md): CPU speech, 750 ms
-bounded pre-roll after manual activation, 350 ms VAD silence, 30 s utterance cap,
+bounded pre-roll during wake idle or after manual activation, 350 ms VAD silence, 30 s utterance cap,
 20 s follow-up, 5 s recognition allowance, 300 s conversation/extension,
 20 s extension response, 120 s playback/generation watchdogs. Activation and end
-sounds default on. Wake, barge-in, external tools, tray, persistence and content
-logging remain disabled. `echo_cancellation` does not establish acoustic support.
-Non-null wake model/threshold values fail configuration; there is no enable switch.
+sounds default on for manual activation; wake uses continuous capture without a cue.
+Wake defaults on in real voice mode; barge-in, external tools, tray, persistence
+and content logging remain disabled. `echo_cancellation` does not establish acoustic support.
+Set `wake_word.enabled: false` and restart both services for manual-only idle.
 
 ```sh
 unset JARVIS_CONFIG
@@ -233,7 +235,8 @@ resolve that separately before acceptance. Units are bound to
 (`start-desktop`). Plain foreground `start` does not monitor real desktop privacy.
 Unknown lock/mute/device state inhibits capture. Health exit 0 is a handshake,
 not acoustic acceptance: also inspect `manual_activation`, `voice_conversation`,
-`inference` and inhibitions. `mock` is not real readiness; wake is `unavailable`.
+`inference` and inhibitions. `mock` is not real readiness. Inspect `wake_word`
+for configured enablement, operational readiness and experimental quality.
 
 Before relying on a microphone's physical mute switch, check
 [physical mute support](desktop-acceptance.md#physical-mute-support). The Jieli
@@ -298,7 +301,7 @@ Stop both units, select the reviewed new commit using your Git workflow, then:
 
 ```sh
 npm ci
-uv sync --frozen --python 3.11 --extra input --extra output
+uv sync --frozen --python 3.11 --extra input --extra output --extra wake-benchmark
 npm run build
 npm run check
 npm test

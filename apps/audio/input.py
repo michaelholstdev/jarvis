@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import select
+import re
 import subprocess
 import time
 from typing import Any, Protocol
@@ -114,7 +115,25 @@ class Input:
             ParakeetRecognizer(config, sherpa) if config['stt']['model'] == 'parakeet-tdt-v3-int8'
             else WhisperRecognizer(config, sherpa))
 
-    def recognize(self, emit: Any, cancelled: Any = None, echo_reference: Any = None) -> dict[str, Any]:
+        self.wake_detector: Any = None
+        self.wake_diagnostic: str | None = 'wake_disabled'
+        if config['wake_word']['enabled']:
+            try:
+                wake_module = importlib.import_module('apps.audio.wake' if __package__ else 'wake')
+                self.wake_detector = wake_module.WakeDetector(config)
+                self.wake_diagnostic = None
+            except Exception as error:
+                self.wake_detector = None
+                allowed = {'unsupported_wake_runtime', 'unsupported_wake_model', 'missing_wake_model',
+                           'wake_checksum_mismatch', 'wake_cpu_required', 'input_device_missing',
+                           'input_device_muted'}
+                self.wake_diagnostic = str(error) if str(error) in allowed else 'wake_runtime_unavailable'
+
+    def recognize(self, emit: Any, cancelled: Any = None, echo_reference: Any = None, *, wake: bool = False) -> dict[str, Any]:
+        if wake and self.wake_detector is None:
+            raise RuntimeError('wake_runtime_unavailable')
+        if wake:
+            self.wake_detector.reset()
         source = selected_source(self.config)
         if echo_reference is not None and (source['name'].endswith('.monitor') or source.get('monitor_of_sink_name')):
             raise RuntimeError('input_device_missing')
@@ -131,34 +150,41 @@ class Input:
             '-'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         self.vad.reset()
         resampler = self.soxr.ResampleStream(rate, 16000, 1, dtype='float32')
-        # Manual-only pre-roll starts after the cue: preserve audio preceding VAD onset,
-        # without opening an idle microphone or retaining acknowledgment audio.
-        ring: deque[Any] = deque(maxlen=((128 if echo_reference is not None else self.config['audio']['pre_roll_ms']) * 16 + 511) // 512)
+        # Wake idle continuously overwrites this bounded ring. Manual pre-roll
+        # begins after the cue; neither mode sends ambient audio to STT.
+        ring: deque[Any] = deque(maxlen=((128 if echo_reference is not None else self.config['audio']['pre_roll_ms']) * 16) // 512)
         utterance: list[Any] = []
         pending = self.np.zeros(0, dtype=self.np.float32)
+        wake_pending = self.np.zeros(0, dtype=self.np.float32)
+        activated = not wake
         speaking = False
         started = time.monotonic()
-        cap = 2 if echo_reference is not None else self.config['vad']['max_utterance_seconds']
+        cap = (24 * 3600 - 60) if wake else 2 if echo_reference is not None else self.config['vad']['max_utterance_seconds']
         boundary = None
         if echo_reference is not None:
             stop_control = importlib.import_module('apps.audio.stop_control' if __package__ else 'stop_control')
             # Require a silence boundary in every window, including after a
             # truncated utterance. A continued phrase's tail cannot be a command.
-            boundary = stop_control.ControlBoundary(max(11, (self.config['vad']['end_silence_ms'] * 16 + 511) // 512))
+            boundary = stop_control.ControlBoundary(max(11, (self.config['vad']['end_silence_ms'] * 16) // 512))
         last_check = started
+        last_audio = started
         frame_bytes = rate // 50 * channels * 2
         raw = bytearray()
         try:
             assert capture.stdout
+            active = False
             while time.monotonic() - started < cap and not (cancelled and cancelled.is_set()):
                 if time.monotonic() - last_check >= .25:
                     selected_source(self.config)
                     last_check = time.monotonic()
                 if not select.select([capture.stdout], [], [], .1)[0]:
+                    if time.monotonic() - last_audio > 2:
+                        raise RuntimeError('input_disconnected')
                     continue
                 block = os.read(capture.stdout.fileno(), frame_bytes)
                 if not block:
                     raise RuntimeError('input_disconnected')
+                last_audio = time.monotonic()
                 raw.extend(block)
                 size = len(raw) // (channels * 2) * (channels * 2)
                 if not size:
@@ -168,9 +194,33 @@ class Input:
                 pending = self.np.concatenate((pending, resampler.resample_chunk(mono)))
                 while len(pending) >= 512:
                     frame, pending = pending[:512], pending[512:]
+                    if not activated:
+                        ring.append(frame.copy())
+                        wake_pending = self.np.concatenate((wake_pending, frame))
+                        if len(wake_pending) < 1280:
+                            continue
+                        wake_frame, wake_pending = wake_pending[:1280], wake_pending[1280:]
+                        if not self.wake_detector.detected(self.np.clip(wake_frame * 32768, -32768, 32767).astype('<i2')):
+                            continue
+                        activated = True
+                        active = True
+                        utterance.extend(ring)
+                        for buffered in ring:
+                            self.vad.accept_waveform(buffered)
+                        speaking = self.vad.is_speech_detected()
+                        ring.clear()
+                        started = time.monotonic()
+                        cap = self.config['vad']['max_utterance_seconds']
+                        emit('wake_detected')
+                        emit('speech_started')
+                        # Same capture, resampler and pending frames: no cue or reopen.
+                        continue
                     self.vad.accept_waveform(frame)
                     active = self.vad.is_speech_detected()
-                    if speaking:
+                    if wake:
+                        utterance.append(frame.copy())
+                        speaking = speaking or active
+                    elif speaking:
                         utterance.append(frame.copy())
                     else:
                         ring.append(frame.copy())
@@ -192,6 +242,8 @@ class Input:
                 capture.stdout.close()
             self.vad.reset()
             ring.clear()
+            if wake:
+                self.wake_detector.reset()
         endpoint = time.monotonic()
         emit('endpoint', elapsed_ms=round((endpoint - started) * 1000))
         endpoint_complete = speaking and not active
@@ -202,6 +254,8 @@ class Input:
             echo = stop_control.is_echo(samples, echo_reference, self.np)
         text = (self.recognizer.recognize(samples)
                 if speaking and (echo_reference is None or endpoint_complete) and not echo and not (cancelled and cancelled.is_set()) else '')
+        if wake:
+            text = re.sub(r'^(?:(?:hey|he|hallo)\s+)?ja(?:r)?vis[\s,.:!?-]*', '', text, flags=re.IGNORECASE).strip()
         utterance.clear()
         emit('recognition_final', elapsed_ms=round((time.monotonic() - endpoint) * 1000))
         if echo_reference is not None:

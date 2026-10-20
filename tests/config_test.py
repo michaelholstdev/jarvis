@@ -55,29 +55,22 @@ class AudioConfigurationTest(unittest.TestCase):
         self.assertEqual(config["stt"]["device"], "cpu")
         self.assertIs(config["features"]["external_tools"], False)
 
-    def test_wake_rejection_and_manual_fallback_match_the_core_cli(self) -> None:
-        diagnostic = (
-            "invalid_config: /wake_word wake unavailable; set model_path and threshold "
-            "to null for manual activation; see docs/wake-activation.md"
-        )
+    def test_experimental_wake_defaults_and_disable_match_core_cli(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.yaml"
-            for wake in ({"model_path": "/private/unverified.onnx"}, {"threshold": 0.5}):
-                path.write_text(json.dumps({"wake_word": wake}))
+            for wake in ({}, {"enabled": False}, {"threshold": .3},
+                         {"model_path": "/private/candidate.onnx"},
+                         {"model_path": None, "threshold": None}):
+                path.write_text(json.dumps({"audio": {"mode": "voice"}, "wake_word": wake}))
                 with patch.dict(os.environ, {"JARVIS_CONFIG": str(path)}):
-                    with self.assertRaises(Diagnostic) as error:
-                        load_config()
-                    self.assertEqual(str(error.exception), diagnostic)
+                    audio = load_config()
                     result = subprocess.run(
                         ["node", "dist/apps/core/main.js", "config"],
-                        capture_output=True, text=True, check=False,
+                        capture_output=True, text=True, check=True,
                     )
-                    self.assertNotEqual(result.returncode, 0)
-                    self.assertEqual(result.stdout, "")
-                    self.assertEqual(json.loads(result.stderr)["code"], diagnostic)
-            path.write_text("wake_word:\n  model_path: null\n  threshold: null")
-            with patch.dict(os.environ, {"JARVIS_CONFIG": str(path)}):
-                self.assertIsNone(load_config()["wake_word"]["model_path"])
+                self.assertEqual(audio, json.loads(result.stdout))
+                self.assertEqual(audio["wake_word"]["enabled"], wake.get("enabled", True))
+                self.assertEqual(audio["wake_word"]["threshold"], wake.get("threshold") or .2)
 
     def test_invalid_configuration_is_content_free(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -88,7 +81,8 @@ class AudioConfigurationTest(unittest.TestCase):
                 "features:\n  external_tools: true",
                 "logging:\n  content_logging: off",
                 "audio:\n  1: secret",
-                "wake_word:\n  model_path: unverified-model",
+                "wake_word:\n  threshold: 1",
+                "wake_word:\n  threshold: .nan",
                 "unknown: secret",
                 "llm:\n  base_url: http://127.0.0.1:65536",
                 "session:\n  follow_up_seconds: 5\n  follow_up_seconds: 60",

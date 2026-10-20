@@ -63,12 +63,20 @@
           "const": "Hey Jarvis"
         },
         "model_path": {
-          "type": "null",
+          "type": ["string", "null"],
+          "minLength": 1,
+          "maxLength": 4096,
           "default": null
         },
         "threshold": {
-          "type": "null",
-          "default": null
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1,
+          "default": 0.2
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
         }
       }
     },

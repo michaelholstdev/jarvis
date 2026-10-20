@@ -85,7 +85,7 @@ not start on login: `systemctl --user status graphical-session.target`.
 Health exit 0 / `ready:true` means the service handshake and cleanup succeeded;
 it does not imply an available microphone or model. Expect
 `manual_activation:ready` and `voice_conversation:ready` for configured real voice
-with available models and devices. Wake remains unavailable: **manual-only** is
+with available models and devices. Wake now defaults on experimentally at 0.2; see [setup and limits](../docs/wake-activation.md). Explicit `wake_word.enabled: false` selects manual-only idle. **Manual activation** is
 the supported mode. `mock` indicates simulated configuration, not real voice.
 `inhibitions.locked` also covers unknown desktop/device state and suspend;
 `hardware_muted` combines explicit CLI hardware mute with source mute/unknown
