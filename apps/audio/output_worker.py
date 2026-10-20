@@ -161,7 +161,13 @@ def main() -> None:
         if kind in {'recognize', 'wake'}:
             if microphone is None or 'text' in operation:
                 raise RuntimeError('invalid_recognition')
-            emit('result', result=microphone.recognize(emit, wake=kind == 'wake'))
+            def capture_emit(event: str, **values: Any) -> None:
+                if event == 'buffer_occupancy':
+                    values.update(operation_id=operation['operation_id'],
+                                  generation=operation.get('diagnostic_generation'),
+                                  capture_sequence=operation.get('diagnostic_sequence'))
+                emit(event, **values)
+            emit('result', result=microphone.recognize(capture_emit, wake=kind == 'wake'))
         elif kind == 'synthesize':
             cached_text = ''
             segments.clear()

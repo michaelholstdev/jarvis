@@ -28,13 +28,15 @@ model or physical-device buffer occupancy.
 | Core/audio request admission | 8 default connections, configurable 1–32; excess closed | Real isolated sockets; kernel backlog separate |
 | Protocol frame | 8192 bytes default, configurable up to 65536; absolute deadline | Framing/admission regressions; transient OS/stream allocations separate |
 | Audio operation | One busy worker; concurrent work rejected; privacy invalidates prior admission and destroys worker | Worker-boundary regressions; no native heap-erasure claim |
-| Input pre-roll | `ceil(pre_roll_ms * 16 / 512)` frames of 512 float32 samples; default 24 frames = 49,152 sample bytes | Source audit of `apps/audio/input.py`; excludes metadata/copies |
+| Input pre-roll | `floor(pre_roll_ms * 16 / 512)` frames of 512 float32 samples; current default 23 frames = 47,104 sample bytes | Source audit of `apps/audio/input.py`; excludes metadata/copies |
 | Captured utterance | Capture loop stops at configured 30 seconds (maximum setting 120); 512-sample frames at 16 kHz | Wall-clock bound, not a measured maximum allocation/frame count |
 | Synthesized speech | Accepted segments plus reserved notice limited to 60 seconds at voice rate; text limited to 4096 UTF-8 bytes and configured budget | Fixture duration regression; native Piper can allocate a rejected chunk before budget check |
 | Ollama response | At most 1 MiB accepted response data; separate answer/context budgets | Source audit of `apps/core/ollama.ts`; no inference-server memory bound |
 
-The pre-roll ring, utterance, resampler/VAD, synthesis chunks and physical backend
-are not instrumented for instantaneous occupancy. This is explicit partial bound
+The original report below predates production capture instrumentation. See the
+[scoped capture follow-up](capture-buffer-evidence.md) and its separate fixture
+report for logical payload occupancy. Native resampler/VAD, synthesis chunks and
+physical backend occupancy remain unmeasured. This is explicit partial bound
 evidence; native audio occupancy and complete queue/buffer acceptance remain
 **unvalidated**. Low RSS is not substituted for occupancy or erased heap contents.
 
@@ -121,3 +123,5 @@ the approved tooling-only scope.
 
 Standards: 0 findings; Spec: 0 actionable findings. No worst issue remains within
 either axis; the acceptance gaps above remain open.
+
+Production capture instrumentation follow-up: [method, scope and finite evidence](capture-buffer-evidence.md). Historical contract/network and physical evidence above is preserved.

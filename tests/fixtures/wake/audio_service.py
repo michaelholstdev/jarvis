@@ -22,6 +22,15 @@ SOURCE = {'name': 'fixture', 'mute': False, 'sample_specification': 's16le 1ch 1
 def capture() -> None:
     import numpy as np
     Path(os.environ['WAKE_FIXTURE_PID']).write_text(str(os.getpid()))
+    mode_file = os.environ.get('WAKE_FIXTURE_MODE')
+    mode = Path(mode_file).read_text() if mode_file else 'endpoint'
+    if mode == 'maximum':
+        for _ in range(200):
+            sys.stdout.buffer.write(np.full(320, 2000, dtype='<i2').tobytes())
+            sys.stdout.buffer.flush()
+            time.sleep(.02)
+        time.sleep(60)
+        return
     # More idle PCM than the pre-roll may retain; no speech can be decoded yet.
     block = np.full(512, -1000, dtype='<i2').tobytes()
     for _ in range(150):
@@ -103,7 +112,7 @@ def worker() -> None:
 
     packages = {
         'numpy': np,
-        'soxr': SimpleNamespace(ResampleStream=lambda *a, **k: SimpleNamespace(resample_chunk=lambda x: x), resample=lambda x, *a: x),
+        'soxr': SimpleNamespace(ResampleStream=lambda *a, **k: SimpleNamespace(resample_chunk=lambda x: np.tile(x, int(os.environ.get('WAKE_FIXTURE_RESAMPLE_MULTIPLIER', '1')) if os.environ.get('WAKE_FIXTURE_MODE') and Path(os.environ['WAKE_FIXTURE_MODE']).read_text() == 'maximum' else 1)), resample=lambda x, *a: x),
         'sherpa_onnx': SimpleNamespace(
             VadModelConfig=lambda: SimpleNamespace(silero_vad=SimpleNamespace()),
             VoiceActivityDetector=Vad,
@@ -123,6 +132,29 @@ def worker() -> None:
     pulse.pa_simple_new.return_value = 1
     pulse.pa_simple_write.return_value = 0
     pulse.pa_simple_drain.return_value = 0
+    # Fault injection at the private worker pipe: production counters are still
+    # measured normally; only the external transport drops/corrupts observations.
+    original_stdout = sys.stdout
+    class EvidencePipe:
+        def write(self, value):
+            if value.startswith('{'):
+                event = json.loads(value)
+                if event.get('event') == 'buffer_occupancy':
+                    fault = os.environ.get('WAKE_FIXTURE_EVIDENCE_FAULT')
+                    if fault == 'missing':
+                        event['buffers'].pop('handoff', None)
+                        value = json.dumps(event)
+                    elif fault == 'stale':
+                        for key, wrong in (('operation_id', 'old-operation'), ('generation', -1),
+                                           ('capture_sequence', -1)):
+                            stale = json.loads(value)
+                            stale[key] = wrong
+                            stale['buffers']['pre_roll']['high_water_bytes'] = 99999999
+                            original_stdout.write(json.dumps(stale) + '\n')
+            return original_stdout.write(value)
+        def flush(self):
+            original_stdout.flush()
+    sys.stdout = EvidencePipe()
     with ExitStack() as stack:
         boundaries(stack, {})
         stack.enter_context(patch('importlib.import_module', side_effect=dependency))

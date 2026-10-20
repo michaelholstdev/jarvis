@@ -36,6 +36,7 @@ class WakeSocketTest(unittest.IsolatedAsyncioTestCase):
         self.process = await asyncio.create_subprocess_exec(
             sys.executable, 'tests/fixtures/wake/audio_service.py',
             env={**os.environ, 'JARVIS_CONFIG': str(path), 'XDG_RUNTIME_DIR': str(self.root),
+                 'JARVIS_BUFFER_DIAGNOSTICS': str(self.root / 'buffers.json'),
                  'WAKE_FIXTURE_PID': str(self.root / 'capture.pid'),
                  'WAKE_FIXTURE_TRIGGER': str(self.root / 'trigger')},
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
@@ -77,6 +78,26 @@ class WakeSocketTest(unittest.IsolatedAsyncioTestCase):
         final = json.loads(await asyncio.wait_for(reader.readline(), 5))
         self.assertEqual(final['text'], 'Wie spät ist es?')
         self.assertEqual(final['operation_id'], 'wake')
+
+    async def test_occupancy_observes_overwrite_handoff_and_release(self):
+        await self.start()
+        reader, _ = await self.operation('wake')
+        await self.until(lambda: (self.root / 'capture.pid').exists())
+        await asyncio.sleep(.3)
+        (self.root / 'trigger').touch()
+        await asyncio.wait_for(reader.readline(), 5)
+        final = json.loads(await asyncio.wait_for(reader.readline(), 5))
+        self.assertEqual(final['text'], 'Wie spät ist es?')
+        report = json.loads((self.root / 'buffers.json').read_text())
+        run = report['operations'][-1]
+        self.assertEqual(run['operation_id'], 'wake')
+        self.assertEqual(run['outcome'], 'released')
+        self.assertGreater(run['overwritten_frames'], 23)
+        self.assertEqual(run['buffers']['pre_roll']['high_water_samples'], 11776)
+        self.assertEqual(run['buffers']['pre_roll']['high_water_bytes'], 47104)
+        for buffer in run['buffers'].values():
+            self.assertEqual(buffer['current_samples'], 0)
+            self.assertGreater(buffer['high_water_samples'], 0)
 
     async def test_disconnect_and_privacy_destroy_capture_and_recovery_does_not_replay(self):
         await self.start()

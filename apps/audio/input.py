@@ -130,6 +130,17 @@ class Input:
                 self.wake_diagnostic = str(error) if str(error) in allowed else 'wake_runtime_unavailable'
 
     def recognize(self, emit: Any, cancelled: Any = None, echo_reference: Any = None, *, wake: bool = False) -> dict[str, Any]:
+        diagnostic = None
+        if os.environ.get('JARVIS_BUFFER_DIAGNOSTICS'):
+            module = importlib.import_module('apps.audio.buffers' if __package__ else 'buffers')
+            diagnostic = module.CaptureOccupancy(emit)
+        result = self._recognize(emit, cancelled, echo_reference, wake=wake, diagnostic=diagnostic)
+        # The capture function has returned: its arrays and views are released.
+        if diagnostic:
+            diagnostic.released()
+        return result
+
+    def _recognize(self, emit: Any, cancelled: Any, echo_reference: Any, *, wake: bool, diagnostic: Any) -> dict[str, Any]:
         if wake and self.wake_detector is None:
             raise RuntimeError('wake_runtime_unavailable')
         if wake:
@@ -153,6 +164,8 @@ class Input:
         # Wake idle continuously overwrites this bounded ring. Manual pre-roll
         # begins after the cue; neither mode sends ambient audio to STT.
         ring: deque[Any] = deque(maxlen=((128 if echo_reference is not None else self.config['audio']['pre_roll_ms']) * 16) // 512)
+        if diagnostic:
+            diagnostic.configure(rate, channels, ring.maxlen, 2 if echo_reference is not None else self.config['vad']['max_utterance_seconds'])
         utterance: list[Any] = []
         pending = self.np.zeros(0, dtype=self.np.float32)
         wake_pending = self.np.zeros(0, dtype=self.np.float32)
@@ -186,20 +199,37 @@ class Input:
                     raise RuntimeError('input_disconnected')
                 last_audio = time.monotonic()
                 raw.extend(block)
+                if diagnostic:
+                    diagnostic.observe('raw_pcm', (len(raw) + 1) // 2, len(raw))
                 size = len(raw) // (channels * 2) * (channels * 2)
                 if not size:
                     continue
                 mono = self.np.frombuffer(bytes(raw[:size]), dtype='<i2').reshape(-1, channels).mean(axis=1).astype('float32') / 32768
                 del raw[:size]
+                if diagnostic:
+                    diagnostic.observe('raw_pcm', (len(raw) + 1) // 2, len(raw))
                 pending = self.np.concatenate((pending, resampler.resample_chunk(mono)))
+                if diagnostic:
+                    diagnostic.observe('resampled_pending', len(pending))
                 while len(pending) >= 512:
                     frame, pending = pending[:512], pending[512:]
+                    if diagnostic:
+                        diagnostic.frames += 1
+                        diagnostic.observe('resampled_pending', len(pending))
                     if not activated:
+                        if diagnostic and len(ring) == ring.maxlen:
+                            diagnostic.overwritten_frames += 1
                         ring.append(frame.copy())
+                        if diagnostic:
+                            diagnostic.observe('pre_roll', len(ring) * 512)
                         wake_pending = self.np.concatenate((wake_pending, frame))
+                        if diagnostic:
+                            diagnostic.observe('wake_pending', len(wake_pending))
                         if len(wake_pending) < 1280:
                             continue
                         wake_frame, wake_pending = wake_pending[:1280], wake_pending[1280:]
+                        if diagnostic:
+                            diagnostic.observe('wake_pending', len(wake_pending))
                         if not self.wake_detector.detected(self.np.clip(wake_frame * 32768, -32768, 32767).astype('<i2')):
                             continue
                         activated = True
@@ -209,6 +239,9 @@ class Input:
                             self.vad.accept_waveform(buffered)
                         speaking = self.vad.is_speech_detected()
                         ring.clear()
+                        if diagnostic:
+                            diagnostic.observe('pre_roll', 0)
+                            diagnostic.observe('utterance', len(utterance) * 512)
                         started = time.monotonic()
                         cap = self.config['vad']['max_utterance_seconds']
                         emit('wake_detected')
@@ -223,16 +256,27 @@ class Input:
                     elif speaking:
                         utterance.append(frame.copy())
                     else:
+                        if diagnostic and len(ring) == ring.maxlen:
+                            diagnostic.overwritten_frames += 1
                         ring.append(frame.copy())
+                        if diagnostic:
+                            diagnostic.observe('pre_roll', len(ring) * 512)
                         if (boundary.accept(active) if boundary is not None else active):
                             speaking = True
                             emit('speech_started')
                             utterance.extend(ring)
                             ring.clear()
+                            if diagnostic:
+                                diagnostic.observe('pre_roll', 0)
+                                diagnostic.observe('utterance', len(utterance) * 512)
+                    if diagnostic:
+                        diagnostic.observe('utterance', len(utterance) * 512)
                     while not self.vad.empty():
                         self.vad.pop()
                     if speaking and not active:
                         break
+                if diagnostic:
+                    diagnostic.checkpoint()
                 if speaking and not active:
                     break
         finally:
@@ -249,6 +293,10 @@ class Input:
         endpoint_complete = speaking and not active
         echo = False
         samples = self.np.concatenate(utterance) if utterance else self.np.zeros(0, dtype=self.np.float32)
+        if diagnostic:
+            diagnostic.capture_end = 'endpoint' if endpoint_complete else 'maximum_duration'
+            diagnostic.observe('handoff', len(samples))
+            diagnostic.checkpoint('decoding')
         if echo_reference is not None:
             stop_control = importlib.import_module('apps.audio.stop_control' if __package__ else 'stop_control')
             echo = stop_control.is_echo(samples, echo_reference, self.np)

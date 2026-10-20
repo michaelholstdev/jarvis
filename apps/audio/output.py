@@ -48,6 +48,7 @@ def report_diagnostic(event: dict[str, Any]) -> None:
 
 class Output:
     def __init__(self, config: dict[str, Any]) -> None:
+        self.evidence = import_module('apps.audio.buffers' if __package__ else 'buffers').BufferEvidence()
         self.config = config
         self.process: asyncio.subprocess.Process | None = None
         self.wake_ready = False
@@ -107,6 +108,7 @@ class Output:
 
     async def stop(self, *, preserve_delivery_for: str | None = None) -> None:
         self.wake_ready = False
+        stopped_generation = self.generation
         self.generation += 1
         process, self.process = self.process, None
         spawning = self.spawning
@@ -123,6 +125,7 @@ class Output:
                 pass
         if process is not None:
             await self.destroy(process)
+        self.evidence.terminated(stopped_generation)
 
     def run(self, operation: dict[str, Any], on_speech: Callable[[], None] | None = None, on_control: Callable[[], None] | None = None, *, on_delivery: Callable[[int], None] | None = None) -> Coroutine[Any, Any, dict[str, Any]]:
         # Capture admission before create_task can queue work behind a privacy barrier.
@@ -156,7 +159,11 @@ class Output:
                 await self.start()
             process = self.process
             assert process and process.stdin and process.stdout
-            process.stdin.write((json.dumps(operation) + '\n').encode())
+            if kind in {'wake', 'recognize'}:
+                self.evidence.begin(operation, generation)
+            request = {**operation, 'diagnostic_generation': generation,
+                       'diagnostic_sequence': self.evidence.sequence}
+            process.stdin.write((json.dumps(request) + '\n').encode())
             await process.stdin.drain()
             timeout = (
                 self.config['vad']['max_utterance_seconds'] +
@@ -171,6 +178,10 @@ class Output:
                 remaining = max(0, deadline - loop.time())
                 line = await asyncio.wait_for(process.stdout.readline(), remaining)
                 if generation != self.generation:
+                    # Drain killed-worker diagnostics so pipe backpressure cannot
+                    # prevent process.wait() during a privacy barrier.
+                    while await process.stdout.read(8192):
+                        pass
                     return {'completed': False, 'delivered_chars': 0}
                 if not line:
                     if self.process is process:
@@ -178,6 +189,9 @@ class Output:
                     # A concurrent stop already destroyed this worker.
                     return {'completed': False, 'delivered_chars': 0}
                 event = json.loads(line)
+                if event['event'] == 'buffer_occupancy':
+                    self.evidence.accept(event, operation, generation)
+                    continue
                 if event['event'] == 'speech_started' and on_speech is not None:
                     if kind == 'wake':
                         deadline = loop.time() + self.config['vad']['max_utterance_seconds'] + self.config['session']['recognition_completion_seconds']
