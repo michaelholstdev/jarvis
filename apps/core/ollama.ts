@@ -1,8 +1,9 @@
-import { request as httpRequest } from 'node:http';
 import type { Operation } from '../../packages/protocol/index.js';
 import { ProtocolError } from '../../packages/protocol/index.js';
 import type { Config } from './config.js';
 import { diagnostic } from './diagnostics.js';
+import { parseInferenceObject, readInference } from './inference-http.js';
+import { inferenceMessages } from './inference-messages.js';
 
 /** Loopback-only HTTP, no redirects, proxies, tools, downloads or fallback. */
 async function call(
@@ -12,47 +13,10 @@ async function call(
   signal: AbortSignal,
   consume: (line: string) => void,
 ): Promise<void> {
-  const endpoint = new URL(config.llm.base_url);
-  if (
-    endpoint.protocol !== 'http:' ||
-    !['127.0.0.1', 'localhost', '[::1]'].includes(endpoint.hostname)
-  )
-    throw new ProtocolError('unavailable');
-  // Resolve localhost ourselves so its name cannot resolve outside loopback.
-  if (endpoint.hostname === 'localhost') endpoint.hostname = '127.0.0.1';
-  endpoint.pathname = path;
-  const payload = body === undefined ? undefined : JSON.stringify(body);
-  const req = httpRequest(endpoint, {
-    method: payload === undefined ? 'GET' : 'POST',
-    signal,
-    headers:
-      payload === undefined
-        ? {}
-        : {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(payload),
-          },
-  });
-  try {
-    const response = await new Promise<import('node:http').IncomingMessage>(
-      (resolve, reject) => {
-        req.once('response', resolve);
-        req.once('error', reject);
-        req.end(payload);
-      },
-    );
-    if (response.statusCode !== 200) {
-      response.destroy();
-      throw new ProtocolError('unavailable');
-    }
-    let pending = '';
-    let bytes = 0;
-    response.setEncoding('utf8');
-    for await (const chunk of response) {
-      bytes += Buffer.byteLength(chunk);
-      if (bytes > 1048576) throw new ProtocolError('frame_too_large');
-      pending += chunk;
-      if (body === undefined) continue;
+  let pending = '';
+  await readInference(config, path, body, signal, (chunk) => {
+    pending += chunk;
+    if (body !== undefined) {
       let end = pending.indexOf('\n');
       while (end >= 0) {
         const line = pending.slice(0, end).trim();
@@ -61,33 +25,15 @@ async function call(
         end = pending.indexOf('\n');
       }
     }
-    if (pending.trim()) consume(pending);
-  } catch (error) {
-    if (error instanceof ProtocolError) throw error;
-    throw new ProtocolError(
-      signal.aborted && signal.reason?.name === 'TimeoutError'
-        ? 'timeout'
-        : 'unavailable',
-    );
-  } finally {
-    req.destroy();
-  }
+    return true;
+  });
+  if (pending.trim()) consume(pending);
 }
 
 function parse(line: string): Record<string, unknown> {
-  try {
-    const value = JSON.parse(line);
-    if (
-      !value ||
-      typeof value !== 'object' ||
-      Array.isArray(value) ||
-      value.error
-    )
-      throw new Error();
-    return value;
-  } catch {
-    throw new ProtocolError('invalid_message');
-  }
+  const value = parseInferenceObject(line);
+  if (value.error) throw new ProtocolError('invalid_message');
+  return value;
 }
 
 export async function generateAnswer(
@@ -104,18 +50,7 @@ export async function generateAnswer(
     {
       model: config.llm.model,
       stream: true,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'Du bist Jarvis. Antworte auf Deutsch, standardmäßig knapp in wenigen Sätzen. Wenn der Nutzer ausdrücklich mehr Details oder eine ausführliche Erklärung wünscht, antworte ausführlicher. Erkläre Code und Tabellen mit einer verständlichen Zusammenfassung im umgebenden Fließtext. Codebeispiele gehören in Markdown-Codeblöcke, Tabellen in Markdown-Tabellen; sie werden separat als Text bereitgestellt.',
-        },
-        ...(operation.context ?? []).flatMap((exchange) => [
-          { role: 'user', content: exchange.question },
-          { role: 'assistant', content: exchange.reply },
-        ]),
-        { role: 'user', content: operation.text ?? '' },
-      ],
+      messages: inferenceMessages(operation),
       options: {
         num_ctx: config.llm.max_context_tokens,
         num_predict: config.llm.num_predict,

@@ -24,7 +24,7 @@ prints deliberately requested configuration, while routine logs never print it.
 | VAD | `silero`; end silence 350 ms (50–5000); max utterance 30 s (1–120) |
 | Recognition | `sherpa-onnx`, `whisper-tiny-int8` (compatibility default) or `parakeet-tdt-v3-int8`, CPU; mock loads no recognizer |
 | Synthesis | `piper`, `de_DE-thorsten-medium`, CPU; `model_path` defaults to `models/de_DE-thorsten-medium.onnx`; loaded only in `audio.mode: piper` |
-| LLM | `ollama`, `http://127.0.0.1:11434`, `user-configured`; context 8192 tokens (512–32768); `mode: mock` by default; opt-in `ollama` enables local inference |
+| LLM | `ollama`, `http://127.0.0.1:11434`, `user-configured`; context 8192 tokens (512–32768); `mode: mock` by default; opt-in matching `mode`/`provider` of `ollama` or `llama.cpp` enables local inference; see [backend selection](llama-cpp.md) |
 | Local endpoint | Only HTTP with literal `127.0.0.1`, `localhost`, or `[::1]` plus a port 1–65535; credentials and remote endpoints rejected |
 | Session | Follow-up 20 s (5–60), duration 300 s (30–3600), extension response 20 s (5–60), extension duration 300 s (30–3600) |
 | Recognition allowance | 5 s (1–30) beyond the original follow-up deadline for speech begun before it; also bounded by max utterance from onset; acoustic validation pending |

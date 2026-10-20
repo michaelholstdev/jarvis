@@ -7,7 +7,7 @@ export function audioDeadlineMs(
   type?: Operation['type'],
 ): number {
   if (type === 'wake') return 24 * 60 * 60 * 1000;
-  if (type === 'infer' && config.llm.mode === 'ollama')
+  if (type === 'infer' && config.llm.mode !== 'mock')
     return config.llm.timeout_ms;
   if (type === 'recognize' && config.audio.mode === 'voice')
     return (

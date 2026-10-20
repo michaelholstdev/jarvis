@@ -15,6 +15,9 @@ The key constraint is to **preserve GPU VRAM for Ollama** and keep the speech st
 
 The first release targets offline German conversational questions and follow-ups on the user's CachyOS desktop, primarily with a headset. Broad Linux support and current-data integrations are deferred. Manual activation is an accepted MVP release mode; hands-free activation has its own validation gate. Publish headset and speaker results separately.
 
+Backend selection is expanded by [ADR-0002](adr/0002-selectable-local-inference.md):
+Ollama or llama.cpp may own the independently managed local inference process.
+
 ## Decision
 
 ### 1. Deployment and process boundaries

@@ -48,7 +48,7 @@ export function createCore(
     wake: 'unavailable',
     stt: 'mock',
     tts: 'mock',
-    inference: config.llm.mode === 'ollama' ? 'unavailable' : 'mock',
+    inference: config.llm.mode !== 'mock' ? 'unavailable' : 'mock',
   };
   let lastFailure: HealthStatus['last_failure'] = null;
   let retryQuestion = '';
@@ -235,7 +235,8 @@ export function createCore(
   };
   return {
     stop(): void {
-      if (state === 'speaking') cancel(false);
+      if (['thinking', 'synthesizing', 'speaking'].includes(state))
+        cancel(false);
     },
     activate(): void {
       if (!ready || inhibited() || privacyPending || cleanupPending)
@@ -245,7 +246,7 @@ export function createCore(
         operation?.type === 'wake' ||
         (state === 'follow-up' &&
           config.audio.mode === 'voice' &&
-          config.llm.mode === 'ollama' &&
+          config.llm.mode !== 'mock' &&
           operation?.type === 'recognize')
       ) {
         cancel(true);

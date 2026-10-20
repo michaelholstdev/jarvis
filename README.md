@@ -390,3 +390,5 @@ measurements are separate from unvalidated headset/speaker audibility.
 
 Repeatable two-hour idle collection, 30-turn offline voice flows, failure evidence
 and remaining hardware gates: [stability acceptance](docs/stability-acceptance.md).
+
+For an existing GGUF/llama.cpp installation, see [llama.cpp configuration, health and switching back to Ollama](docs/llama-cpp.md).

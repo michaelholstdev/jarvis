@@ -12,7 +12,7 @@ import { configPath, loadConfig } from './config.js';
 import { createCore } from './core.js';
 import { DesktopGuard, monitorDesktop } from './desktop.js';
 import { diagnostic as logDiagnostic } from './diagnostics.js';
-import { probeInference } from './ollama.js';
+import { probeInference } from './inference.js';
 import { runtimeDirectory } from './runtime.js';
 import { readTextAnswer, textAnswerPage } from './text-answer.js';
 import { receive, request } from './transport.js';
@@ -68,7 +68,7 @@ async function main() {
         ...config.transport,
         timeout_ms:
           command === 'demo' &&
-          (config.audio.mode === 'piper' || config.llm.mode === 'ollama')
+          (config.audio.mode === 'piper' || config.llm.mode !== 'mock')
             ? config.recovery.playback_timeout_ms * 3
             : config.transport.timeout_ms * (command === 'health' ? 2 : 6),
       },
@@ -109,7 +109,7 @@ async function main() {
     | undefined;
   let inferenceProbe: Promise<void> | undefined;
   const refreshInference = () => {
-    if (config.llm.mode !== 'ollama') return Promise.resolve();
+    if (config.llm.mode === 'mock') return Promise.resolve();
     inferenceProbe ??= probeInference(config)
       .then((ready) => {
         core.dispatch({
@@ -228,7 +228,7 @@ async function main() {
       operation &&
       operation.type !== 'privacy' &&
       (operation.type !== 'recognize' ||
-        (config.audio.mode === 'voice' && config.llm.mode === 'ollama'))
+        (config.audio.mode === 'voice' && config.llm.mode !== 'mock'))
     ) {
       void drive().catch(() => loseAudio());
     }

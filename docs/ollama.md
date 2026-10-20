@@ -78,7 +78,7 @@ llm:
 # Also set absolute stt.model_dir and tts.model_path as in the speech guides.
 ```
 
-`mode` is `mock` or `ollama`; endpoint validation accepts HTTP loopback only
+`mode` is `mock` or `ollama` for this provider (also see [llama.cpp](llama-cpp.md)); endpoint validation accepts HTTP loopback only
 (`127.0.0.1`, `localhost`, `[::1]`, explicit port). Requests use direct HTTP,
 resolve localhost to IPv4 loopback, reject redirects and ignore proxy settings.
 `timeout_ms` is a total generation deadline (100–300000 ms), including model

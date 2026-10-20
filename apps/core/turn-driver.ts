@@ -5,7 +5,7 @@ import { audioDeadlineMs } from './audio-deadline.js';
 import type { Config } from './config.js';
 import type { createCore } from './core.js';
 import { diagnostic as logDiagnostic } from './diagnostics.js';
-import { generateAnswer } from './ollama.js';
+import { generateAnswer } from './inference.js';
 import { operationCapability } from './operation-capability.js';
 import { request } from './transport.js';
 
@@ -41,8 +41,7 @@ export async function runTurn(
       (operation.type === 'recognize' &&
         utterance === undefined &&
         (config.audio.mode !== 'voice' ||
-          (core.status().state !== 'listening' &&
-            config.llm.mode !== 'ollama')))
+          (core.status().state !== 'listening' && config.llm.mode === 'mock')))
     )
       return;
     if (operation.type === 'recognize') turns.set(core, operation.operation_id);
@@ -74,7 +73,7 @@ export async function runTurn(
       });
     }
     if (operation.type === 'infer') {
-      if (config.llm.mode === 'ollama') {
+      if (config.llm.mode !== 'mock') {
         try {
           const text = await perform(operation.operation_id, (signal) =>
             generateAnswer(config, operation, signal),

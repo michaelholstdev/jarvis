@@ -101,3 +101,24 @@ test('conversation allowance and extension settings validate their own integer b
     rmSync(directory, { recursive: true });
   }
 });
+
+test('llama.cpp selection validates mode/provider consistency and preserves mocks', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'jarvis-provider-'));
+  try {
+    const path = join(directory, 'config.yaml');
+    for (const [mode, provider, valid] of [
+      ['llama.cpp', 'llama.cpp', true],
+      ['ollama', 'ollama', true],
+      ['mock', 'ollama', true],
+      ['mock', 'llama.cpp', true],
+      ['ollama', 'llama.cpp', false],
+      ['llama.cpp', 'ollama', false],
+    ] as const) {
+      writeFileSync(path, JSON.stringify({ llm: { mode, provider } }));
+      if (valid) assert.equal(loadConfig(path).llm.provider, provider);
+      else assert.throws(() => loadConfig(path), /invalid_config:/);
+    }
+  } finally {
+    rmSync(directory, { recursive: true });
+  }
+});

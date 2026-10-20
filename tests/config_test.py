@@ -34,6 +34,28 @@ class AudioConfigurationTest(unittest.TestCase):
             self.assertEqual(audio["llm"]["model"], "0b1000")
             self.assertEqual(audio, core)
 
+    def test_inference_provider_combinations_match_core(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'config.yaml'
+            for mode, provider, valid in (
+                ('llama.cpp', 'llama.cpp', True), ('ollama', 'ollama', True),
+                ('mock', 'llama.cpp', True), ('mock', 'ollama', True),
+                ('llama.cpp', 'ollama', False), ('ollama', 'llama.cpp', False),
+            ):
+                path.write_text(json.dumps({'llm': {'mode': mode, 'provider': provider}}))
+                with patch.dict(os.environ, {'JARVIS_CONFIG': str(path)}):
+                    result = subprocess.run(
+                        ['node', 'dist/apps/core/main.js', 'config'],
+                        capture_output=True, text=True,
+                    )
+                    if valid:
+                        self.assertEqual(result.returncode, 0)
+                        self.assertEqual(load_config(), json.loads(result.stdout))
+                    else:
+                        self.assertNotEqual(result.returncode, 0)
+                        with self.assertRaises(Diagnostic):
+                            load_config()
+
     def test_unknown_recognizer_is_rejected_by_both_services(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'config.yaml'
