@@ -218,6 +218,13 @@ Unknown lock/mute/device state inhibits capture. Health exit 0 is a handshake,
 not acoustic acceptance: also inspect `manual_activation`, `voice_conversation`,
 `inference` and inhibitions. `mock` is not real readiness; wake is `unavailable`.
 
+Before relying on a microphone's physical mute switch, check
+[physical mute support](desktop-acceptance.md#physical-mute-support). The Jieli
+USB switch did not update the monitored source mute in the recorded trial;
+Jarvis cannot use it to cancel work. Use source/CLI mute as an explicit privacy
+control during development. This setup has not passed the hardware-mute release
+gate. `hardware_muted: false` in health is not confirmation of switch position.
+
 In KDE System Settings → Keyboard → Shortcuts add a command, assign an unused
 chord (e.g. Meta+J), and replace `/home/YOU` with the literal absolute home path:
 

@@ -1,0 +1,45 @@
+{
+  "utc": "2026-10-20T06:01:05.134169+00:00",
+  "physical_switch": "muted; user confirmed and held",
+  "commands": [
+    {
+      "argv": [
+        "amixer",
+        "-c",
+        "3",
+        "contents"
+      ],
+      "returncode": 0,
+      "stdout": "numid=2,iface=MIXER,name='Mic Capture Switch'\n  ; type=BOOLEAN,access=rw------,values=1\n  : values=on\nnumid=3,iface=MIXER,name='Mic Capture Volume'\n  ; type=INTEGER,access=rw---R--,values=1,min=0,max=147,step=0\n  : values=147\n  | dBminmax-min=-28.37dB,max=-0.94dB\nnumid=1,iface=PCM,name='Capture Channel Map'\n  ; type=INTEGER,access=r--v-R--,values=1,min=0,max=36,step=0\n  : values=0\n  | container\n    | chmap-fixed=MONO\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-source-mute",
+        "alsa_input.usb-Jieli_Technology_USB_Composite_Device_4150345930323108-00.pro-input-0"
+      ],
+      "returncode": 0,
+      "stdout": "Mute: no\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "cat",
+        "/proc/asound/card3/stream0"
+      ],
+      "returncode": 0,
+      "stdout": "Jieli Technology USB Composite Device at usb-0000:02:00.0-3, full speed : USB Audio\n\nCapture:\n  Status: Stop\n  Interface 1\n    Altset 1\n    Format: S16_LE\n    Channels: 1\n    Endpoint: 0x83 (3 IN) (ASYNC)\n    Rates: 48000\n    Bits: 16\n    Channel map: MONO\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "ls",
+        "/sys/bus/hid/devices"
+      ],
+      "returncode": 0,
+      "stdout": "0003:0C45:8513.0001\n0003:0C45:8513.0002\n0003:1038:1729.0003\n0003:1038:1729.0004\n0003:1462:7C95.0005\n",
+      "stderr": ""
+    }
+  ]
+}

@@ -140,9 +140,15 @@ The desktop/audio-facing core socket accepts
 `{version:1,type:"inhibition-changed",source:"locked"|"muted"|"hardware_muted",active:boolean}`.
 The CLI `lock`, `unlock`, `mute`, `unmute`, `hardware-mute` and `hardware-unmute`
 commands send these simulated events. Repeated identical values are idempotent.
-Hardware mute is distinct from software mute; clearing either cannot clear the
-other or desktop lock. Health includes all three `inhibitions` booleans and
-`privacy_pending`; these are capture conditions separate from conversation state.
+The `hardware_muted` inhibition is independent of CLI `muted` and desktop lock.
+In `start-desktop`, it combines the configured PipeWire source's mute property,
+unknown desktop/device state, and explicit CLI `hardware-mute` ownership. The
+name does not establish that a physical switch is observable: `false` means
+these monitored signals are clear, not that the microphone's switch is unmuted.
+CLI `hardware-mute` simulates an inhibition; it does not detect or operate the
+physical switch. See [device limitations](desktop-acceptance.md#physical-mute-support).
+Clearing one owner cannot clear another. Health includes all three `inhibitions`
+booleans and `privacy_pending`; these are capture conditions separate from conversation state.
 
 The public orchestration boundary dispatches the same event (without `version`).
 It immediately drops conversation data and replaces the current operation with

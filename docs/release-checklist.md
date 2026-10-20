@@ -62,7 +62,7 @@ acceptance claim. Source links contain reproduction commands and limitations.
 | FR-16 Early speech | Deferred P1 | Deferred P1 | Deferred P1 | Entire LLM response precedes speech; streaming HTTP is not early speech |
 | FR-17 Tray | Deferred P1 | Deferred P1 | Deferred P1 | No tray dependency |
 | FR-18 Finance tool | Deferred P1 | Deferred P1 | Deferred P1 | No current-data/financial integration |
-| FR-19 Lock/mute privacy | Passed independent inhibition, cleanup and late-event software checks | Unvalidated | Unvalidated | [Desktop steps 4–6](desktop-acceptance.md); mute switch must expose source mute, never resume old work |
+| FR-19 Lock/mute privacy | Passed independent inhibition, cleanup and late-event software checks | **Failed/unsupported Jieli physical-switch detection**; remaining physical checks unvalidated | Unvalidated | [Physical mute support and release handling](desktop-acceptance.md#physical-mute-support); source/CLI mute does not pass the hardware criterion; no canceled work may resume |
 | FR-20 Manual replacement | Passed core/socket cancellation and obsolete-result checks | Unvalidated | Unvalidated | [Replacement](../README.md#manual-replacement-and-stop-playback-04); measure device stop/cue/capture |
 | FR-21 Delivered context | Passed socket/fake-Ollama + real independently monitored silent-sink prefix checks | Unvalidated | Unvalidated | [Delivery precision](delivered-context.md); fully drained sentences only, physical demo remains open |
 | FR-22 Expiry/extension | Passed fake-clock and timed socket extension rules | Unvalidated | Unvalidated | [Stability](stability-acceptance.md); real spoken Weiter/end and prolonged conversation required |

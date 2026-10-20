@@ -2,9 +2,16 @@
 
 **Type:** Bug
 
-**Status:** needs-triage
+**Status:** wontfix
 
-**Blocked by:** Determine whether the device exposes a usable hardware-mute signal.
+**Resolution:** Investigated; physical-switch detection unsupported for the selected
+device/configuration. No usable signal found in the inspected interfaces;
+release hardware-mute gate remains open.
+
+**Blocked by:** None for the unsupported-device outcome. Supported hardware-switch
+acceptance remains with #12.
+
+**Claimed by:** Codex — 2026-10-20; baseline `d3e119d`.
 
 ## Observed failure
 
@@ -40,5 +47,49 @@ Whether the switch electrically silences samples was not measured.
 
 [Headset desktop session](../desktop-acceptance-2026-10-19.md), held-switch check
 at 12:06:12 UTC on candidate `4b76547`.
+
+Map: [MVP implementation map](../map.md).
+
+## Answer
+
+Completed the ticket's unsupported-device outcome. The actual reconnected
+`3654:4455` device advertises only two USB audio interfaces, no HID/event
+interface. ALSA exposes mute/volume controls, but both user-confirmed held
+physical switch positions report `Mic Capture Switch: on` and PipeWire
+`Mute: no`. No usable signal was found through these documented interfaces.
+[Investigation and raw evidence](../hardware-mute-2026-10-20.md) record the
+limits, including no raw USB queries and no inference from silent samples.
+
+No speculative runtime detector is added. Jieli remains a development setup;
+it is not accepted as the selected release setup for hardware-switch privacy.
+A supported path or a replacement setup must pass #12 before that release gate
+can close. Source/CLI mute remains an explicit privacy control and does not
+pass the physical-switch criterion. Installation, protocol health semantics,
+desktop acceptance and FR-19 release documentation now expose this limitation.
+
+No new test seam or runtime behavior is introduced, so no TDD test was added.
+Existing desktop unit/socket checks pass (5 tests); `npm run check` passes.
+Full validation passed: all **208 Node + 43 Python tests**. The first default
+parallel `npm test` run timed out in the existing Python-handshake test; that
+file passed alone (4 tests), then the full suite passed with Node file concurrency
+limited to 1 (`npm run build && node --test --test-concurrency=1 dist/tests/*.test.js`,
+followed by `uv run --frozen python -m unittest discover -s tests -p '*_test.py'`).
+No test/runtime changes were needed. Saved command outputs match across both
+held positions, all snapshot commands exited 0, and local documentation link
+targets and diff whitespace checks pass.
+
+### Standards review
+
+No findings. Ticket status/claim/answer/map follow tracker rules; documented
+privacy gates and glossary vocabulary are preserved. No baseline code smells.
+
+### Spec review
+
+No findings. The unsupported-device outcome records the inspected interfaces,
+limits and release setup decision. Conditional active-phase hardware trials
+remain required only if a supported detector is later added.
+
+Review totals: Standards 0; Spec 0. Both reviews compare against baseline
+`d3e119d`; unrelated existing working-tree changes are excluded.
 
 Map: [MVP implementation map](../map.md).

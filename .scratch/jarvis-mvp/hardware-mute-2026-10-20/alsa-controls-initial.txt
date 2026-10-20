@@ -1,0 +1,12 @@
+numid=2,iface=MIXER,name='Mic Capture Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=on
+numid=3,iface=MIXER,name='Mic Capture Volume'
+  ; type=INTEGER,access=rw---R--,values=1,min=0,max=147,step=0
+  : values=147
+  | dBminmax-min=-28.37dB,max=-0.94dB
+numid=1,iface=PCM,name='Capture Channel Map'
+  ; type=INTEGER,access=r--v-R--,values=1,min=0,max=36,step=0
+  : values=0
+  | container
+    | chmap-fixed=MONO

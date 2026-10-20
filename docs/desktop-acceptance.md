@@ -63,3 +63,28 @@ manual-only deployment does not claim them.
 Integration sources: KDE's [screen-locker D-Bus contract](https://github.com/KDE/kscreenlocker/blob/master/dbus/org.freedesktop.ScreenSaver.xml)
 and [implementation](https://github.com/KDE/kscreenlocker/blob/master/interface.cpp),
 and systemd's [logind API](https://github.com/systemd/systemd/blob/main/man/org.freedesktop.login1.xml).
+
+## Physical mute support
+
+Jarvis currently monitors the configured source's PipeWire/PulseAudio mute
+property. A physical switch that does not update that property is unsupported
+by this integration, even if it electrically silences the microphone. Silence
+cannot establish switch state or trigger cancellation of inference/playback.
+Health's `hardware_muted: false` is not proof that a physical switch is unmuted;
+the CLI `hardware-mute` command is an explicit control, not hardware detection.
+
+The Jieli USB microphone with stable source
+`alsa_input.usb-Jieli_Technology_USB_Composite_Device_4150345930323108-00.pro-input-0`
+failed physical-switch detection in the [2026-10-19 headset trial](../.scratch/jarvis-mvp/desktop-acceptance-2026-10-19.md).
+Software source mute worked independently. The [2026-10-20 interface investigation](../.scratch/jarvis-mvp/hardware-mute-2026-10-20.md)
+also found identical ALSA capture-switch values in both user-confirmed positions
+and no exposed HID/event interface. No usable switch signal was found through
+those interfaces; undocumented firmware behavior remains unknown. See
+[ticket #24](../.scratch/jarvis-mvp/issues/24-jieli-hardware-mute-detection.md).
+
+Release handling: retain this device only as a development setup with unsupported
+physical-switch cancellation. It is not accepted for a release claiming the
+hardware-mute privacy criterion. Keep #12 and FR-19 open until a supported path
+passes actual switch trials, or a replacement setup passes the same acceptance.
+Software/CLI mute is an available explicit privacy control, not a hardware pass.
+No replacement device is selected by this record.
