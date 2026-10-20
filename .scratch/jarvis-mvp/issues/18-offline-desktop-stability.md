@@ -79,3 +79,10 @@ hardware mute remains unsupported. Final #17 configuration, 30 physical turns,
 chosen-setup offline trials and remaining coverage stay open. No release pass or
 new long-idle run is claimed. See [follow-up report](../../../docs/stability-follow-up.md)
 and [existing map pointer](../map.md).
+
+
+Follow-up validation: `npm run check` and full `npm test` pass (208 Node / 48
+Python tests). Standards and Spec reviewers independently rechecked the stale
+CLI-report correction and report zero remaining findings. Review details and
+remaining acceptance gates are in the follow-up report. Tooling work is committed;
+status remains ready-for-human for final candidate/physical evidence.

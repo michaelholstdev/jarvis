@@ -92,3 +92,32 @@ Final #17 candidate selection, 30 physical contextual turns with extension,
 disconnected chosen-setup trials, precise physical cessation delay and remaining
 phase permutations stay open. These imported observations do not close #12/#18
 or claim a release pass.
+
+## Validation and review
+
+`npm run check` passes. Full `npm test` passes **208 Node / 48 Python tests**.
+The focused audit CLI suite passes five tests. The first external-attempt test
+failed before the tool existed; the review's stale-report regression reproduced
+three failed usage cases before the fix and passed afterward. The bounds evidence
+command passed both public-contract groups. The real connection-audit invocation
+failed because `strace` is missing; it is intentionally retained as failed evidence.
+
+Review comparison: `git diff afc5ac098c2678b1e4eabab2608088eac62d9668...HEAD`,
+covering implementation `983159f` and correction `16fc6e6`. Independent reviewers
+rechecked the correction before the final full-suite run.
+
+### Standards
+
+Zero remaining findings. Shared audit-test setup resolves the initial low-priority
+duplication concern. No new documented-standard violations or material privacy
+concerns were found in the revised hunks.
+
+### Spec
+
+Zero remaining actionable findings. Invalid CLI usage now clears prior passing
+audit evidence before argument validation can exit. Native occupancy, actual
+tracing and physical acceptance remain explicitly unvalidated, consistent with
+the approved tooling-only scope.
+
+Standards: 0 findings; Spec: 0 actionable findings. No worst issue remains within
+either axis; the acceptance gaps above remain open.
