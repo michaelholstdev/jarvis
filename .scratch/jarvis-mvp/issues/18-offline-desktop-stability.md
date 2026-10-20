@@ -6,6 +6,8 @@
 
 **Status:** ready-for-human
 
+**Resolution:** closed — delivered implementation/tooling; remaining acceptance tracked in #12/#17/#19.
+
 Claimed by Codex for implementation and acceptance evidence, 2026-10-19.
 
 - [ ] Run a two-hour idle soak showing bounded CPU/RAM, queues, buffers, and log growth with no ambient STT/LLM invocation or retained conversation content.
@@ -131,3 +133,21 @@ incorrect verdict before the fix and pass afterward. Updated
 The existing ready-for-human status and remaining acceptance limits are unchanged.
 
 Correction validation: `npm run check` and full `npm test` pass (**211 Node / 65 Python tests**); all 12 focused CLI/socket tests pass. The refreshed bounds report passes its scoped screen. Independent Standards and Spec rechecks report **0 remaining findings**.
+
+### User-requested closure and handoff — 2026-10-20
+
+The user requested closing #18 and moving directly to #17 in a fresh context.
+**Resolution: closed for delivered implementation/tooling.** Implementation and
+review fixes are committed through `ee483ce`; checks pass (211 Node / 65 Python),
+with zero remaining Standards/Spec findings for that work.
+
+This closure is a scope decision, not a full stability/privacy or release pass.
+Remaining chosen-setup physical conversation/offline evidence follows #17 and
+release acceptance #19; desktop/privacy recovery stays with #12. Broader network
+attempt coverage and native/backend/other unmeasured buffer coverage remain
+explicitly unvalidated in #19. Further instrumentation needs a separately scoped
+follow-up. No criterion is relabeled passed. The two-hour idle waiver and actual
+44.02-minute partial observation remain unchanged.
+
+Next task: [#17 headset acceptance](17-latency-and-resource-benchmarks.md).
+Fresh-context entry: [handoff](../headset-acceptance-handoff.md).

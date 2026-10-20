@@ -111,3 +111,19 @@ original software defect resolved, no new correction defect. The two previously
 recorded **human acceptance gaps remain open**: physical audible latency and human
 German usefulness/remaining scenario measurements. Fixing software and evidence
 consistency does not establish those acoustic or quality results.
+
+### Active next task — user decision, 2026-10-20
+
+Claimed by Codex for beginning physical headset acceptance after #18's scoped
+closure. #20 is implemented; its historical dependency is satisfied. Start with
+a short real headset conversation before the full 30-query/model-comparison
+matrix. Record the current Git revision and actual device/configuration for each
+trial. Setup-specific failures become focused tickets with preserved evidence.
+
+Wake #13 is already implemented and experimentally enabled at threshold 0.2;
+accepted measured recall is 23/30. Historical text saying wake is unavailable is
+superseded by #13's current outcome. Preserve that user decision. This trial can
+use deliberate manual activation while recording the actual wake setting.
+
+Continue using [the fresh-context handoff](../headset-acceptance-handoff.md).
+No physical #17 test or model-selection decision is claimed by this preparation.

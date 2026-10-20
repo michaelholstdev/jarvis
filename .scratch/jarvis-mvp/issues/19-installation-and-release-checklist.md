@@ -127,3 +127,21 @@ No scope creep or incorrect implementation found.
 
 Standards: 0 findings; Spec: 0 actionable findings; no worst issue within either
 axis. Ticket #19 remains ready-for-human; no release sign-off granted.
+
+### Remaining acceptance carried from #18 — 2026-10-20
+
+The user closed #18 for its delivered implementation/tooling and moved to #17.
+This does not close the release checklist's stability/privacy gates. At final
+candidate review, retain these explicit gaps until separately demonstrated:
+
+- Chosen-setup prolonged/contextual and disconnected local conversation evidence,
+  coordinated with #17; desktop/privacy recovery evidence from #12.
+- Broader external-request-attempt coverage: current connect-only tracing excludes
+  unconnected datagrams, inherited descriptors and services outside the launched
+  process tree; actual tracing still needs execution evidence.
+- Native model/resampler/VAD/synthesis allocations, OS/PipeWire queues and other
+  unmeasured buffers; #18's logical capture payload fixture is narrower evidence.
+
+New implementation needed to expand coverage gets a separate scoped follow-up.
+Retain the two-hour duration waiver and historical 44.02-minute partial evidence.
+A closed implementation ticket does not grant a locality/privacy/bounds pass.
