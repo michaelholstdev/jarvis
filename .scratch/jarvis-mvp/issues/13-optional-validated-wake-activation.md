@@ -178,3 +178,25 @@ from physical acceptance; no new acoustic/privacy/release pass is claimed.
 
 Map: [MVP implementation map](../map.md). Physical acceptance remains with
 #12/#17/#18/#19/#21; implementation is complete for this experimental decision.
+
+
+### Final validation and independent review — experimental implementation
+
+`npm run check` passes TypeScript, Biome, Ruff and both mypy checks. Full
+`npm test` passes **211 Node + 57 Python tests**, including the real optional
+candidate evaluator regression. The first full run identified one legacy exact
+health expectation missing the new `wake_word` field; its explicit expectation
+was updated, focused tests passed, and the full rerun passed.
+
+Review against `6b7c11113d7497dc479215d5bbbe861c6a0cd937` (implementation
+`fed827a`, plus the reviewed health-test follow-up):
+
+- **Standards:** 0 findings; no documented-standard violations or substantive
+  baseline smells.
+- **Spec:** 0 findings; the current experimental default-on scope is implemented,
+  with no scope creep. Review also checked the final health-test update.
+
+Worst issue in each axis: none. These results establish software behavior, not
+physical wake/clipping/privacy or hands-free release acceptance. Preexisting
+user tracker changes and local calibration/validation records remain preserved
+outside the implementation commits.

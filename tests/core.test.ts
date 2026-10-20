@@ -10,6 +10,12 @@ test('scripted service events expose readiness and latency without requesting sp
   now = 125;
   assert.deepEqual(core.status(), {
     ready: true,
+    wake_word: {
+      enabled: true,
+      ready: false,
+      quality: 'experimental',
+      threshold: 0.2,
+    },
     capabilities: {
       wake: 'unavailable',
       stt: 'mock',
