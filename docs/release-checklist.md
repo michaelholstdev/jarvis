@@ -236,3 +236,14 @@ bounds/cancellation gaps, complete #17/#12/#18 acceptance on that setup, then ru
 the fresh-account lifecycle procedure. Record per-requirement verdicts, optional
 mode gaps and an explicit owner/date/SHA decision. Documentation delivery and
 automated check success do not supply that decision.
+
+## Follow-up documentation validation — 2026-10-20
+
+`npm run check` passed; focused configuration/desktop-runtime checks passed
+6 Node + 5 Python tests; full `npm test` passed **208 Node + 48 Python tests**.
+Local links/anchors, all 25 requirement rows and diff whitespace checks passed.
+Independent Standards and Spec reviews of `3a64f52` against the user-confirmed
+`0207ee5e6552755e7a64a5bd67eb6cfa8b8be30b` baseline report **0 findings** and
+**0 actionable findings**, respectively. The remaining fresh-account and physical
+acceptance gaps are preserved, consistent with the confirmed documentation scope.
+No release approval or new runtime evidence is implied.

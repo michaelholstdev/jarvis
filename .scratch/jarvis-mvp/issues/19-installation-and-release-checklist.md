@@ -98,3 +98,32 @@ without turning the partial observation into a full-duration or CPU pass. Origin
 unchecked criteria remain unchecked.
 
 Map pointer: [MVP implementation map](../map.md).
+
+
+### Follow-up validation and review
+
+`npm run check` passed TypeScript, Biome, Ruff and both mypy checks. Focused
+configuration/desktop-runtime tests passed 6 Node + 5 Python tests. Full `npm test`
+passed **208 Node + 48 Python tests**. Local runbook/checklist links and anchors,
+all FR-01–FR-25 rows and `git diff --check` passed. These are checkout/documentation
+checks; no model download, fresh-account lifecycle or hardware acceptance is implied.
+
+Independent review of `3a64f52` against user-confirmed task-start baseline
+`0207ee5e6552755e7a64a5bd67eb6cfa8b8be30b`:
+
+### Standards
+
+0 findings. Documentation follows tracker conventions and glossary vocabulary;
+scoped evidence, optional modes and mandatory gates remain consistent with ADR-0001.
+No documented-standard breach or material baseline smell found.
+
+### Spec
+
+0 actionable findings. Parakeet instructions match the production guide; the
+blocked decision preserves the hardware-mute failure and remaining acceptance.
+Fresh-account execution, final model/candidate and human owner remain incomplete,
+explicitly outside the user-confirmed documentation scope and retained as open.
+No scope creep or incorrect implementation found.
+
+Standards: 0 findings; Spec: 0 actionable findings; no worst issue within either
+axis. Ticket #19 remains ready-for-human; no release sign-off granted.
