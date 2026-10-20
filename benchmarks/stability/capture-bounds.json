@@ -1,0 +1,820 @@
+{
+  "run_completed": true,
+  "timestamp_utc": "2026-10-20T10:01:35.533962+00:00",
+  "checks": {
+    "native_audio_buffer_occupancy": "unvalidated",
+    "production_capture_payload_occupancy": "passed",
+    "socket_admission_and_frames": "passed",
+    "audio_cancellation_and_duration": "passed"
+  },
+  "results": [
+    {
+      "command": [
+        "node",
+        "--test",
+        "dist/tests/transport.test.js",
+        "dist/tests/transport-framing.test.js"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 10.492941196000174
+    },
+    {
+      "command": [
+        "/home/michael/projects/jarvis/.venv/bin/python3",
+        "-m",
+        "unittest",
+        "tests.output_test",
+        "tests.long_speech_test"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 4.67679037599919
+    }
+  ],
+  "source_state": "working tree identified by source_sha256; source_revision is its Git parent",
+  "fixture_service": "tests/fixtures/wake/audio_service.py",
+  "source_revision": "a6bdc9fafe77f7a1e83701a7180d5b88e00f0c76",
+  "source_sha256": {
+    "apps/audio/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "apps/audio/audio_errors.py": "dd2428e873ac375a30b4f50b02d48b17eb906726de8435b48d0b33e942902470",
+    "apps/audio/buffers.py": "b02ec332110823eeeb57359336dfa2036950940c934c2081e013768918080dc8",
+    "apps/audio/input.py": "c0ec31d12a45c5a2490dbc89f3cc4efa17f30b90d45e5cf7ef5af73851b432fc",
+    "apps/audio/main.py": "4aa32dc3338667c2be7254053d387c7dccea95568f095266f5ff6cf9d545fc35",
+    "apps/audio/output.py": "148deb7185c5fcee974de0ce719bf330b9aa0ed5ce1157e2ef6b713616b4056e",
+    "apps/audio/output_worker.py": "18129cc8b3c9e3e7ca30e2af25ad28c2857d2a0a7155aff093bf93eede18fa9e",
+    "apps/audio/stop_control.py": "ae30574b1f94a8fe6799b7a0991f68bda19867f267a78d6c9bde864c78d7504d",
+    "apps/audio/voice.py": "52fe3b3cad14904b515b623755317d370e63c25661d8d8cf6c29930a8dd33999",
+    "apps/audio/wake.py": "bd00863cbd9f6f377e0848ddbe627cd83bba4802fd38e40771b4b44f803d2bc5",
+    "apps/core/audio-deadline.ts": "eaa4685b65d3aa701a882bb717a9e6eb2f575404db2f4379e33275464881b03a",
+    "apps/core/config.ts": "b878f4898a8ad5774099a3b4ca7d80da5d8321b41d7a7dc04ecc5f08c4fb1e00",
+    "apps/core/core.ts": "498836639778f51b971f81e93939e5b2da15bd22d3ae39cb0a94e1d972d07e3e",
+    "apps/core/desktop.ts": "43a771620dc7102fed8bf2e9c0848d5f724a723bbee18da003fec0695e6f19ca",
+    "apps/core/diagnostics.ts": "14222b29aa3c0aa9bb3bfc40a813aea74851875294d36954e53c8db8eec5a2c6",
+    "apps/core/main.ts": "35678dd1348ce36000f01d9105960d9a67ca66d77efb9d0221f1a042c6652779",
+    "apps/core/ollama.ts": "e5af5b123f86eb93e01f53e489b1f704dabd64ec8baf8c6b6e0224f85114c117",
+    "apps/core/operation-capability.ts": "4c80ec7286c00afaeb9caf33d5527c6b046f5d24c429fad3ada76160321792f2",
+    "apps/core/runtime.ts": "bb6235752e7820e70c3072a26dfcd43bb52ea3d41d7b8605be3852b9ac341b9d",
+    "apps/core/spoken-answer.ts": "e95e83cdf40f8c78abb9b5268a68fea4320835803e9c2bb28cf634df72bac0f3",
+    "apps/core/text-answer.ts": "74aa4d9b6570743131a775f0eeefff5c6be6f353898e29f3e77459b24a30943b",
+    "apps/core/transport.ts": "587e748b618d3441367952410ced025039e2dd7ffa81d9cdd40c3bcaed42a06c",
+    "apps/core/turn-driver.ts": "f5c8f12a0ea85ec326af299588d1b0f875b56a6ae31737f434d40e1b1c843492",
+    "benchmarks/stability/__init__.py": "43b4f810c1a1ac112e6ec2afe589d3b991f6d5b7155cdb82294e2d11a938e9f8",
+    "benchmarks/stability/bounds.py": "882c032dffd87e5baa6efc52dc63a4d4fcf6086faf26a09090a26a1ac713dbbb",
+    "benchmarks/stability/idle.py": "f0f81691e72fb5fc0e2028ab74fddb598a1597f9dbcc8480e2bf0a612cbe4228",
+    "benchmarks/stability/network.py": "aecd2a4ab743b0c984bbb1e6bb60325ce831ca3a8e032847f08b3cd2b07b4768",
+    "benchmarks/stability/occupancy.py": "52707b63830310560e6030fbec4bad0bfbd66cc922ced2624a7ed9e61d86f8c4",
+    "benchmarks/stability/offline.py": "9fa2bd7cd7aaed3285952dc83f9e27a4f7cff5e1ee165e375fdef6d21949de79",
+    "config/defaults.json": "f67912fb274f0f8603a6fb98c6de98925fb608395be119da46c5247b402f4f14",
+    "dist/apps/core/audio-deadline.js": "245e64868416e968c712dfee9d4d34601088f30e4e719b435d3f1ecb3a0c1bc6",
+    "dist/apps/core/config.js": "ce4203c91392f4f6e57ddd70cb6659be3590fa37a773e8442142f7987b5f707c",
+    "dist/apps/core/core.js": "08e4953d3fc1ef56caa7417492fd9a7ab83959bbf5f72e42f755024516f6576c",
+    "dist/apps/core/desktop.js": "1540496112d7f4f976d0bb25c9bc4cd6af6cacb5a5bd8210ffecce5dee209f9e",
+    "dist/apps/core/diagnostics.js": "66e5f40588ec70511594a354d1138d08e36ea37c34c5d54e2c4062456b56bb6e",
+    "dist/apps/core/main.js": "7d8bf57c346789b9447e67965fc441e90e6ba6f8bf6d18610cc61721fc22258c",
+    "dist/apps/core/mock-turn.js": "80b33dd880240201e6bc3f55cfa6cc371fe9e76cf835223aa850300317cc43f4",
+    "dist/apps/core/ollama.js": "ad1bb61ddcb68865db761648c0085aa0a6e0299d5748fa535400cccfd95caedb",
+    "dist/apps/core/operation-capability.js": "c49aeae3ae7cfac23974f5053cc7e59e94d26c215c88f953693548319276cf01",
+    "dist/apps/core/runtime.js": "892380a6a18cb116aa21a532957e8c1ebc2267df90f4c3bbc5162a320ecd54da",
+    "dist/apps/core/spoken-answer.js": "01c943feca14fb05faff721b333abada7498f72c5675f445799d7a72592c45d1",
+    "dist/apps/core/text-answer.js": "62e4e9714a692f3dde76376f9f79e649d055262274532057245cb109dbf3f1e0",
+    "dist/apps/core/transport.js": "526a2965ec0eff66f9cfa0645618b56062d300e3b35abe50b9c7ef1dcbf30302",
+    "dist/apps/core/turn-driver.js": "33609ba6c55a53f76f60b35ec2d37e122305e752e02ac1b995c40fb96cdd647d",
+    "dist/packages/protocol/index.js": "faa7cce96ac792fd37b5077c05a93a39be191a912e747046268b979a01b3d99a",
+    "dist/tests/audio-restart-runtime.test.js": "3c397200670626a98c60c169acd5a0ffe22d3b6983aaffb78289c09dd6b3f19b",
+    "dist/tests/config.test.js": "c3c1950bec551005cc9c7ebe69b3061d1e005212b570394b4f6e23d07711660a",
+    "dist/tests/conversation.test.js": "20f149c5709fe1decbb528a206eaadd3ef300f522f36915474680194cd100342",
+    "dist/tests/core.test.js": "38ae9f94a03eedb32e2ed807a3b198c014614de511a2d171fea94c96847c61a3",
+    "dist/tests/delivered-context.test.js": "a46c3b45d15400eb2208cbe04bf141095ccb4fc1f5d53ce34bba044360522979",
+    "dist/tests/desktop-runtime.test.js": "5a07f2ff3e4b7c8fc2a78eb4233e8bf904ddcd11828a7136e792d2699aba3a6d",
+    "dist/tests/desktop.test.js": "d0d1dddc4e70f146287ef9b1ca284bcae344c07a3ae587259e2717129c08a224",
+    "dist/tests/expiry.test.js": "247ddfea19bfa6dbec8cadbbf134297e14c503408411b0fbe5df0978843f1cbb",
+    "dist/tests/extension-runtime.test.js": "6ad66d220f4bdf6e9a4e2a3ee86e805cedfd1919df92c11c4f2c936845334aa8",
+    "dist/tests/manual-control-probe.test.js": "0622be376486002bab711999b86aef47b174d64bc9d83b274ff11342cd52f5ab",
+    "dist/tests/microphone.test.js": "6055245f747a08384a6e7195fdd07a9f91de555f6a7146f6a6e32f72fba7087f",
+    "dist/tests/ollama-daemon.test.js": "e7f00c695687842dd72fb693d77b2725d2e0d1a85def1bd8e59d409fcd925388",
+    "dist/tests/ollama-runtime.test.js": "cd4e02bc30bbfc6ea9fbcdd5c98170ca8bd1d6958de636724f927273af3dada5",
+    "dist/tests/ollama.test.js": "3d140b33c48fe63f68c8c55cdbbe6f37f64a7446d48269ecb18d0382444fee80",
+    "dist/tests/playback.test.js": "ada1b6dfaccb4b07fd6a6450fa88223118a3adb64cdb66236d1c5c76f161b2c4",
+    "dist/tests/privacy-runtime.test.js": "56f4d6850a208951e01b24ed2d0cbaf1c83f8e3d9c9abcd99ec1f6c04d2086ed",
+    "dist/tests/privacy.test.js": "4d16daf6afe2753e0ffbe418df4b3bc748ae80f8c2a87bdc48a947010b58a836",
+    "dist/tests/recovery-runtime.test.js": "4b11374ec3b909c395b92e71d363f60c3c9bb36db8b7263cf1b30e504158d660",
+    "dist/tests/recovery.test.js": "ec714ff5047a105c377e0f26757dd929d609b140804b1d1150c445a2f1cc865f",
+    "dist/tests/service-startup.test.js": "4494075cf7553c169147aa5184da47ff50241c56bbfdf53f3695d4e540a44ce1",
+    "dist/tests/spoken-stop-service.test.js": "23898691dfc94f0ffc3e53f85ac0c33044fc6e52ee4d60bd0452e5da98e00b41",
+    "dist/tests/spoken-stop.test.js": "fbc44440447e0b86b27c4fac8c87b7519dd08cdf3551a920520c5501d65cc092",
+    "dist/tests/text-answer-cli.test.js": "abe5e7ec26e2864009e79c2ab51e28fdd10e33c04c61e2361ce7b324d9cbc57e",
+    "dist/tests/text-answer-runtime.test.js": "3ad2c3685a297b8ab26fe3d45546d4d530b7bfe63b30907b4aa68caf1e033273",
+    "dist/tests/text-answer.test.js": "ebfcb5bf07117a7690328f10abd48f19e6d087af19c958a85327ac8c2b94124e",
+    "dist/tests/transport-framing.test.js": "f35776892ada5f227945ba0ed1617892ffeb74543b135a1e2e84554e36c66adc",
+    "dist/tests/transport.test.js": "11a7ed548dcd7297b43649cf49efa1ea2ab6e3bf22476bc0c0864a3423439e77",
+    "dist/tests/wake-runtime.test.js": "9c8c91763f3bf1344947cad4ced74a560cdb3304979b8c13345e6444b3ce3241",
+    "packages/protocol/schemas/config.schema.json": "fa33ac46c46bfdb0811bb5ae7ac055b61b96755220b29be9d8464ea861f7fc5c",
+    "tests/buffer_acceptance_test.py": "f47abeca829c97cbb88d5bfe3e9a9fb8576d2ef202faaeb8bac58ef0c5d66954",
+    "tests/fixtures/long-speech/worker.py": "94c33958fdf0706406ca90a7ae9b4e4c8cd1e7db683cb9d382a3d723ead202e9",
+    "tests/fixtures/wake/audio_service.py": "a22ba527acbbf0cf1f58e78baa0203b321a192a7a475a17c02f4cca5b4d18992",
+    "tests/long_speech_test.py": "88a6b42652b04691e715421a655ecaad7b64ba8b6b5efe762224a45cbf54f170",
+    "tests/output_test.py": "2e0591c04c775d9b6fe9b97eea961000e006dac0932d76200a50ca18bee28127",
+    "tests/transport-framing.test.ts": "8055dda89cc79fffb6c55389ca22ffe08e3482e6ac4b26b4d1653d199e82012a",
+    "tests/transport.test.ts": "ecbc3fcf30cd4e3269bac81db9d91941fa8a1b16f9643d7fc4931f744f9d632b"
+  },
+  "occupancy": {
+    "verdict": "passed",
+    "coverage": {
+      "idle_wake_endpoint": "passed",
+      "manual_replacement": "passed",
+      "manual_endpoint": "passed",
+      "maximum_duration": "passed",
+      "lock": "passed",
+      "software_mute": "passed",
+      "disconnect": "passed",
+      "recovery": "passed"
+    },
+    "buffers": {
+      "raw_pcm": {
+        "verdict": "passed",
+        "high_water_samples": 320,
+        "high_water_bytes": 640,
+        "limit_samples": [
+          321
+        ],
+        "limit_bytes": [
+          642
+        ]
+      },
+      "resampled_pending": {
+        "verdict": "passed",
+        "high_water_samples": 768,
+        "high_water_bytes": 3072,
+        "limit_samples": [
+          1343
+        ],
+        "limit_bytes": [
+          5372
+        ]
+      },
+      "wake_pending": {
+        "verdict": "passed",
+        "high_water_samples": 1536,
+        "high_water_bytes": 6144,
+        "limit_samples": [
+          1791
+        ],
+        "limit_bytes": [
+          7164
+        ]
+      },
+      "pre_roll": {
+        "verdict": "passed",
+        "high_water_samples": 11776,
+        "high_water_bytes": 47104,
+        "limit_samples": [
+          11776
+        ],
+        "limit_bytes": [
+          47104
+        ]
+      },
+      "utterance": {
+        "verdict": "passed",
+        "high_water_samples": 23552,
+        "high_water_bytes": 94208,
+        "limit_samples": [
+          28288
+        ],
+        "limit_bytes": [
+          113152
+        ]
+      },
+      "handoff": {
+        "verdict": "passed",
+        "high_water_samples": 23552,
+        "high_water_bytes": 94208,
+        "limit_samples": [
+          28288
+        ],
+        "limit_bytes": [
+          113152
+        ]
+      }
+    },
+    "operations": [
+      {
+        "operation_id": "idle_wake_endpoint",
+        "generation": 0,
+        "capture_sequence": 1,
+        "outcome": "released",
+        "buffers": {
+          "raw_pcm": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 320,
+            "high_water_bytes": 640,
+            "limit_samples": 321,
+            "limit_bytes": 642,
+            "sample_bytes": 2
+          },
+          "resampled_pending": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 768,
+            "high_water_bytes": 3072,
+            "limit_samples": 1343,
+            "limit_bytes": 5372,
+            "sample_bytes": 4
+          },
+          "wake_pending": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 1536,
+            "high_water_bytes": 6144,
+            "limit_samples": 1791,
+            "limit_bytes": 7164,
+            "sample_bytes": 4
+          },
+          "pre_roll": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 11776,
+            "high_water_bytes": 47104,
+            "limit_samples": 11776,
+            "limit_bytes": 47104,
+            "sample_bytes": 4
+          },
+          "utterance": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 18432,
+            "high_water_bytes": 73728,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          },
+          "handoff": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 18432,
+            "high_water_bytes": 73728,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          }
+        },
+        "overwritten_frames": 140,
+        "frames": 176,
+        "capture_end": "endpoint",
+        "buffer_verdicts": {
+          "raw_pcm": "passed",
+          "resampled_pending": "passed",
+          "wake_pending": "passed",
+          "pre_roll": "passed",
+          "utterance": "passed",
+          "handoff": "passed"
+        }
+      },
+      {
+        "operation_id": "manual_replacement",
+        "generation": 0,
+        "capture_sequence": 2,
+        "outcome": "worker_terminated",
+        "buffers": {
+          "raw_pcm": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 320,
+            "high_water_bytes": 640,
+            "limit_samples": 321,
+            "limit_bytes": 642,
+            "sample_bytes": 2
+          },
+          "resampled_pending": {
+            "current_samples": 256,
+            "current_bytes": 1024,
+            "high_water_samples": 768,
+            "high_water_bytes": 3072,
+            "limit_samples": 1343,
+            "limit_bytes": 5372,
+            "sample_bytes": 4
+          },
+          "wake_pending": {
+            "current_samples": 1024,
+            "current_bytes": 4096,
+            "high_water_samples": 1536,
+            "high_water_bytes": 6144,
+            "limit_samples": 1791,
+            "limit_bytes": 7164,
+            "sample_bytes": 4
+          },
+          "pre_roll": {
+            "current_samples": 11776,
+            "current_bytes": 47104,
+            "high_water_samples": 11776,
+            "high_water_bytes": 47104,
+            "limit_samples": 11776,
+            "limit_bytes": 47104,
+            "sample_bytes": 4
+          },
+          "utterance": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 0,
+            "high_water_bytes": 0,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          },
+          "handoff": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 0,
+            "high_water_bytes": 0,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          }
+        },
+        "overwritten_frames": 34,
+        "frames": 57,
+        "capture_end": "unvalidated",
+        "buffer_verdicts": {
+          "raw_pcm": "unvalidated",
+          "resampled_pending": "unvalidated",
+          "wake_pending": "unvalidated",
+          "pre_roll": "unvalidated",
+          "utterance": "unvalidated",
+          "handoff": "unvalidated"
+        }
+      },
+      {
+        "operation_id": "manual_endpoint",
+        "generation": 1,
+        "capture_sequence": 3,
+        "outcome": "released",
+        "buffers": {
+          "raw_pcm": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 320,
+            "high_water_bytes": 640,
+            "limit_samples": 321,
+            "limit_bytes": 642,
+            "sample_bytes": 2
+          },
+          "resampled_pending": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 768,
+            "high_water_bytes": 3072,
+            "limit_samples": 1343,
+            "limit_bytes": 5372,
+            "sample_bytes": 4
+          },
+          "wake_pending": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 0,
+            "high_water_bytes": 0,
+            "limit_samples": 1791,
+            "limit_bytes": 7164,
+            "sample_bytes": 4
+          },
+          "pre_roll": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 11776,
+            "high_water_bytes": 47104,
+            "limit_samples": 11776,
+            "limit_bytes": 47104,
+            "sample_bytes": 4
+          },
+          "utterance": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 23552,
+            "high_water_bytes": 94208,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          },
+          "handoff": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 23552,
+            "high_water_bytes": 94208,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          }
+        },
+        "overwritten_frames": 128,
+        "frames": 174,
+        "capture_end": "endpoint",
+        "buffer_verdicts": {
+          "raw_pcm": "passed",
+          "resampled_pending": "passed",
+          "wake_pending": "unvalidated",
+          "pre_roll": "passed",
+          "utterance": "passed",
+          "handoff": "passed"
+        }
+      },
+      {
+        "operation_id": "maximum_duration",
+        "generation": 1,
+        "capture_sequence": 4,
+        "outcome": "released",
+        "buffers": {
+          "raw_pcm": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 320,
+            "high_water_bytes": 640,
+            "limit_samples": 321,
+            "limit_bytes": 642,
+            "sample_bytes": 2
+          },
+          "resampled_pending": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 768,
+            "high_water_bytes": 3072,
+            "limit_samples": 1343,
+            "limit_bytes": 5372,
+            "sample_bytes": 4
+          },
+          "wake_pending": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 0,
+            "high_water_bytes": 0,
+            "limit_samples": 1791,
+            "limit_bytes": 7164,
+            "sample_bytes": 4
+          },
+          "pre_roll": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 512,
+            "high_water_bytes": 2048,
+            "limit_samples": 11776,
+            "limit_bytes": 47104,
+            "sample_bytes": 4
+          },
+          "utterance": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 14848,
+            "high_water_bytes": 59392,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          },
+          "handoff": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 14848,
+            "high_water_bytes": 59392,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          }
+        },
+        "overwritten_frames": 0,
+        "frames": 29,
+        "capture_end": "maximum_duration",
+        "buffer_verdicts": {
+          "raw_pcm": "passed",
+          "resampled_pending": "passed",
+          "wake_pending": "unvalidated",
+          "pre_roll": "passed",
+          "utterance": "passed",
+          "handoff": "passed"
+        }
+      },
+      {
+        "operation_id": "lock",
+        "generation": 1,
+        "capture_sequence": 5,
+        "outcome": "worker_terminated",
+        "buffers": {
+          "raw_pcm": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 320,
+            "high_water_bytes": 640,
+            "limit_samples": 321,
+            "limit_bytes": 642,
+            "sample_bytes": 2
+          },
+          "resampled_pending": {
+            "current_samples": 256,
+            "current_bytes": 1024,
+            "high_water_samples": 768,
+            "high_water_bytes": 3072,
+            "limit_samples": 1343,
+            "limit_bytes": 5372,
+            "sample_bytes": 4
+          },
+          "wake_pending": {
+            "current_samples": 1024,
+            "current_bytes": 4096,
+            "high_water_samples": 1536,
+            "high_water_bytes": 6144,
+            "limit_samples": 1791,
+            "limit_bytes": 7164,
+            "sample_bytes": 4
+          },
+          "pre_roll": {
+            "current_samples": 11776,
+            "current_bytes": 47104,
+            "high_water_samples": 11776,
+            "high_water_bytes": 47104,
+            "limit_samples": 11776,
+            "limit_bytes": 47104,
+            "sample_bytes": 4
+          },
+          "utterance": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 0,
+            "high_water_bytes": 0,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          },
+          "handoff": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 0,
+            "high_water_bytes": 0,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          }
+        },
+        "overwritten_frames": 49,
+        "frames": 72,
+        "capture_end": "unvalidated",
+        "buffer_verdicts": {
+          "raw_pcm": "unvalidated",
+          "resampled_pending": "unvalidated",
+          "wake_pending": "unvalidated",
+          "pre_roll": "unvalidated",
+          "utterance": "unvalidated",
+          "handoff": "unvalidated"
+        }
+      },
+      {
+        "operation_id": "software_mute",
+        "generation": 3,
+        "capture_sequence": 6,
+        "outcome": "worker_terminated",
+        "buffers": {
+          "raw_pcm": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 320,
+            "high_water_bytes": 640,
+            "limit_samples": 321,
+            "limit_bytes": 642,
+            "sample_bytes": 2
+          },
+          "resampled_pending": {
+            "current_samples": 64,
+            "current_bytes": 256,
+            "high_water_samples": 768,
+            "high_water_bytes": 3072,
+            "limit_samples": 1343,
+            "limit_bytes": 5372,
+            "sample_bytes": 4
+          },
+          "wake_pending": {
+            "current_samples": 768,
+            "current_bytes": 3072,
+            "high_water_samples": 1536,
+            "high_water_bytes": 6144,
+            "limit_samples": 1791,
+            "limit_bytes": 7164,
+            "sample_bytes": 4
+          },
+          "pre_roll": {
+            "current_samples": 11776,
+            "current_bytes": 47104,
+            "high_water_samples": 11776,
+            "high_water_bytes": 47104,
+            "limit_samples": 11776,
+            "limit_bytes": 47104,
+            "sample_bytes": 4
+          },
+          "utterance": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 0,
+            "high_water_bytes": 0,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          },
+          "handoff": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 0,
+            "high_water_bytes": 0,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          }
+        },
+        "overwritten_frames": 61,
+        "frames": 84,
+        "capture_end": "unvalidated",
+        "buffer_verdicts": {
+          "raw_pcm": "unvalidated",
+          "resampled_pending": "unvalidated",
+          "wake_pending": "unvalidated",
+          "pre_roll": "unvalidated",
+          "utterance": "unvalidated",
+          "handoff": "unvalidated"
+        }
+      },
+      {
+        "operation_id": "disconnect",
+        "generation": 5,
+        "capture_sequence": 7,
+        "outcome": "worker_terminated",
+        "buffers": {
+          "raw_pcm": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 320,
+            "high_water_bytes": 640,
+            "limit_samples": 321,
+            "limit_bytes": 642,
+            "sample_bytes": 2
+          },
+          "resampled_pending": {
+            "current_samples": 384,
+            "current_bytes": 1536,
+            "high_water_samples": 768,
+            "high_water_bytes": 3072,
+            "limit_samples": 1343,
+            "limit_bytes": 5372,
+            "sample_bytes": 4
+          },
+          "wake_pending": {
+            "current_samples": 768,
+            "current_bytes": 3072,
+            "high_water_samples": 1536,
+            "high_water_bytes": 6144,
+            "limit_samples": 1791,
+            "limit_bytes": 7164,
+            "sample_bytes": 4
+          },
+          "pre_roll": {
+            "current_samples": 11776,
+            "current_bytes": 47104,
+            "high_water_samples": 11776,
+            "high_water_bytes": 47104,
+            "limit_samples": 11776,
+            "limit_bytes": 47104,
+            "sample_bytes": 4
+          },
+          "utterance": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 0,
+            "high_water_bytes": 0,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          },
+          "handoff": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 0,
+            "high_water_bytes": 0,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          }
+        },
+        "overwritten_frames": 46,
+        "frames": 69,
+        "capture_end": "unvalidated",
+        "buffer_verdicts": {
+          "raw_pcm": "unvalidated",
+          "resampled_pending": "unvalidated",
+          "wake_pending": "unvalidated",
+          "pre_roll": "unvalidated",
+          "utterance": "unvalidated",
+          "handoff": "unvalidated"
+        }
+      },
+      {
+        "operation_id": "recovery",
+        "generation": 7,
+        "capture_sequence": 8,
+        "outcome": "released",
+        "buffers": {
+          "raw_pcm": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 320,
+            "high_water_bytes": 640,
+            "limit_samples": 321,
+            "limit_bytes": 642,
+            "sample_bytes": 2
+          },
+          "resampled_pending": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 768,
+            "high_water_bytes": 3072,
+            "limit_samples": 1343,
+            "limit_bytes": 5372,
+            "sample_bytes": 4
+          },
+          "wake_pending": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 1536,
+            "high_water_bytes": 6144,
+            "limit_samples": 1791,
+            "limit_bytes": 7164,
+            "sample_bytes": 4
+          },
+          "pre_roll": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 11776,
+            "high_water_bytes": 47104,
+            "limit_samples": 11776,
+            "limit_bytes": 47104,
+            "sample_bytes": 4
+          },
+          "utterance": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 17408,
+            "high_water_bytes": 69632,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          },
+          "handoff": {
+            "current_samples": 0,
+            "current_bytes": 0,
+            "high_water_samples": 17408,
+            "high_water_bytes": 69632,
+            "limit_samples": 28288,
+            "limit_bytes": 113152,
+            "sample_bytes": 4
+          }
+        },
+        "overwritten_frames": 140,
+        "frames": 174,
+        "capture_end": "endpoint",
+        "buffer_verdicts": {
+          "raw_pcm": "passed",
+          "resampled_pending": "passed",
+          "wake_pending": "passed",
+          "pre_roll": "passed",
+          "utterance": "passed",
+          "handoff": "passed"
+        }
+      }
+    ],
+    "lifecycle": "passed",
+    "rejected_observations": 0,
+    "units": {
+      "samples": "scalar PCM samples",
+      "bytes": "sample payload bytes; excludes array metadata/backing copies"
+    },
+    "configuration": {
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "pre_roll_ms": 750,
+      "max_utterance_seconds": 1,
+      "wake_threshold": 0.2
+    },
+    "unvalidated": [
+      "openWakeWord inference buffers",
+      "native resampler/VAD/model allocations",
+      "Piper synthesis",
+      "OS/PipeWire queues",
+      "array backing storage and transient conversion copies",
+      "heap erasure",
+      "physical devices",
+      "other unmeasured queues"
+    ]
+  },
+  "scope": "isolated production capture/socket path with deterministic external audio/model fixtures; no physical devices",
+  "unvalidated": [
+    "openWakeWord inference buffers",
+    "native resampler/VAD/model allocations",
+    "Piper synthesis",
+    "OS/PipeWire queues",
+    "array backing storage and transient conversion copies",
+    "heap erasure",
+    "physical devices",
+    "other unmeasured queues"
+  ]
+}

@@ -104,3 +104,33 @@ recognizer allocations; Piper synthesis; OS/PipeWire queues; array backing stora
 conversion temporaries and all other unmeasured queues; real hardware behavior;
 physical heap erasure. The broader network audit remains separate. No new physical
 or release pass is claimed.
+
+## Delivered observations and review
+
+The published fixture observes peaks of 640 raw-accumulator bytes, 3,072 resampled
+pending bytes, 6,144 wake-accumulator bytes and 47,104 pre-roll bytes. Retained
+utterance and concatenated handoff each peak at 94,208 bytes. All stay within the
+recorded diagnostic limits. Each normal operation reports zero current payload
+on release. Four canceled captures retain partial observed counters with explicit
+unvalidated per-buffer verdicts and a passed process-termination/recovery gate.
+Buffers never used by an operation also remain unvalidated for that operation.
+
+Review comparison: `git diff d2e56dd4c01a8e39e31c87025f0cbe00b22fa777...HEAD`,
+implementation `56b9b2e` and correction `a6bdc9f`. The command regression first
+reproduced the malformed trailing duplicate `--output` case leaving an old pass,
+then passed after invalidation moved ahead of argument parsing. Separate missing
+observations, bound overflow and stale-identity regressions were also red before
+the corresponding implementation/fault fixture and green afterward.
+
+### Standards
+
+Independent review and correction recheck: **0 remaining findings**. No documented
+standard violation or material baseline smell remains.
+
+### Spec
+
+Independent review and correction recheck: **0 remaining findings**. The stale
+report finding is fixed; native/backend, network and physical coverage remain
+explicitly outside this implementation's passing verdict.
+
+Validation: `npm run check` passes; full `npm test` passes **211 Node / 64 Python tests**. The focused CLI and wake socket suites pass; the final bounds command passes its historical contract groups and scoped production payload/lifecycle screen. Standards: 0 remaining findings; Spec: 0 remaining findings.

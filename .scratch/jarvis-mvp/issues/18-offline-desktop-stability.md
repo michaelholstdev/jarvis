@@ -86,3 +86,38 @@ Python tests). Standards and Spec reviewers independently rechecked the stale
 CLI-report correction and report zero remaining findings. Review details and
 remaining acceptance gates are in the follow-up report. Tooling work is committed;
 status remains ready-for-human for final candidate/physical evidence.
+
+2026-10-20: Scoped buffer instrumentation claimed by Codex. Task-start/review baseline: `d2e56dd4c01a8e39e31c87025f0cbe00b22fa777`. Agreed seams: acceptance CLI/report and daemon/audio sockets. Existing working-tree edits preserved.
+
+### Buffer occupancy instrumentation delivered — 2026-10-20
+
+The current scoped instrumentation criteria are delivered. This outcome supersedes
+its preparation/next-task wording above; full #18 acceptance remains open.
+**Status: ready-for-human** for the remaining physical/privacy/network work.
+
+Production capture now measures opt-in content-free logical payload occupancy and
+high-water marks for raw PCM, resampled pending, wake accumulation, overwritten
+pre-roll, utterance and concatenated handoff. The CLI consumes actual production
+observations via isolated audio sockets with external device/model fixtures;
+it separately records historical contract results. Eight finite scenarios cover
+idle overwrite, immediate wake/question handoff, manual cancellation/cue/capture,
+endpoint, maximum duration, lock, software mute, owner disconnect and deliberate
+recovery. Stale identities/sequences are rejected; missing evidence and observed
+bound violations cannot pass. Failed/interrupted/invalid reruns invalidate old
+reports, including the review's malformed duplicate-output case.
+
+See [method, measurements and review](../../../docs/capture-buffer-evidence.md),
+[content-free fixture report](../../../benchmarks/stability/capture-bounds.json)
+and [map](../map.md). Task baseline `d2e56dd`; implementation `56b9b2e`, correction
+`a6bdc9f`. The report records exact source hashes and its Git parent. Pre-roll
+peaks at 47,104 bytes; utterance and handoff each peak at 94,208 bytes. Canceled
+captures retain partial observations with explicit unvalidated per-buffer
+verdicts; worker termination is lifecycle evidence, never heap-erasure evidence.
+
+Native inference/resampler/VAD/model allocations, synthesis, OS/PipeWire queues,
+array backing storage/conversion copies and other unmeasured queues remain
+unvalidated. This does not establish full buffer acceptance, expand the separate
+network audit, perform hardware trials or select the final #17 configuration.
+The two-hour duration remains waived; 44.02-minute evidence remains partial.
+
+Validation: `npm run check` passes; full `npm test` passes **211 Node / 64 Python tests**. The focused CLI and wake socket suites pass; the final bounds command passes its historical contract groups and scoped production payload/lifecycle screen. Standards: 0 remaining findings; Spec: 0 remaining findings.

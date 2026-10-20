@@ -17,7 +17,7 @@
 - [15: Real playback delivery in follow-up context](issues/15-real-delivered-reply-context.md#answer) — resolved; next fake Ollama requests verify delivered-only context and stale/privacy handling; real Piper/Pulse interruption probe with independent silent-sink monitor passed. Sentence precision measured and documented; physical headset/speaker demo remains unvalidated. 203 Node/21 Python tests pass; review follow-up replaced circular baseline evidence with independent source PCM and frozen report-time capture, and rejects a real premature-report negative control.
 - [16: German recognition comparison](issues/16-german-recognition-comparison.md#answer) — resolved; reproducible 30-utterance synthetic CPU comparison plus capability probes; Parakeet v3 INT8 passes the screening gate, Whisper/Vosk fail quality; production integration and acoustic acceptance remain unvalidated.
 - [17: End-to-end latency and resource benchmarks](issues/17-latency-and-resource-benchmarks.md#answer) — implementation and synthetic baseline delivered; 30 real-path silent-sink queries per local LLM, content-free traces, regression command and separate idle/concurrent speech resource measurements published. **Ready for human:** physical audibility, German quality ratings and remaining acoustic/load scenarios; proxy passes do not close the audible target gate.
-- [18: Offline and desktop stability acceptance](issues/18-offline-desktop-stability.md#answer) — acceptance harnesses and 30-turn real synthetic offline evidence delivered; 204 Node/39 Python tests and both review axes pass. **Ready for human:** physical desktop/device checks, queue/buffer and external-attempt audit remain unvalidated. User stopped idle observation (44.02-minute last checkpoint); no two-hour/CPU acceptance claimed.
+- [18: Offline and desktop stability acceptance](issues/18-offline-desktop-stability.md) — scoped production capture occupancy instrumentation and content-free finite fixture evidence delivered; 211 Node / 64 Python tests and both reviews pass. **Ready for human:** remaining physical/privacy/network acceptance. Native/backend and other unmeasured queues remain unvalidated; two-hour duration waived, 44.02-minute historical evidence partial.
 - [19: Reproducible installation and release checklist](issues/19-installation-and-release-checklist.md#answer) — documentation delivered; consolidated installation/lifecycle/model inventory and FR-01–FR-25/M0–M4 evidence matrix. **Ready for human:** fresh-account target-desktop installation and release acceptance; mandatory hardware gates remain unvalidated, no MVP release claimed. #13 feasibility revisited at source level, actual candidate/runtime/German trials remain open.
 - [20: Production Parakeet recognition](issues/20-production-parakeet-recognition.md#answer) — resolved; selectable pinned CPU recognizer, synthetic production path, cancellation/privacy and error checks passed; human headset quality/latency handed to #17.
 - [23: Long spoken answers fail at the duration limit](issues/23-long-speech-duration-overflow.md#answer) — resolved; bounded prefix/notice speech, full temporary text and delivered-only context; 208 Node/43 Python tests, both review axes, real Piper PCM-boundary probe and actual headset rerun pass.
@@ -34,3 +34,11 @@ false activations. No approved threshold or production handoff is delivered.
 User-requested physical calibration is prepared, not executed; #13 and its #17
 prerequisite remain open. See [#13 follow-up](issues/13-optional-validated-wake-activation.md)
 and [evaluation procedure](../../docs/wake-activation.md#offline-candidate-evaluation--2026-10-20).
+
+## #18 scoped delivery — 2026-10-20
+
+Production buffer instrumentation and finite fixture evidence are delivered; this
+supersedes earlier wording naming #18 instrumentation as the next agent task.
+See [the scoped outcome](issues/18-offline-desktop-stability.md#buffer-occupancy-instrumentation-delivered--2026-10-20)
+and [evidence/method](../../docs/capture-buffer-evidence.md). Remaining #18 work
+requires physical/privacy/network acceptance; no release gate is closed here.
