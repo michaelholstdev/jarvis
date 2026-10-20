@@ -117,3 +117,29 @@ The candidate evidence does not justify implementing/enabling the production
 detector/handoff yet. Manual activation remains available.
 
 Map: [MVP implementation map](../map.md).
+
+
+### Validation and independent review
+
+`npm run check` passed TypeScript, Biome, Ruff and both mypy checks. Full
+`npm test` passed **208 Node / 53 Python tests**, including the optional real
+candidate truncated-WAV regression. CLI tests cover stale-report invalidation,
+invalid thresholds, interrupted recording manifests and muted-source refusal.
+TDD observed stale-report, malformed-threshold and truncated-WAV failures before
+fixes. The actual configured headset source passed a read-only desktop/source
+preflight; no physical recording was opened.
+
+Independent review of `7e6308a` against
+`782c87001fa3e563561209403beac17599c08512`:
+
+- **Standards:** 0 documented-standard violations and no substantive heuristic
+  smells. CPU inference, content-free reports, artifact/dependency pins and
+  explicit manual fallback follow repository standards.
+- **Spec:** 0 actionable defects. Feasibility tooling and user-requested trial
+  preparation match the conditional ticket scope. Production detector/handoff,
+  human German validation, artifact approval and physical acceptance remain
+  unfinished and explicitly disclosed. No scope creep or invented pass found.
+
+Worst issue within either review axis: none. These reviews do not close #13 or
+establish acoustic/privacy acceptance. The user's preexisting tracker edits
+were preserved outside the implementation commits.
