@@ -1,0 +1,9 @@
+{
+  "run_completed": false,
+  "timestamp_utc": "2026-10-20T06:16:46.492717+00:00",
+  "checks": {
+    "execution": "failed",
+    "all_external_request_attempts": "unvalidated"
+  },
+  "error_type": "FileNotFoundError"
+}

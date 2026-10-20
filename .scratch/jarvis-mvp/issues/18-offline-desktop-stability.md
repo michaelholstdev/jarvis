@@ -58,3 +58,24 @@ are preserved.
 
 Follow-up validation: `npm run check` and full `npm test` pass: 204 Node /
 39 Python tests.
+
+
+### Tooling follow-up — 2026-10-20
+
+Claimed by Codex for tooling and automated evidence only, as confirmed by the
+user. Review baseline: `afc5ac098c2678b1e4eabab2608088eac62d9668`. Confirmed seams:
+acceptance CLI/report and daemon/audio sockets under excess input.
+
+Added a reproducible bounds-evidence collector around existing public-contract
+regressions, a content-free descendant connection-attempt audit CLI, and tracer
+boundary regressions. Socket admission/frame and audio cancellation/duration
+checks pass. Native buffer occupancy remains unvalidated. The actual audit cannot
+run because `strace` is absent; its failed execution is retained, not a pass.
+Connection-only tracing also cannot establish all external-request coverage.
+
+Imported #12's setup-specific physical observations, including corrected #25
+recovery and #23 long-answer reruns, without repeating hardware trials. Jieli
+hardware mute remains unsupported. Final #17 configuration, 30 physical turns,
+chosen-setup offline trials and remaining coverage stay open. No release pass or
+new long-idle run is claimed. See [follow-up report](../../../docs/stability-follow-up.md)
+and [existing map pointer](../map.md).

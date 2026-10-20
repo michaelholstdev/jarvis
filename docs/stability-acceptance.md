@@ -1,8 +1,11 @@
 # Offline and desktop stability acceptance (#18)
 
 This report separates automated synthetic/socket evidence from physical desktop
-acceptance. Hardware lock/mute, real unplug/replug, systemd restart, suspend/resume,
-and acoustic spoken stop remain **unvalidated**. See the step-by-step
+acceptance. See the [2026-10-20 follow-up](stability-follow-up.md) for current
+socket-bound evidence, connection-audit tooling and imported #12 physical trials.
+Historical results below retain their original configuration and coverage.
+Hardware-mute detection is unsupported on the #12 setup; final physical
+acceptance and acoustic spoken stop remain open. See the step-by-step
 [desktop procedure](desktop-acceptance.md) and separate [spoken-stop gate](spoken-stop.md).
 No physical device settings or desktop session are changed by the commands below.
 
