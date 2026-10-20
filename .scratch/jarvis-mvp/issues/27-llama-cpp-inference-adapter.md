@@ -122,3 +122,13 @@ before the fix. Independent reviewers confirmed both findings resolved.
 Validation after review corrections: `npm run check` passed; `npm test` passed
 255 Node tests and 67 Python tests. No hardware trial or service reconfiguration
 was needed for these configuration/diagnostic fixes.
+
+### Persistent deployment — 2026-10-20
+
+User authorized installing/enabling the reviewed llama.cpp user unit and restarting
+Jarvis with manual-only activation. Current source `9e569de` rebuilt successfully;
+inference, audio and core are active and ready. Loopback/model/GPU checks pass;
+no microphone capture or generation requested. Prior config and unit files backed
+up privately. See [deployment record and exact units](../llama-deployment/README.md).
+Final-build headset quality trial awaits the user's separate readiness signal;
+login lifecycle and #17's full matrix remain unvalidated.

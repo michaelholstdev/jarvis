@@ -1,0 +1,21 @@
+[Unit]
+Description=Local llama.cpp inference for Jarvis
+PartOf=graphical-session.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=exec
+WorkingDirectory=%h/progz/llama-prism
+ExecStart=%h/progz/llama-prism/build/bin/llama-server --model %h/models/Ternary-Bonsai-2-27B-PQ2_0.gguf --alias jarvis-bonsai --host 127.0.0.1 --port 18080 --ctx-size 8192 --parallel 1 --n-gpu-layers 99 --reasoning-format deepseek --no-ui
+Restart=on-failure
+RestartSec=15s
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=yes
+LimitCORE=0
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target
