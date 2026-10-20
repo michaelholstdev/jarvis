@@ -3,6 +3,7 @@ import type { Operation } from '../../packages/protocol/index.js';
 import type { Config } from './config.js';
 import { diagnostic } from './diagnostics.js';
 import {
+  InferenceError,
   inferenceFailure,
   inferenceObservation,
 } from './inference-diagnostic.js';
@@ -25,10 +26,13 @@ export async function generateAnswer(
   const observation = inferenceObservation();
   let outcome = 'success';
   let category = 'none';
+  let httpStatus: number | 'unknown' = 'unknown';
   try {
     const adapter = config.llm.provider === 'llama.cpp' ? llamaCpp : ollama;
     return await adapter.generateAnswer(config, operation, signal, observation);
   } catch (error) {
+    if (error instanceof InferenceError && error.httpStatus !== undefined)
+      httpStatus = error.httpStatus;
     outcome = signal.aborted ? 'cancelled' : 'failure';
     category = signal.aborted ? 'cancelled' : inferenceFailure(error);
     throw error;
@@ -51,6 +55,7 @@ export async function generateAnswer(
       elapsed_ms: performance.now() - started,
       outcome,
       category,
+      http_status: httpStatus,
     });
   }
 }

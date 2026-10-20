@@ -48,7 +48,7 @@ export async function readInference(
     const status = response.statusCode ?? 0;
     if (status !== 200 && !(allowLoading && status === 503)) {
       response.destroy();
-      throw new InferenceError('http_failure', 'unavailable');
+      throw new InferenceError('http_failure', 'unavailable', status);
     }
     connected = true;
     response.setEncoding('utf8');

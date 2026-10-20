@@ -152,3 +152,65 @@ for (const [name, expected] of [
     }
   });
 }
+
+for (const provider of ['llama.cpp', 'ollama']) {
+  for (const includeContent of [true, false]) {
+    test(`${provider} preserves metadata on unsupported tool output ${includeContent ? 'with' : 'without'} content`, async () => {
+      const message = {
+        tool_calls: [
+          { function: { name: 'SECRET_TOOL', arguments: 'SECRET_ARGUMENTS' } },
+        ],
+        ...(includeContent ? { content: 'SECRET_ANSWER' } : {}),
+        ...(provider === 'ollama'
+          ? { thinking: 'SECRET_REASONING' }
+          : { reasoning_content: 'SECRET_REASONING' }),
+      };
+      const payload =
+        provider === 'ollama'
+          ? `${JSON.stringify({ message, done: true, done_reason: 'tool_calls', prompt_eval_count: 11, eval_count: 7 })}\n`
+          : `data: ${JSON.stringify({ choices: [{ index: 0, delta: message, finish_reason: 'tool_calls' }], usage: { prompt_tokens: 11, completion_tokens: 7, total_tokens: 18 } })}\n\ndata: [DONE]\n\n`;
+      const server = createServer((_req, res) => res.end(payload));
+      server.listen(0, '127.0.0.1');
+      await once(server, 'listening');
+      const address = server.address();
+      assert.ok(address && typeof address !== 'string');
+      const config = loadConfig();
+      Object.assign(config.llm, {
+        provider,
+        base_url: `http://127.0.0.1:${address.port}`,
+      });
+      const logs: Record<string, unknown>[] = [];
+      const original = console.error;
+      console.error = (line: string) => logs.push(JSON.parse(line));
+      try {
+        await assert.rejects(
+          generateAnswer(
+            config,
+            { type: 'infer', operation_id: 'tool', text: 'SECRET_PROMPT' },
+            new AbortController().signal,
+          ),
+        );
+        const terminal = logs.filter(
+          (line) => line.event === 'inference_terminal',
+        );
+        assert.equal(terminal.length, 1);
+        assert.equal(terminal[0]?.outcome, 'failure');
+        assert.equal(terminal[0]?.category, 'unsupported_response');
+        assert.equal(terminal[0]?.finish_reason, 'tool_calls');
+        assert.equal(terminal[0]?.prompt_tokens, 11);
+        assert.equal(terminal[0]?.completion_tokens, 7);
+        assert.equal(
+          terminal[0]?.total_tokens,
+          provider === 'ollama' ? 'unknown' : 18,
+        );
+        assert.equal(terminal[0]?.answer_chars, includeContent ? 13 : 0);
+        assert.equal(terminal[0]?.reasoning_chars, 16);
+        assert.doesNotMatch(JSON.stringify(logs), /SECRET/);
+      } finally {
+        console.error = original;
+        server.closeAllConnections();
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+      }
+    });
+  }
+}

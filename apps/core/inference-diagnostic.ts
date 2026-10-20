@@ -18,6 +18,7 @@ export class InferenceError extends ProtocolError {
   constructor(
     public readonly category: InferenceFailure,
     code: Diagnostic = 'invalid_message',
+    public readonly httpStatus?: number,
   ) {
     super(code);
   }
@@ -54,15 +55,16 @@ export function inferenceObservation() {
     },
     finish(reason: unknown) {
       if (
+        typeof reason === 'string' &&
         [
           'stop',
           'length',
           'tool_calls',
           'function_call',
           'content_filter',
-        ].includes(String(reason))
+        ].includes(reason)
       )
-        fields.finish_reason = String(reason);
+        fields.finish_reason = reason;
     },
     usage(value: unknown) {
       if (!value || typeof value !== 'object') return;
@@ -92,4 +94,17 @@ export function inferenceFailure(error: unknown): InferenceFailure {
     if (error.code === 'invalid_message') return 'malformed_stream';
   }
   return 'connection_failure';
+}
+
+/** Request rejection does not establish that the backend is unavailable. */
+export function inferenceUnavailable(error: unknown): boolean {
+  const category = inferenceFailure(error);
+  if (category === 'http_failure')
+    return !(
+      error instanceof InferenceError &&
+      error.httpStatus !== undefined &&
+      error.httpStatus >= 400 &&
+      error.httpStatus < 500
+    );
+  return category === 'connection_failure' || category === 'timeout';
 }

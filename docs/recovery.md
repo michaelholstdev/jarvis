@@ -133,15 +133,20 @@ Terminal fields are content-free:
 | `outcome` | `success`, `failure`, or deliberate `cancelled` |
 | `category` | `none`, `cancelled`, `empty_answer`, `timeout`, `connection_failure`, `http_failure`, `malformed_stream`, `incomplete_stream`, `unsupported_response`, or `output_size_limit` |
 | `generation_limit` | Configured `num_predict`; this change does not raise it |
+| `http_status` | Numeric HTTP rejection status when an HTTP request fails, otherwise `unknown`; response bodies are never logged |
 | `finish_reason` | Allowlisted `stop`, `length`, `tool_calls`, `function_call`, `content_filter`, or `unknown` |
 | `prompt_tokens`, `completion_tokens`, `total_tokens` | Nonnegative safe integer usage reported by the server, otherwise `unknown`; Ollama has no reported total |
 | `answer_chars`, `reasoning_chars` | Accumulated UTF-16 code units; reasoning count is `unknown` unless the server sends a separate reasoning string |
 | `first_stream_ms`, `first_answer_ms` | Time from gateway entry to first stream activity and first answer content; `unknown` if absent |
 
+Allowlisted finish reasons and reported usage are captured before unsupported
+tool output is rejected; available answer/reasoning counts remain content-free.
 No token counts are estimated from characters. A usable answer with finish
 reason `length` succeeds. Empty or unusable responses and broken streams do not
-by themselves mark inference unavailable; connection/HTTP failures and timeouts
-retain readiness probing and explicit recovery. Failed output never enters
+by themselves mark inference unavailable. HTTP 4xx request rejections (such as
+400 for context overflow or 422 for invalid parameters) also preserve readiness.
+Other HTTP failures, connection failures and timeouts retain readiness probing
+and explicit recovery. Failed output never enters
 conversation history. Earlier delivered exchanges remain available while the
 conversation stays open; “Noch einmal” or a new question is required.
 

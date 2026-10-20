@@ -68,6 +68,11 @@ export async function generateAnswer(
     AbortSignal.any([signal, timeout]),
     (line) => {
       const value = parse(line);
+      observation?.finish(value.done_reason);
+      observation?.usage({
+        prompt_tokens: value.prompt_eval_count,
+        completion_tokens: value.eval_count,
+      });
       const message = value.message as
         | { content?: unknown; tool_calls?: unknown; thinking?: unknown }
         | undefined;
@@ -75,10 +80,17 @@ export async function generateAnswer(
         done ||
         typeof value.done !== 'boolean' ||
         !message ||
-        typeof message.content !== 'string'
+        typeof message !== 'object' ||
+        Array.isArray(message)
       )
         throw new ProtocolError('invalid_message');
+      observation?.content(
+        answer + (typeof message.content === 'string' ? message.content : ''),
+        message.thinking,
+      );
       if (message.tool_calls) throw new InferenceError('unsupported_response');
+      if (typeof message.content !== 'string')
+        throw new ProtocolError('invalid_message');
       if (!answer && message.content) {
         diagnostic({
           event: 'llm_first_token',
@@ -86,12 +98,6 @@ export async function generateAnswer(
         });
       }
       answer += message.content;
-      observation?.content(answer, message.thinking);
-      observation?.finish(value.done_reason);
-      observation?.usage({
-        prompt_tokens: value.prompt_eval_count,
-        completion_tokens: value.eval_count,
-      });
       if (
         Buffer.byteLength(answer) >
         Math.min(4096, config.llm.max_context_tokens)

@@ -41,6 +41,7 @@ export async function generateAnswer(
     if (!value.choices.length && value.usage) return;
     if (value.choices.length !== 1) throw new ProtocolError('invalid_message');
     const choice = value.choices[0];
+    observation?.finish(choice?.finish_reason);
     const delta = choice?.delta;
     if (
       finished ||
@@ -52,17 +53,16 @@ export async function generateAnswer(
       (delta.content != null && typeof delta.content !== 'string')
     )
       throw new ProtocolError('invalid_message');
+    const content = delta.content ?? '';
+    observation?.content(answer + content, delta.reasoning_content);
     if (delta.tool_calls || delta.function_call)
       throw new InferenceError('unsupported_response');
-    const content = delta.content ?? '';
-    observation?.finish(choice.finish_reason);
     if (!answer && content)
       diagnostic({
         event: 'llm_first_token',
         operation_id: operation.operation_id,
       });
     answer += content;
-    observation?.content(answer, delta.reasoning_content);
     if (
       Buffer.byteLength(answer) > Math.min(4096, config.llm.max_context_tokens)
     )

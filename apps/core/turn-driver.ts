@@ -6,7 +6,7 @@ import type { Config } from './config.js';
 import type { createCore } from './core.js';
 import { diagnostic as logDiagnostic } from './diagnostics.js';
 import { generateAnswer } from './inference.js';
-import { inferenceFailure } from './inference-diagnostic.js';
+import { inferenceUnavailable } from './inference-diagnostic.js';
 import { operationCapability } from './operation-capability.js';
 import { request } from './transport.js';
 
@@ -105,11 +105,7 @@ export async function runTurn(
             type: 'operation-failed',
             operation_id: operation.operation_id,
             capability: 'inference',
-            unavailable: [
-              'connection_failure',
-              'http_failure',
-              'timeout',
-            ].includes(inferenceFailure(error)),
+            unavailable: inferenceUnavailable(error),
             code: error instanceof ProtocolError ? error.code : 'unavailable',
           });
         }
